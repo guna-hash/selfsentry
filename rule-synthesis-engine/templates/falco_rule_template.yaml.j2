@@ -1,0 +1,14 @@
+{# 
+  falco_rule_template.yaml.j2
+  -----------------------------
+  Jinja2 template for auto-generated Falco rules.
+  STATUS: illustrative draft only — NOT validated against real Falco yet
+  (Phase 6). Refine condition/output syntax once Phase 3 (Falco install)
+  is complete and you can test-load rules against a real Falco instance.
+#}
+- rule: Auto_Generated_{{ rule_name }}_{{ rule_id }}
+  desc: "Auto-generated from confirmed anomaly #{{ incident_id }}"
+  condition: {{ condition_expression }}
+  output: "{{ output_message }} (user=%user.name container=%container.name)"
+  priority: {{ priority | default("WARNING") }}
+  tags: [auto-generated, container-guard-ai]

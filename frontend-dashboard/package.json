@@ -1,0 +1,22 @@
+{
+  "name": "containerguard-ai-dashboard",
+  "version": "0.1.0",
+  "private": true,
+  "description": "STATUS: Phase 9 stub — not yet implemented. React dashboard for ContainerGuard AI (Alerts feed, Rule Review Queue, compliance reports).",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "test": "vitest"
+  },
+  "dependencies": {
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0",
+    "react-router-dom": "^6.23.0"
+  },
+  "devDependencies": {
+    "vite": "^5.2.0",
+    "@vitejs/plugin-react": "^4.2.0",
+    "vitest": "^1.5.0"
+  },
+  "notes": "Not yet installed/run. Implement in Phase 9, after backend-api (Phase 8) exposes real endpoints and a WebSocket stream to consume. Run `npm install` inside frontend-dashboard/ once you begin this phase."
+}

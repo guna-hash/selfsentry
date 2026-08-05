@@ -1,0 +1,18 @@
+# base-rules.yaml
+# -----------------
+# Hand-written Falco rules — NEVER auto-modified by the Rule Synthesis
+# Engine (that engine only writes to auto-generated-rules.yaml).
+#
+# STATUS: placeholder — populate with real rules once Phase 3 (Falco
+# install) begins. Falco ships with a solid default rule set
+# (falco_rules.yaml) that this file should extend, not replace.
+#
+# Example custom rule (illustrative only, not yet validated against a
+# real Falco instance):
+#
+# - rule: Shell Spawned in Container
+#   desc: Detect a shell being spawned inside a monitored container
+#   condition: spawned_process and container and shell_procs
+#   output: "Shell spawned in container (user=%user.name container=%container.name shell=%proc.name)"
+#   priority: NOTICE
+#   tags: [container-guard-ai, shell]

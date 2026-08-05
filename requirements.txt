@@ -1,0 +1,53 @@
+# ContainerGuard AI — full project dependency list, organized by phase.
+# Install everything now with `pip install -r requirements.txt`, or install
+# incrementally per-phase if you'd rather keep your venv lean while learning.
+# NOTE: `trivy` and `falco` are NOT pip packages — they are separate CLI
+# tools/binaries installed via their own install scripts (see docs/).
+
+# --- Phase 1: Image Scanner ---
+# trivy_wrapper.py itself only needs the standard library (subprocess, json,
+# dataclasses) — nothing to pip install for Phase 1 code specifically.
+
+# --- Phase 2: Deployment Policy Checker ---
+docker>=7.0.0              # Docker SDK — read container/deployment specs
+
+# --- Phase 3: Falco + eBPF (rule-based layer) ---
+grpcio>=1.62.0              # Falco's gRPC output API (falco_integration.py)
+protobuf>=4.25.0             # required by grpcio for Falco's protobuf schema
+
+# --- Phase 4: Behavioral baseline + anomaly detection ---
+scikit-learn>=1.4.0           # Isolation Forest / One-Class SVM
+numpy>=1.26.0                  # feature vector math (scikit-learn dependency, pinned explicitly)
+pandas>=2.2.0                   # convenience for feature engineering / event tables
+
+# --- Phase 5: Correlation Engine ---
+# No new third-party packages — pure Python logic over Phase 3/4 outputs.
+
+# --- Phase 6: Rule Synthesis Engine (core novelty) ---
+jinja2>=3.1.0                    # template-based Falco rule generation (NEVER LLM-freehand)
+pyyaml>=6.0.1                     # parsing/validating generated Falco YAML rules
+
+# --- Phase 7: AI Threat Analysis ---
+openai>=1.0.0                      # OpenAI-compatible client (hosted API or local Ollama)
+
+# --- Phase 8: Backend + Database ---
+fastapi>=0.110.0                    # backend API framework
+uvicorn[standard]>=0.29.0            # ASGI server to run FastAPI
+sqlalchemy>=2.0.0                     # ORM
+psycopg2-binary>=2.9.9                # PostgreSQL driver
+alembic>=1.13.0                        # DB migrations
+websockets>=12.0                        # real-time alert streaming to the dashboard
+python-dotenv>=1.0.0                     # load .env into environment variables
+
+# --- Phase 9: Frontend Dashboard ---
+# React + JS dependencies live in frontend-dashboard/package.json (npm), not here.
+
+# --- Phase 10: Testing / evaluation ---
+# Uses the same pytest tooling below — no additional packages needed.
+
+# --- Dev / test tooling (all phases) ---
+pytest>=8.0.0
+pytest-cov>=5.0.0
+black>=24.0.0
+flake8>=7.0.0
+mypy>=1.9.0

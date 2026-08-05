@@ -1,0 +1,10 @@
+# auto-generated-rules.yaml
+# ----------------------------
+# ONLY the Rule Synthesis Engine (rule-synthesis-engine/rule_deployer.py)
+# writes to this file, and only after backtesting + human approval
+# (see rule-synthesis-engine/rule_backtester.py and
+# backend-api/routes/rules.py). Kept separate from base-rules.yaml for
+# clean provenance — this file can be safely wiped/reset without
+# touching hand-written rules.
+#
+# STATUS: empty. Will be populated starting in Phase 6.
