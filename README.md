@@ -8,11 +8,11 @@ Scans container images before deployment (Trivy), validates deployment configura
 Full design rationale, architecture, and academic materials live in `docs/` and the project's report deliverables (see `ContainerGuard_AI_*.pdf` / `.md` files generated during the design phase).
 
 ## Status
-🚧 **In active implementation.** Currently on **Phase 1 of 11** (Image Scanner). See `ROADMAP.md` for the full phase plan and `TODO.md` for current task status.
+🚧 **In active implementation.** Phase 1 (Image Scanner) is complete and validated against real Trivy. Currently on **Phase 2 of 11** (Deployment Policy Checker) — code and tests done, manual `docker inspect` validation pending. See `ROADMAP.md` for the full phase plan and `TODO.md` for current task status.
 
 ## Modules (11 total)
-1. Image Scanner (Trivy) — ✅ in progress
-2. Deployment Policy Checker
+1. Image Scanner (Trivy) — ✅ complete
+2. Deployment Policy Checker — 🔶 code complete, manual validation pending
 3. Falco Rule Engine
 4. Behavioral Runtime Monitor
 5. Anomaly Detection Model (Isolation Forest / One-Class SVM)
@@ -24,35 +24,19 @@ Full design rationale, architecture, and academic materials live in `docs/` and 
 11. Dashboard & Reports (React)
 
 ## Project structure
-Full scaffold for all 11 modules exists from day one — but **only `image-scanner/` has real, working code**. Everything else is an intentional stub (docstring explaining what it will do + `NotImplementedError`), so the architecture is visible without pretending unbuilt phases are done. Check each file's own docstring for its status.
-
 ```
 containerguard-ai/
-├── image-scanner/              # Phase 1 — ✅ REAL, working (Trivy wrapper)
-├── policy-checker/             # Phase 2 — stub
-├── runtime-monitor/            # Phase 3 — stub (Falco/eBPF integration)
-├── behavioral-engine/          # Phase 4 — stub (baseline + anomaly model)
-├── correlation-engine/         # Phase 5 — stub
-├── rule-synthesis-engine/      # Phase 6 — stub (★ core novelty ★)
-│   └── templates/               #   Jinja2 Falco rule template
-├── ai-analysis/                # Phase 7 — stub (LLM root-cause + timeline)
-├── response-engine/            # Phase 10 — stub (auto-isolate)
-├── falco-rules/                # base-rules.yaml (hand-written) +
-│                                #   auto-generated-rules.yaml (system-managed)
-├── backend-api/                # Phase 8 — stub (FastAPI routes + models)
-│   ├── routes/
-│   └── models/
-├── frontend-dashboard/         # Phase 9 — stub (React, incl. package.json)
-│   └── src/pages/
-├── database/                   # schema.sql — draft DDL for all tables
-├── tests/                      # Unit tests (currently: image-scanner only)
-├── docs/                       # Per-phase documentation
-├── requirements.txt            # full dependency list, organized by phase
+├── image-scanner/       # Phase 1 — Trivy wrapper
+├── policy-checker/      # Phase 2 — Deployment policy validator
+├── tests/                # Unit tests for all modules
+├── docs/                 # Per-phase documentation
+├── requirements.txt
 ├── .env.example
 ├── TODO.md
 ├── CHANGELOG.md
 └── ROADMAP.md
 ```
+(More module directories — `runtime-monitor/`, `behavioral-engine/`, `correlation-engine/`, `rule-synthesis-engine/`, `ai-analysis/`, `response-engine/`, `backend-api/`, `frontend-dashboard/` — are added as their phases begin.)
 
 ## Setup
 ```bash

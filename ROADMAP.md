@@ -5,8 +5,8 @@ Phase-by-phase build order (see `docs/` for per-phase detail as each is complete
 | # | Phase | Est. duration (solo, part-time) | Status |
 |---|-------|----------------------------------|--------|
 | 0 | Foundations (Linux, Docker, Python, Git) | 1–2 wks | ✅ self-verified by user |
-| 1 | Image Scanner (Trivy) | 3–5 days | 🔶 code complete, manual validation pending |
-| 2 | Deployment Policy Checker | 2–3 days | ⬜ not started |
+| 1 | Image Scanner (Trivy) | 3–5 days | ✅ complete (real Trivy validated, pushed to GitHub) |
+| 2 | Deployment Policy Checker | 2–3 days | 🔶 code complete (25/25 tests), manual `docker inspect` validation pending |
 | 3 | Falco + eBPF (rule-based layer) | 1.5–2 wks | ⬜ not started (biggest risk phase) |
 | 4 | Behavioral baseline + anomaly detection | 2–2.5 wks | ⬜ not started |
 | 5 | Correlation Engine | 4–6 days | ⬜ not started |
