@@ -1,0 +1,41 @@
+# ContainerGuard AI — Phase 3 Falco output configuration
+#
+# This is NOT a full falco.yaml — it's the specific settings this project
+# needs, verified against Falco's current documented config keys. Merge
+# these into your real /etc/falco/falco.yaml (the settings likely already
+# exist in that file, commented out or set to different defaults — find and
+# edit each key in place rather than pasting this block in wholesale).
+#
+# See docs/phase3_falco_integration.md for full install + verification
+# steps on your Linux VM.
+
+# Emit alerts as JSON instead of Falco's plain-text format. This project's
+# entire parsing layer (falco_integration.parse_falco_alert) assumes JSON.
+json_output: true
+
+# Include the human-readable "output" string in the JSON (used directly as
+# this project's "output" field in shape #1 — see docs/interfaces.md).
+json_include_output_property: true
+
+# Include each rule's tags in the JSON output (not currently consumed by
+# ContainerGuard AI, but cheap to keep for future use / debugging).
+json_include_tags_property: true
+
+# Use full ISO 8601 timestamps (e.g. "2026-08-09T10:15:00.123456789Z")
+# rather than Falco's default relative/short time format. This project's
+# "timestamp" field (shape #1) assumes this is enabled.
+time_format_iso_8601: true
+
+# Write alerts to a file so falco_integration.py can tail it. Pick any path
+# Falco (running as root) can write to; /var/log/falco/ is used throughout
+# this project's docs — create it first with: sudo mkdir -p /var/log/falco
+file_output:
+  enabled: true
+  keep_alive: false
+  filename: /var/log/falco/alerts.json
+
+# Optional but recommended while you're first getting this running: keep
+# stdout output on too, so you can visually confirm alerts are firing in
+# `journalctl -u falco-modern-bpf -f` without needing to tail the file.
+stdout_output:
+  enabled: true
