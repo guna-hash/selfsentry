@@ -1,17 +1,44 @@
+from dotenv import load_dotenv
+load_dotenv()
+
+import os
+import json
+from openai import OpenAI
+
+client = OpenAI(
+    api_key=os.environ.get("GROQ_API_KEY"),
+    base_url="https://api.groq.com/openai/v1",
+)
+
+
+def build_timeline(incident: dict, related_events: list[dict]) -> list[dict]:
+    """
+    Advisory-only: reconstructs a chronological, plain-English attacker
+    timeline from an ALREADY-SCORED incident's related events.
+    Refuses to run on an incident missing a risk_score, per project's
+    non-negotiable rule that the LLM never becomes the detection source.
+    """
+    if "risk_score" not in incident:
+        raise ValueError(
+            "build_timeline() requires an incident with a risk_score. "
+            "The LLM is advisory-only and must never be called before "
+            "the Correlation Engine has scored the incident."
+        )
+
+    prompt = f"""You are a container security analyst. Given this incident
+and its related events, reconstruct a chronological, plain-English attack
+timeline. Respond ONLY in JSON with a single key "timeline", whose value is
+a list of objects, each with keys: step (int), description (string).
+
+Incident: {incident}
+Related events: {related_events}
 """
-attack_timeline_builder.py
-------------------------------
-Module 9 of ContainerGuard AI: Attack Timeline.
 
-STATUS: NOT YET IMPLEMENTED — Phase 7 stub.
+    response = client.chat.completions.create(
+        model="openai/gpt-oss-20b",
+        messages=[{"role": "user", "content": prompt}],
+        response_format={"type": "json_object"},
+    )
 
-Planned responsibility:
-Use the LLM to reconstruct a chronological sequence of attacker actions
-from correlated events (e.g. "1. Reverse shell spawned via curl | pipe sh
--> 2. Outbound connection to unknown IP -> 3. /etc/passwd read attempt").
-Advisory/explanatory only, same constraint as root_cause_summarizer.py.
-
-Planned interface:
-    def build_timeline(incident: dict, related_events: list[dict]) -> list[dict]:
-        raise NotImplementedError("Phase 7 not yet built")
-"""
+    parsed = json.loads(response.choices[0].message.content)
+    return parsed["timeline"]
