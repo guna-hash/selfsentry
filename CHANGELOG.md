@@ -24,3 +24,19 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 - Produced full academic report, project profile, defense-prep notes, and beginner build guide.
 - Selected and verified IEEE base papers.
 - Decided: Jinja2 templated rule synthesis (not LLM-freehand), mandatory backtest + human-approval gate, hosted OpenAI-compatible API for LLM layer.
+
+### Validated — Phase 4: Behavioral Baseline + Anomaly Detection (real data)
+- Added `falco-rules/baseline-capture-rules.yaml`: four NOTICE-priority
+  Falco rules capturing normal (not just malicious) process/file/syscall
+  activity, feeding Phase 4's baseline.
+- Added `behavioral-engine/baseline_collector.py`: parses Falco's JSON log
+  into RawEvents, sharing the log file safely alongside runtime-monitor/
+  falco_integration.py's real alert parsing.
+- Added `behavioral-engine/collect_baseline.py` and `validate_live.py`:
+  real capture and live-scoring drivers.
+- Real validation run against `test-container`: 20 real baseline samples,
+  live anomaly scores separating normal (0.2595) from a triggered
+  `docker exec -it <c> sh` session (0.9977, flagged anomalous).
+- Documented a discovered Falco modern-eBPF probe limitation: `proc.name`
+  misresolves to a raw identifier for the first process in a fresh exec
+  session (see docs/phase4_behavioral_engine.md).

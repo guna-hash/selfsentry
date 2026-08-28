@@ -27,3 +27,6 @@ Phase-by-phase build order (see `docs/` for per-phase detail as each is complete
 ## Future scope (explicitly not in current build)
 - Full Kubernetes integration (admission controllers, OPA/Gatekeeper)
 - SHAP explainability, attack-graph/lateral-movement detection, honeytokens, business-context risk scoring, attack-simulation module
+
+- | 4 | Behavioral baseline + anomaly detection | 2-2.5 wks | 🔶 code complete, manual validation pending |
++ | 4 | Behavioral baseline + anomaly detection | 2-2.5 wks | ✅ complete - validated on real Falco/Docker data |

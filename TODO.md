@@ -1,3 +1,4 @@
+
 # TODO
 
 ## Phase 1 — Image Scanner
@@ -30,3 +31,20 @@
 
 ## Outstanding from design phase (deferred, not urgent)
 - [ ] Grayscale `ContainerGuard_AI_Summary.pdf` conversion with highlighted Novelty section (deferred at user's request — revisit only if asked)
+
+## Phase 4 — Behavioral Baseline + Anomaly Detection
+- [x] Design 8-feature feature vector (feature_extractor.py)
+- [x] Implement feature_extractor.py, baseline_builder.py, anomaly_model.py
+- [x] Write unit tests (34/34 passing)
+- [x] Add falco-rules/baseline-capture-rules.yaml (real baseline event capture)
+- [x] Add behavioral-engine/baseline_collector.py (Falco log -> RawEvent)
+- [x] Add behavioral-engine/collect_baseline.py (real capture driver)
+- [x] Add behavioral-engine/validate_live.py (live scoring validation driver)
+- [x] Run real learning-window capture on Linux/Docker/Falco (20 samples, test-container)
+- [x] Run real live validation: normal=0.2595, docker-exec-triggered=0.9977 (ANOMALY)
+- [x] Document known limitation: shell proc.name race on first exec'd process
+- [x] Phase 4 fully closed
+
+## Phase 5 — Correlation Engine (next up)
+- [ ] risk_scorer.py (in progress - paused mid-build)
+- [ ] event_router.py

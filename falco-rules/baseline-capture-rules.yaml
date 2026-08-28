@@ -1,0 +1,67 @@
+# baseline-capture-rules.yaml
+# ContainerGuard AI - Phase 4 baseline data collection rules.
+#
+# IMPORTANT: these are NOT security alerts. Every rule here fires on
+# completely normal, expected container activity - their only purpose is
+# to give the Behavioral Engine (Phase 4) a real stream of "what does
+# normal look like" events to build a baseline from. Falco's own default
+# ruleset (falco_rules.yaml, loaded in Phase 3) only emits events that
+# already look suspicious, which is useless for baselining "normal."
+#
+# This file must be loaded IN ADDITION TO falco_rules.yaml (not instead
+# of it) - all macros used below (container, spawned_process, outbound,
+# open_write) are defined there, not here. See falco.yaml setup below.
+
+- rule: Baseline Process Spawn
+  desc: >
+    Captures every process spawn inside any container - training data for
+    ContainerGuard AI's behavioral baseline, not a security alert.
+  condition: spawned_process and container
+  output: >
+    BASELINE_PROCESS_SPAWN container_id=%container.id proc_name=%proc.name
+    parent_proc_name=%proc.pname timestamp=%evt.time.iso8601
+  priority: NOTICE
+  tags: [baseline, containerguard-ai]
+
+- rule: Baseline Network Outbound
+  desc: >
+    Captures every outbound network connection from any container -
+    training data for ContainerGuard AI's behavioral baseline, not a
+    security alert.
+  condition: outbound and container
+  output: >
+    BASELINE_NETWORK_CONNECT container_id=%container.id dest_ip=%fd.rip
+    dest_port=%fd.rport timestamp=%evt.time.iso8601
+  priority: NOTICE
+  tags: [baseline, containerguard-ai]
+
+- rule: Baseline File Write
+  desc: >
+    Captures every file write inside any container - training data for
+    the behavioral baseline. Scoped to writes only (not reads) to keep
+    event volume manageable - reads include routine library/config
+    loading and would be extremely high-volume with little baseline
+    value.
+  condition: open_write and container
+  output: >
+    BASELINE_FILE_ACCESS container_id=%container.id file_path=%fd.name
+    timestamp=%evt.time.iso8601
+  priority: NOTICE
+  tags: [baseline, containerguard-ai]
+
+- rule: Baseline Sensitive Syscall
+  desc: >
+    Captures syscalls from ContainerGuard AI's sensitive-syscall watchlist
+    (see behavioral-engine/feature_extractor.py's SENSITIVE_SYSCALLS) -
+    baseline training data. Several of these also overlap with Falco's own
+    default security rules, which is expected and fine - this rule exists
+    purely so Phase 4 sees them too, even when they're benign.
+  condition: >
+    container and
+    evt.type in (ptrace, setuid, setgid, mount, umount2, reboot,
+                 init_module, delete_module, chmod, chown)
+  output: >
+    BASELINE_SYSCALL container_id=%container.id syscall_name=%evt.type
+    timestamp=%evt.time.iso8601
+  priority: NOTICE
+  tags: [baseline, containerguard-ai]
