@@ -23,27 +23,36 @@ export default function Alerts() {
   }, [])
 
   return (
-    <div style={{ padding: '1rem' }}>
-      <h1>Alerts</h1>
-      {error && <p style={{ color: 'red' }}>Error: {error}</p>}
-      {incidents.length === 0 && !error && <p>No incidents yet.</p>}
-      {incidents.map((incident) => (
-        <div
-          key={incident.id}
-          style={{ border: '1px solid #ccc', padding: '1rem', marginBottom: '1rem' }}
-        >
-          <strong>Container:</strong> {incident.container_id} |{' '}
-          <strong>Risk Score:</strong> {incident.risk_score} |{' '}
-          <strong>Confidence:</strong> {incident.confidence}
-          {incident.ai_summary && (
-            <div style={{ marginTop: '0.5rem' }}>
-              <p><strong>Severity:</strong> {incident.ai_summary.severity}</p>
-              <p><strong>Summary:</strong> {incident.ai_summary.plain_summary}</p>
-              <p><strong>Recommended Action:</strong> {incident.ai_summary.recommended_action}</p>
+    <div>
+      <h2>Alerts</h2>
+      {error && <p className="error-state">Couldn't reach the backend: {error}</p>}
+      {incidents.length === 0 && !error && (
+        <p className="empty-state">No incidents yet. New detections will appear here automatically.</p>
+      )}
+      {incidents.map((incident) => {
+        const severity = incident.ai_summary?.severity || 'low'
+        return (
+          <div key={incident.id} className={`incident-card sev-${severity}`}>
+            <div className="incident-meta">
+              <span>{incident.container_id}</span>
+              <span className="risk-score">risk {incident.risk_score}</span>
+              <span>{incident.confidence}</span>
             </div>
-          )}
-        </div>
-      ))}
+            {incident.ai_summary && (
+              <div className="incident-summary">
+                <p>
+                  <strong>Summary</strong>
+                  {incident.ai_summary.plain_summary}
+                </p>
+                <p>
+                  <strong>Recommended action</strong>
+                  {incident.ai_summary.recommended_action}
+                </p>
+              </div>
+            )}
+          </div>
+        )
+      })}
     </div>
   )
 }

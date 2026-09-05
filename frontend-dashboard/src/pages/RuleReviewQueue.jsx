@@ -45,21 +45,24 @@ export default function RuleReviewQueue() {
   }
 
   return (
-    <div style={{ padding: '1rem' }}>
-      <h1>Rule Review Queue</h1>
-      {error && <p style={{ color: 'red' }}>Error: {error}</p>}
-      {rules.length === 0 && !error && <p>No rules pending review.</p>}
+    <div>
+      <h2>Rule review queue</h2>
+      {error && <p className="error-state">Couldn't reach the backend: {error}</p>}
+      {rules.length === 0 && !error && (
+        <p className="empty-state">No rules pending review. Auto-generated rules will appear here once confirmed.</p>
+      )}
       {rules.map((rule) => (
-        <div
-          key={rule.id}
-          style={{ border: '1px solid #ccc', padding: '1rem', marginBottom: '1rem' }}
-        >
-          <p><strong>Backtested FP Rate:</strong> {rule.backtested_fp_rate}</p>
-          <pre style={{ background: '#f5f5f5', padding: '0.5rem' }}>{rule.rule_yaml}</pre>
-          <button onClick={() => handleApprove(rule.id)} style={{ marginRight: '0.5rem' }}>
+        <div key={rule.id} className="incident-card">
+          <div className="incident-meta">
+            <span>false positive rate {rule.backtested_fp_rate}</span>
+          </div>
+          <pre className="rule-yaml">{rule.rule_yaml}</pre>
+          <button className="btn btn-approve" onClick={() => handleApprove(rule.id)}>
             Approve
           </button>
-          <button onClick={() => handleReject(rule.id)}>Reject</button>
+          <button className="btn btn-reject" onClick={() => handleReject(rule.id)}>
+            Reject
+          </button>
         </div>
       ))}
     </div>
