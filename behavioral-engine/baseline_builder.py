@@ -81,7 +81,9 @@ class BaselineStore:
         # else - stripping would let "../../etc/passwd" quietly become
         # "etcpasswd" and succeed, which defeats the point of the check.
         if not container_id or not container_id.isalnum():
-            raise ValueError(f"invalid container_id for baseline storage: {container_id!r}")
+            raise ValueError(
+                f"invalid container_id for baseline storage: {container_id!r}"
+            )
         return self.storage_dir / f"{container_id}.json"
 
     def append(self, feature_vector: FeatureVector) -> None:
@@ -101,7 +103,9 @@ class BaselineStore:
         if not path.exists():
             if allow_missing:
                 return BaselineDataset(container_id=container_id, feature_vectors=[])
-            raise FileNotFoundError(f"no baseline stored yet for container {container_id!r}")
+            raise FileNotFoundError(
+                f"no baseline stored yet for container {container_id!r}"
+            )
 
         raw = json.loads(path.read_text())
         vectors = []

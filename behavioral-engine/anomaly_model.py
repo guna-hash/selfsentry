@@ -46,7 +46,6 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Optional
 
 import numpy as np
 from sklearn.ensemble import IsolationForest
@@ -66,7 +65,9 @@ class AnomalyResult:
     container_id: str
     timestamp: datetime
     anomaly_score: float  # normalized 0.0 (normal) - 1.0 (highly anomalous)
-    raw_decision_function: float  # sklearn's original unbounded score, kept for audit/debug
+    raw_decision_function: (
+        float  # sklearn's original unbounded score, kept for audit/debug
+    )
     is_anomaly: bool
     feature_vector: FeatureVector
 
@@ -151,7 +152,8 @@ class AnomalyModel:
         model. Raises ModelNotTrainedError if fit() hasn't been called."""
         if not self._trained:
             raise ModelNotTrainedError(
-                f"model for container {self.container_id!r} has not been trained yet - call fit() first"
+                f"model for container {self.container_id!r} has not been trained yet - "
+                "call fit() first"
             )
         if feature_vector.container_id != self.container_id:
             raise ValueError(

@@ -122,7 +122,9 @@ def parse_baseline_event(raw_line: str) -> Optional[RawEvent]:
         return None  # a real security alert or unrelated rule - not ours
 
     if "time" not in raw:
-        raise BaselineParseError(f"baseline rule {rule_name!r} line missing 'time' field")
+        raise BaselineParseError(
+            f"baseline rule {rule_name!r} line missing 'time' field"
+        )
 
     output_fields = raw.get("output_fields") or {}
     container_id = _extract_container_id(output_fields)
@@ -230,7 +232,9 @@ if __name__ == "__main__":
             for evt in read_baseline_events_from_file(args.log_path):
                 print(json.dumps(_preview(evt)))
         else:
-            for evt in stream_baseline_events(args.log_path, from_start=args.from_start):
+            for evt in stream_baseline_events(
+                args.log_path, from_start=args.from_start
+            ):
                 print(json.dumps(_preview(evt)))
     except FileNotFoundError:
         print(f"ERROR: log file not found: {args.log_path}", file=sys.stderr)

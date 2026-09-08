@@ -51,7 +51,9 @@ def run_validation(
     window_end = window_start + timedelta(seconds=window_seconds)
     buffer: list = []
 
-    print(f"Scoring LIVE windows for {duration_minutes} minute(s), {window_seconds}s each.")
+    print(
+        f"Scoring LIVE windows for {duration_minutes} minute(s), {window_seconds}s each."
+    )
     print("Let the first window or two run quiet, then trigger your test behavior.\n")
 
     window_num = 0
@@ -91,7 +93,9 @@ def run_validation(
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="SelfSentry - Phase 4 live validation driver")
+    parser = argparse.ArgumentParser(
+        description="SelfSentry - Phase 4 live validation driver"
+    )
     parser.add_argument("container_id")
     parser.add_argument("--log-path", default="/var/log/falco/alerts.json")
     parser.add_argument("--minutes", type=float, default=3.0)
@@ -101,7 +105,11 @@ if __name__ == "__main__":
 
     try:
         run_validation(
-            args.container_id, args.log_path, args.minutes, args.window_seconds, args.storage_dir
+            args.container_id,
+            args.log_path,
+            args.minutes,
+            args.window_seconds,
+            args.storage_dir,
         )
     except FileNotFoundError as exc:
         print(f"ERROR: {exc}", file=sys.stderr)

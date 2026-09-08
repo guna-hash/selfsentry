@@ -108,12 +108,20 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="SelfSentry - Phase 4 real baseline capture driver"
     )
-    parser.add_argument("container_id", help="Container ID to capture baseline for (short or full)")
     parser.add_argument(
-        "--log-path", default="/var/log/falco/alerts.json", help="Path to Falco's JSON alert log"
+        "container_id", help="Container ID to capture baseline for (short or full)"
     )
-    parser.add_argument("--minutes", type=float, default=15.0, help="Capture duration in minutes")
-    parser.add_argument("--window-seconds", type=float, default=60.0, help="Window size in seconds")
+    parser.add_argument(
+        "--log-path",
+        default="/var/log/falco/alerts.json",
+        help="Path to Falco's JSON alert log",
+    )
+    parser.add_argument(
+        "--minutes", type=float, default=15.0, help="Capture duration in minutes"
+    )
+    parser.add_argument(
+        "--window-seconds", type=float, default=60.0, help="Window size in seconds"
+    )
     parser.add_argument(
         "--storage-dir",
         default="behavioral-engine/baselines",
