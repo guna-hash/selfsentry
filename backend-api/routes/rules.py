@@ -1,16 +1,52 @@
-"""
-rules.py
------------
-Module 11 support: FastAPI routes for the Rule Review Queue.
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
+from datetime import datetime, timezone
 
-STATUS: NOT YET IMPLEMENTED — Phase 8 stub.
+from database import get_db
+from models.db_models import GeneratedRule
 
-Planned endpoints:
-    GET  /rules/pending          - list auto-generated rules awaiting human approval
-    POST /rules/{id}/approve     - approve a rule -> triggers rule_deployer.py (Phase 6)
-    POST /rules/{id}/reject      - reject a rule (with reason, for lifecycle tracking)
-    POST /rules/{id}/deprecate   - retire a previously-deployed rule
+router = APIRouter(prefix="/rules", tags=["rules"])
 
-This is the backend counterpart to frontend-dashboard/src/pages/RuleReviewQueue.jsx.
-The mandatory human-approval gate (project design constraint) lives here.
-"""
+
+@router.get("/pending")
+async def list_pending_rules(db: Session = Depends(get_db)):
+    rules = db.query(GeneratedRule).filter(GeneratedRule.status == "pending_review").all()
+    return rules
+
+
+@router.post("/{rule_id}/approve")
+async def approve_rule(rule_id: int, reviewed_by: str, db: Session = Depends(get_db)):
+    rule = db.query(GeneratedRule).filter(GeneratedRule.id == rule_id).first()
+    if not rule:
+        raise HTTPException(status_code=404, detail="Rule not found")
+    rule.status = "approved"
+    rule.reviewed_by = reviewed_by
+    rule.reviewed_at = datetime.now(timezone.utc)
+    db.commit()
+    # NOTE: Actual deployment (rule_deployer.py) is Phase 6 (teammate's responsibility).
+    # This endpoint only records human approval.
+    return {"status": "approved", "rule_id": rule_id, "reviewed_by": reviewed_by}
+
+
+@router.post("/{rule_id}/reject")
+async def reject_rule(rule_id: int, reviewed_by: str, reason: str, db: Session = Depends(get_db)):
+    rule = db.query(GeneratedRule).filter(GeneratedRule.id == rule_id).first()
+    if not rule:
+        raise HTTPException(status_code=404, detail="Rule not found")
+    rule.status = "rejected"
+    rule.reviewed_by = reviewed_by
+    rule.reviewed_at = datetime.now(timezone.utc)
+    db.commit()
+    return {"status": "rejected", "rule_id": rule_id, "reason": reason}
+
+
+@router.post("/{rule_id}/deprecate")
+async def deprecate_rule(rule_id: int, reviewed_by: str, db: Session = Depends(get_db)):
+    rule = db.query(GeneratedRule).filter(GeneratedRule.id == rule_id).first()
+    if not rule:
+        raise HTTPException(status_code=404, detail="Rule not found")
+    rule.status = "retired"
+    rule.reviewed_by = reviewed_by
+    rule.reviewed_at = datetime.now(timezone.utc)
+    db.commit()
+    return {"status": "retired", "rule_id": rule_id}
