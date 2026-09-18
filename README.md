@@ -1,4 +1,4 @@
-# ContainerGuard AI
+# selfsentry
 
 A hybrid rule-based + behavior-based container runtime security platform with a self-learning rule-generation feature. Academic/capstone project.
 
@@ -25,7 +25,7 @@ Full design rationale, architecture, and academic materials live in `docs/` and 
 
 ## Project structure
 ```
-containerguard-ai/
+selfsentry/
 ├── image-scanner/       # Phase 1 — Trivy wrapper
 ├── policy-checker/      # Phase 2 — Deployment policy validator
 ├── tests/                # Unit tests for all modules
