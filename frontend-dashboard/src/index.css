@@ -534,3 +534,54 @@ body {
   color: var(--text-muted);
   margin-top: 0.75rem;
 }
+
+/* Glow + glass polish */
+.stat-card-icon, .chart-panel, .status-panel, .distribution,
+.alerts-table, .detail-panel, .rule-yaml {
+  background: linear-gradient(180deg, var(--panel) 0%, var(--panel-2) 100%);
+  backdrop-filter: blur(6px);
+}
+
+.icon-circle.critical {
+  box-shadow: 0 0 14px rgba(239,68,68,0.35);
+}
+.icon-circle.high {
+  box-shadow: 0 0 14px rgba(245,165,36,0.3);
+}
+.icon-circle.accent {
+  box-shadow: 0 0 14px rgba(59,130,246,0.3);
+}
+
+.sev-tag.sev-critical {
+  box-shadow: 0 0 10px rgba(239,68,68,0.5);
+}
+.sev-tag.sev-high {
+  box-shadow: 0 0 10px rgba(245,165,36,0.4);
+}
+
+@keyframes pulse-dot {
+  0% { box-shadow: 0 0 0 0 rgba(34,197,94,0.5); }
+  70% { box-shadow: 0 0 0 6px rgba(34,197,94,0); }
+  100% { box-shadow: 0 0 0 0 rgba(34,197,94,0); }
+}
+
+.dot-ok {
+  animation: pulse-dot 2s infinite;
+}
+
+@keyframes pulse-critical {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+tr:has(.sev-tag.sev-critical) .sev-tag.sev-critical {
+  animation: pulse-critical 1.8s infinite;
+}
+
+.sidebar a.active {
+  box-shadow: inset 2px 0 0 var(--accent), 0 0 12px rgba(59,130,246,0.15);
+}
+
+.gauge-wrap svg circle:nth-child(2) {
+  filter: drop-shadow(0 0 4px currentColor);
+}
