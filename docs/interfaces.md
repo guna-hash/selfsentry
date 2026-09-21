@@ -57,21 +57,19 @@ Producer function: `falco_integration.parse_falco_alert(raw_line) -> FalcoAlert`
 
 ---
 
-## 3. Correlated incident — produced by `correlation-engine/risk_scorer.py` — 🔜 PLANNED (Phase 5)
-
-This is what the AI layer, backend DB, and dashboard all consume.
-
-```json
+// 3. Correlated incident payload — produced by correlation-engine/risk_scorer.py.
+//    This is the exact POST body for backend-api's POST /incidents/ endpoint
+//    (see backend-api/routes/incidents.py + models/db_models.py — the real
+//    Incident table is the source of truth this now matches, not a
+//    speculative design). The database assigns the real incident ID on
+//    insert (auto-increment) — we no longer generate one ourselves.
 {
-  "incident_id": "inc_001",
   "container_id": "abc123",
   "risk_score": 78,
-  "falco_alert": { "...": "shape #1 above, nullable" },
-  "anomaly_event": { "...": "shape #2 above, nullable" },
-  "dual_layer_agreement": true,
-  "status": "open"
+  "confidence": "high",          // "high" | "medium" | "low" - see risk_scorer.py
+  "falco_alert": { /* shape #1, nullable */ },
+  "anomaly_features": { /* full shape #2 dict, nullable - see note below */ }
 }
-```
 
 ---
 
