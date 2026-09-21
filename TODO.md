@@ -39,11 +39,14 @@ _Last reconciled: after merging Phase 7/8/9 (teammate) + Phase 4 (this session) 
 - [x] **Phase 4 fully closed**
 
 ## Phase 5 — Correlation Engine
-- [ ] `risk_scorer.py` — **designed and explained in detail, but still the original stub on disk** (confirmed via `git diff` — not yet actually implemented on the VM)
-- [ ] `event_router.py` — not started
-- [ ] Unit tests
-- [ ] Manual validation
-- **Status: paused mid-build, resume here next**
+- [x] Implement `risk_scorer.py` (corrected against real backend schema)
+- [x] Implement `event_router.py` (confidence-weighted routing, real-world SOC-style)
+- [x] Unit tests: 33/33 passing (`test_risk_scorer.py` + `test_event_router.py`)
+- [x] Real Groq `ai_summary` integration confirmed working (fixed `GROQ_API_KEY` env var bug)
+- [x] `validate_pipeline.py`: local simulation + real backend POST integration confirmed (4/4 scenarios, ids 4-7 persisted with real ai_summary)
+- [x] `docs/phase5_correlation_engine.md` written
+- [ ] Stage 5 manual validation: live Falco + live anomaly model (no simulated data) — deferred to Phase 6's live loop demo
+
 
 ## Phase 6 — Rule Synthesis Engine (core novelty)
 - [ ] Not started. All 6 sub-components (`confirmation_manager.py`, `pattern_extractor.py`, `rule_template_generator.py`, `rule_backtester.py`, `rule_deployer.py`, `rule_lifecycle_manager.py`) still stubs.

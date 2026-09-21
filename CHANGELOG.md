@@ -16,6 +16,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 - `tests/test_deploy_policy_validator.py`: 25 unit tests (all mocked/offline, no Docker daemon dependency), covering every policy rule, the Phase 1 integration hook, derived `PolicyResult` properties, and input validation.
 - `docs/phase2_deployment_policy_checker.md`: Phase 2 documentation, including manual validation checklist against a real `docker inspect`.
 
+### Added — Phase 5: Correlation Engine
+- `correlation-engine/risk_scorer.py`: merges Falco alerts + anomaly events by container/time-window into unified risk_score + 3-tier confidence, matching the real backend schema (no incident_id, confidence string replaces dual_layer_agreement boolean, no status field).
+- `correlation-engine/event_router.py`: confidence-weighted routing (effective_score = risk_score adjusted by confidence tier) across 4 tiers (log / ai_analysis_noted / analyst_alert / auto_isolate), with auto_isolate deliberately hard to reach on low-confidence signals alone.
+- `correlation-engine/validate_pipeline.py`: local simulation + real backend integration validation driver, with `--post-to-backend` flag.
+- `tests/test_risk_scorer.py` (16 tests) and `tests/test_event_router.py` (17 tests), all passing.
+- `docs/phase5_correlation_engine.md`: full design notes, routing model, and manual validation results.
+- Fixed `GROQ_API_KEY` env var bug in `backend-api/.env` (was misnamed and malformed) blocking real `ai_summary` generation.
+
 ### Changed
 - Marked Phase 1 (Image Scanner) fully complete: real Trivy scan validated end-to-end and repository pushed to GitHub.
 
