@@ -100,7 +100,7 @@ if __name__ == "__main__":
     parser.add_argument("--log-path", default="/var/log/falco/alerts.json")
     parser.add_argument("--minutes", type=float, default=3.0)
     parser.add_argument("--window-seconds", type=float, default=30.0)
-    parser.add_argument("--storage-dir", default="behavioral-engine/baselines")
+    parser.add_argument("--storage-dir", default="baselines")
     args = parser.parse_args()
 
     try:

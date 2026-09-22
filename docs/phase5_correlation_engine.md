@@ -125,11 +125,29 @@ routed correctly regardless — direct, real evidence for why the project's
 "LLM is advisory-only, never the detection source of truth" design
 constraint matters in practice, not just in theory.
 
-### Stage 5: live end-to-end with real Falco + real anomaly model (not yet done)
-Requires a running container with a fresh baseline (the Phase 4 baseline
-container was removed since training). Deferred to be captured naturally
-during Phase 6's own live end-to-end loop demo, rather than duplicating
-container/baseline setup twice.
+### Stage 5: live end-to-end with real Falco + real anomaly model (completed 2026-09-22)
+A fresh container (`selfsentry-test`, 12160024642b) was created, a real
+21-sample baseline captured via `collect_baseline.py` (60s windows), and
+`validate_live.py` run live for 5 minutes (matched 60s windows) with
+continuous normal traffic (`whoami`/`ls` every 5s) plus a real
+`docker exec -it selfsentry-test sh` session triggered mid-run.
+
+Result: all 4 normal-traffic windows scored low (0.036-0.067); the
+window covering the shell session scored 0.7865, correctly flagged
+ANOMALY. Full results in
+`behavioral-engine/live_validation_results.md`.
+
+Two real bugs were found and fixed during this validation (documented
+in that file): triggering the anomaly after the scoring script had
+already exited (no-op), and a window-size mismatch between baseline
+capture (60s) and live scoring (initially run at 30s) that caused every
+window - including fully idle ones - to score as anomalous regardless
+of actual behavior. Both are now understood and avoided by keeping
+window sizes matched between baseline capture and live scoring.
+
+This closes the last item from the earlier "not yet done" status and
+also serves as this project's first genuine, unassisted live
+Falco -> anomaly-model detection demo.
 
 ## Known limitations at this stage
 - `ai_analysis_noted` is a routing label only — the real Groq call is not
@@ -137,5 +155,3 @@ container/baseline setup twice.
 - `analyst_alert` and `auto_isolate` are currently log-based placeholders
   — no real paging channel, and `auto_isolate` depends on Phase 10's
   `response-engine/auto_isolate.py`, which is still an unimplemented stub.
-- Stage 5 (live Falco + live anomaly model, no simulated data) has not
-  yet been run for Phase 5 specifically — see above.
