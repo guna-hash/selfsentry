@@ -25,3 +25,9 @@ Planned fix (Phase 10 or as time allows): extend the Falco-alert-to-Event
 classification step to map "Terminal shell in container" (and other relevant
 default rules) onto EventType.PROCESS_SPAWN with proc_name populated, and
 recapture a larger (60+ sample) baseline before final evaluation.
+
+## Phase 5 — confidence tier comment mismatch (found 2026-09-30)
+validate_pipeline.py's Scenario 2 comment states confidence should be
+"medium" for a strong Falco-only alert, but actual output shows
+confidence="low". Either the comment or the threshold needs revisiting;
+not yet investigated further, flagged during Sep 30 validation.
