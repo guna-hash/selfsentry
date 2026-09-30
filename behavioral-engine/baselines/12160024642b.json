@@ -273,6 +273,45 @@
       "shell_spawned_count": 0,
       "distinct_parent_child_pairs": 4,
       "sensitive_syscall_count": 310
+    },
+    {
+      "container_id": "12160024642b",
+      "window_start": "2026-09-30T06:02:33.816581+00:00",
+      "window_end": "2026-09-30T06:03:33.816581+00:00",
+      "distinct_process_count": 3,
+      "distinct_network_dest_count": 0,
+      "distinct_ports_count": 0,
+      "distinct_files_accessed": 2,
+      "total_event_count": 182,
+      "shell_spawned_count": 0,
+      "distinct_parent_child_pairs": 5,
+      "sensitive_syscall_count": 142
+    },
+    {
+      "container_id": "12160024642b",
+      "window_start": "2026-09-30T06:03:33.816581+00:00",
+      "window_end": "2026-09-30T06:04:33.816581+00:00",
+      "distinct_process_count": 3,
+      "distinct_network_dest_count": 0,
+      "distinct_ports_count": 0,
+      "distinct_files_accessed": 2,
+      "total_event_count": 218,
+      "shell_spawned_count": 0,
+      "distinct_parent_child_pairs": 3,
+      "sensitive_syscall_count": 170
+    },
+    {
+      "container_id": "12160024642b",
+      "window_start": "2026-09-30T06:04:33.816581+00:00",
+      "window_end": "2026-09-30T06:05:33.816581+00:00",
+      "distinct_process_count": 3,
+      "distinct_network_dest_count": 0,
+      "distinct_ports_count": 0,
+      "distinct_files_accessed": 2,
+      "total_event_count": 148,
+      "shell_spawned_count": 0,
+      "distinct_parent_child_pairs": 4,
+      "sensitive_syscall_count": 116
     }
   ]
 }

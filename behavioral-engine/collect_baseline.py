@@ -124,7 +124,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--storage-dir",
-        default="baselines",,
+        default="baselines",
         help="Where BaselineStore writes per-container JSON files",
     )
     args = parser.parse_args()
