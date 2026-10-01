@@ -96,3 +96,21 @@ interaction with the high alert volume from baseline-capture rules.
 This does not invalidate the core deployment mechanism, which is fully
 verified: write, YAML validation, Falco reload, and successful rule
 compilation are all proven working end-to-end on real infrastructure.
+
+## Phase 10 — auto_isolate.py live verification (2026-10-01)
+
+isolate_container() tested against a real running container
+(isolate-test-victim, nginx:1.25), not just the not-found failure case.
+
+Before isolation: confirmed real outbound network access (curl to
+google.com returned HTTP 301).
+
+After calling isolate_container(): container state changed to "paused",
+NetworkSettings.Networks returned {} (fully disconnected), and a direct
+docker exec attempt was refused by the Docker daemon itself ("Container
+is paused, unpause the container before exec") - independent
+confirmation of the pause state, not just our own code's claim.
+
+Forensic state preserved as designed: container was not stopped or
+removed, only paused + network-isolated, so its process/filesystem
+state remained inspectable throughout.
