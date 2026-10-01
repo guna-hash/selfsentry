@@ -31,3 +31,24 @@ validate_pipeline.py's Scenario 2 comment states confidence should be
 "medium" for a strong Falco-only alert, but actual output shows
 confidence="low". Either the comment or the threshold needs revisiting;
 not yet investigated further, flagged during Sep 30 validation.
+
+## Phase 6 — auto-generated rule deployment mechanism verified, live re-fire not yet reproduced (2026-10-01)
+
+rule_deployer.py was tested end-to-end against real Falco: a candidate
+rule (Auto_Generated_ls_from_sh_8, condition: spawned_process and
+proc.name="ls" and proc.pname="sh") was written to
+falco-rules/auto-generated-rules.yaml, validated as YAML, and Falco was
+reloaded — confirmed via journalctl showing
+"auto-generated-rules.yaml | schema validation: ok" with no errors.
+
+A subsequent manual trigger (docker exec -it selfsentry-test sh, then
+ls) produced the exact matching Baseline Process Spawn event
+(proc_name=ls parent_proc_name=sh) in the real Falco log, but the
+Auto_Generated_ls_from_sh_8 rule itself was not observed firing in the
+same log window. The deployment mechanism (write + validate + reload)
+is confirmed working; the condition syntax (likely proc.pname field
+naming or a macro/output-format detail) needs further comparison
+against Falco's own default rule syntax. Not yet root-caused due to
+time constraints — flagged honestly rather than claimed as fully
+working. Planned follow-up: compare against a known-working default
+Falco rule's exact condition syntax for parent-process matching.
