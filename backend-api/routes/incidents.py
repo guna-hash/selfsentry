@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from database import get_db
-from models.db_models import Incident
+from models.db_models import Incident, ConfirmedIncident
 from root_cause_summarizer import summarize_incident
 router = APIRouter(prefix="/incidents", tags=["incidents"])
 
@@ -50,16 +50,22 @@ async def create_incident(incident_data: dict, db: Session = Depends(get_db)):
 
     return new_incident
 
-
 @router.post("/{incident_id}/confirm")
 async def confirm_incident(incident_id: int, confirmed_by: str, db: Session = Depends(get_db)):
     incident = db.query(Incident).filter(Incident.id == incident_id).first()
     if not incident:
         raise HTTPException(status_code=404, detail="Incident not found")
-    # NOTE: Actual Rule Synthesis Engine trigger is Phase 6 (teammate's responsibility).
-    # This endpoint only records the human confirmation.
-    return {"status": "confirmed", "incident_id": incident_id, "confirmed_by": confirmed_by}
 
+    existing = db.query(ConfirmedIncident).filter(ConfirmedIncident.incident_id == incident_id).first()
+    if existing:
+        return {"status": "already_confirmed", "incident_id": incident_id, "confirmed_by": existing.confirmed_by}
+
+    confirmed = ConfirmedIncident(incident_id=incident_id, confirmed_by=confirmed_by)
+    db.add(confirmed)
+    db.commit()
+    db.refresh(confirmed)
+
+    return {"status": "confirmed", "incident_id": incident_id, "confirmed_by": confirmed_by, "confirmed_incident_id": confirmed.id}
 
 @router.post("/{incident_id}/dismiss")
 async def dismiss_incident(incident_id: int, db: Session = Depends(get_db)):
