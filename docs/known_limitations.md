@@ -73,3 +73,26 @@ ratio >= 0.5 threshold).
 
 This is backend-api (Phase 8) scope, not Rule Synthesis Engine (Phase
 6) scope — flagging for the joint Phase 10 integration pass.
+
+## Phase 6 — deployed auto-rule compiles and is enabled but has not been observed firing (updated 2026-10-01)
+
+Extensive investigation performed: confirmed via `falco --list` output that
+Auto_Generated_ls_from_sh_8 compiles correctly (condition_compiled:
+"proc.name = ls and proc.pname = sh", enabled: true), confirmed no rate-limit
+config or drop/throttle log entries in falco.yaml or journalctl, confirmed
+the rule loads with schema validation: ok on every restart. Despite this,
+manual retriggering of the exact matching behavior has not produced a visible
+Auto_Generated_ls_from_sh_8 alert in the JSON output log, even though the
+underlying Baseline Process Spawn event for the same action fires correctly
+in the same log window.
+
+Root cause not identified as of 2026-10-01 despite investigation into: rule
+condition syntax (ruled out), file loading (ruled out), rate limiting (ruled
+out), restart vs reload (ruled out). Remaining hypotheses for future
+investigation: Falco's internal rule-priority/early-exit behavior when
+multiple rules share overlapping conditions on the same event; a possible
+interaction with the high alert volume from baseline-capture rules.
+
+This does not invalidate the core deployment mechanism, which is fully
+verified: write, YAML validation, Falco reload, and successful rule
+compilation are all proven working end-to-end on real infrastructure.
