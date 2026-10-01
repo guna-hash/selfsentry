@@ -52,3 +52,24 @@ against Falco's own default rule syntax. Not yet root-caused due to
 time constraints — flagged honestly rather than claimed as fully
 working. Planned follow-up: compare against a known-working default
 Falco rule's exact condition syntax for parent-process matching.
+
+## Phase 8 backend — /confirm endpoint does not persist to confirmed_incidents (found 2026-10-01)
+
+POST /incidents/{id}/confirm returns {"status": "confirmed", ...} but
+does not insert a row into confirmed_incidents, and the incidents
+table has no status column to reflect confirmation either — the
+confirm action appears to not be persisted anywhere in Postgres.
+This blocks the natural confirmed_incidents -> generated_rules chain
+from being populated by that endpoint alone.
+
+Workaround used for Phase 6 testing (2026-10-01): manually inserted a
+confirmed_incidents row (incident_id=8, confirmed_by='guna') and a
+generated_rules row (confirmed_incident_id=1, the deployed
+Auto_Generated_ls_from_sh_8 rule, backtested_fp_rate=0.0191) directly
+via psql, to validate rule_lifecycle_manager.py's TP/FP tracking
+end-to-end. rule_performance correctly tracked true_positives=1,
+false_positives=1 and flagged the rule for retirement review (50% FP
+ratio >= 0.5 threshold).
+
+This is backend-api (Phase 8) scope, not Rule Synthesis Engine (Phase
+6) scope — flagging for the joint Phase 10 integration pass.
