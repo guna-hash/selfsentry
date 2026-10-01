@@ -24,6 +24,24 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 - `docs/phase5_correlation_engine.md`: full design notes, routing model, and manual validation results.
 - Fixed `GROQ_API_KEY` env var bug in `backend-api/.env` (was misnamed and malformed) blocking real `ai_summary` generation.
 
+### Added — Phase 6: Rule Synthesis Engine (core novelty)
+- `rule-synthesis-engine/confirmation_manager.py`: confirms incidents via real backend `/confirm` endpoint.
+- `rule-synthesis-engine/pattern_extractor.py`: extracts structured patterns from confirmed incidents' Falco alert text.
+- `rule-synthesis-engine/rule_template_generator.py` + `templates/falco_rule_template.yaml.j2`: Jinja2-based Falco YAML rule generation.
+- `rule-synthesis-engine/rule_backtester.py`: backtests candidate rules against real historical benign Falco events.
+- `rule-synthesis-engine/rule_deployer.py`: deploys approved rules to live Falco via `auto-generated-rules.yaml` + hot-reload.
+- `rule-synthesis-engine/rule_lifecycle_manager.py`: tracks TP/FP outcomes in `rule_performance`, flags rules for retirement.
+- Fixed: added missing `UNIQUE` constraint on `rule_performance.rule_id`.
+- Fixed: Falco config (`/etc/falco/falco.yaml`) was missing `auto-generated-rules.yaml` from `rules_files` — added.
+- Documented: two integration findings for Phase 10 (backend `/confirm` not persisting; rule_deployer.py condition re-fire not yet reproduced).
+
+### Fixed — Phase 2/3/4 validation (2026-09-30)
+- Phase 2 and Phase 3 validated against real `docker inspect` / real Falco default rules (previously code-complete but unvalidated).
+- Fixed duplicate comma syntax error in `collect_baseline.py`.
+- Fixed `--storage-dir` relative-path bug in `validate_live.py`.
+- Recaptured Phase 4 baseline after discovering the original 21-sample baseline was all-zero (no real events captured).
+- Documented: `feature_extractor.py`'s `shell_spawned_count` does not credit Falco's default "Terminal shell in container" rule as a shell-spawn signal.
+
 ### Changed
 - Marked Phase 1 (Image Scanner) fully complete: real Trivy scan validated end-to-end and repository pushed to GitHub.
 

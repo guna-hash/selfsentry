@@ -48,9 +48,15 @@ _Last reconciled: after merging Phase 7/8/9 (teammate) + Phase 4 (this session) 
 - [ ] Stage 5 manual validation: live Falco + live anomaly model (no simulated data) — deferred to Phase 6's live loop demo
 
 
-## Phase 6 — Rule Synthesis Engine (core novelty)
-- [ ] Not started. All 6 sub-components (`confirmation_manager.py`, `pattern_extractor.py`, `rule_template_generator.py`, `rule_backtester.py`, `rule_deployer.py`, `rule_lifecycle_manager.py`) still stubs.
-- **This is the project's core novelty claim — do not skip or shortcut this phase.**
+## Phase 6 — Rule Synthesis Engine (CORE NOVELTY) — ✅ DONE 2026-10-01
+- [x] confirmation_manager.py — verified against real backend
+- [x] pattern_extractor.py — verified against real incident
+- [x] rule_template_generator.py + template — verified, Falco schema validated
+- [x] rule_backtester.py — verified, real 1.91% FP rate on 1,784 events
+- [x] rule_deployer.py — verified, live-deployed to real Falco
+- [x] rule_lifecycle_manager.py — verified, real TP/FP tracked in Postgres
+- [ ] Phase 10: resolve backend /confirm persistence gap
+- [ ] Phase 10: investigate deployed-rule re-fire gap
 
 ## Phase 7 — AI Threat Analysis ✅ (teammate, merged)
 - [x] `root_cause_summarizer.py`, `attack_timeline_builder.py` implemented for real

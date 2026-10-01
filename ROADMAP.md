@@ -12,7 +12,7 @@ _Last reconciled: after merging Phase 7/8/9 (teammate) + Phase 4 (this session) 
 | 3 | Falco + eBPF (rule-based layer) | 1.5–2 wks | 🔶 real Falco running + confirmed events, default-ruleset alert path not explicitly re-verified |
 | 4 | Behavioral baseline + anomaly detection | 2–2.5 wks | ✅ complete — validated on real Falco/Docker data |
 | 5 | Correlation Engine | 4–6 days | ✅ done (Stage 5 live validation deferred to Phase 6) |
-| 6 | Rule Synthesis Engine (core novelty) | 2–2.5 wks | ⬜ not started |
+| 6 | Rule Synthesis Engine (core novelty) | 2-2.5 wks | ✅ code-complete, verified 2026-10-01 |
 | 7 | AI Analysis Layer (LLM) | 3–5 days | ✅ complete (teammate, merged PR #1) |
 | 8 | Backend + Database | ~1 wk (spread throughout) | ✅ complete (teammate, merged) — verified end-to-end per commit |
 | 9 | Frontend Dashboard + Rule Review Queue | 1.5–2 wks | ✅ complete (teammate, merged PR #3, redesigned) |
