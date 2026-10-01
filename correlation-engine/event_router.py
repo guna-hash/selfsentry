@@ -228,6 +228,14 @@ def dispatch_incident(incident: dict, decision: RoutingDecision) -> dict:
                     reason,
                 )
                 results[ACTION_AUTO_ISOLATE] = "not_implemented_stub"
+            except Exception as exc:
+                logger.error(
+                    "[%s] AUTO-ISOLATE FAILED (reason: %s): %s",
+                    decision.container_id,
+                    reason,
+                    exc,
+                )
+                results[ACTION_AUTO_ISOLATE] = f"isolation_failed: {exc}"
 
     return results
 
