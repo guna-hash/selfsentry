@@ -16,7 +16,7 @@ _Last reconciled: after merging Phase 7/8/9 (teammate) + Phase 4 (this session) 
 | 7 | AI Analysis Layer (LLM) | 3–5 days | ✅ complete (teammate, merged PR #1) |
 | 8 | Backend + Database | ~1 wk (spread throughout) | ✅ complete (teammate, merged) — verified end-to-end per commit |
 | 9 | Frontend Dashboard + Rule Review Queue | 1.5–2 wks | ✅ complete (teammate, merged PR #3, redesigned) |
-| 10 | Testing, backtesting validation, evaluation writeup | 1–1.5 wks | ⬜ not started — blocked on Phases 5 & 6 |
+| 10 | Testing, backtesting validation, evaluation writeup | 1-1.5 wks | 🔶 in progress — see TODO.md |
 
 **Real remaining work:** Phase 5 (Correlation Engine — the glue between your detection layers and the backend/dashboard your teammate already built), Phase 6 (Rule Synthesis Engine — the project's core novelty claim, still untouched), and Phase 10 (final integration + writeup).
 

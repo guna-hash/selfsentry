@@ -35,6 +35,20 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 - Fixed: Falco config (`/etc/falco/falco.yaml`) was missing `auto-generated-rules.yaml` from `rules_files` — added.
 - Documented: two integration findings for Phase 10 (backend `/confirm` not persisting; rule_deployer.py condition re-fire not yet reproduced).
 
+### Added/Fixed — Phase 10 (partial, 2026-10-01)
+- `response-engine/auto_isolate.py`: implemented `isolate_container()` — network disconnect + pause, preserving forensic state. Verified against real Docker API (correctly raised `IsolationError` for a non-existent container).
+- `backend-api/routes/incidents.py`: fixed `/confirm` endpoint to persist a real row to `confirmed_incidents` (previously returned success without writing to the database). Verified: confirmed real incident 16, new `confirmed_incidents` row created with real timestamp.
+- `correlation-engine/event_router.py`: added exception handling around `isolate_container()` calls so a failed isolation attempt (e.g., container not found) no longer crashes the full pipeline — now logged as `isolation_failed: <reason>` and processing continues.
+- `rule_performance` table: added missing `UNIQUE` constraint on `rule_id` (required for TP/FP upsert logic).
+- Investigated (not resolved): deployed auto-generated Falco rule compiles and is enabled but has not been observed firing on manual retrigger. Full investigation notes in `docs/known_limitations.md`. Core deployment mechanism (write/validate/reload/compile) is fully verified working.
+
+### Still open for Phase 10 completion
+- Full end-to-end live demo recording (scan → policy → deploy → attack → detect → correlate → isolate → confirm → synthesize → approve → re-detect).
+- Evaluation writeup with real numbers.
+- `response-engine/auto_isolate.py` needs a live test against a real running container (currently only tested against a non-existent one).
+- Root-cause the auto-rule firing gap, if time allows.
+- Final README/TODO/ROADMAP pass.
+
 ### Fixed — Phase 2/3/4 validation (2026-09-30)
 - Phase 2 and Phase 3 validated against real `docker inspect` / real Falco default rules (previously code-complete but unvalidated).
 - Fixed duplicate comma syntax error in `collect_baseline.py`.

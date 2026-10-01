@@ -72,8 +72,16 @@ _Last reconciled: after merging Phase 7/8/9 (teammate) + Phase 4 (this session) 
 - [x] React app, `Alerts.jsx`, `RuleReviewQueue.jsx`, dark security-ops theme redesign
 - [x] Merged via PR #3 (`8b68bfa`)
 
-## Phase 10 — Testing / Backtesting / Evaluation Writeup
-- [ ] Not started — needs Phase 5 and Phase 6 finished first (per dependency order in the Complete Project Guide)
+## Phase 10 — Joint Integration & Evaluation — IN PROGRESS
+- [x] auto_isolate.py implemented and unit-verified
+- [x] backend /confirm endpoint fixed to persist confirmed_incidents
+- [x] event_router.py hardened against isolation failures
+- [x] rule_performance schema fix (UNIQUE constraint)
+- [ ] auto_isolate.py tested against a real live container (not just the not-found case)
+- [ ] Full end-to-end demo recorded
+- [ ] Evaluation writeup (real FP rate, detection latency, limitations)
+- [ ] Auto-rule firing gap root-caused (optional, time permitting)
+- [ ] Final README/CHANGELOG/ROADMAP pass
 
 ## Outstanding from design phase (deferred, not urgent)
 - [ ] Grayscale `ContainerGuard_AI_Summary.pdf` conversion with highlighted Novelty section (deferred, revisit only if asked)
