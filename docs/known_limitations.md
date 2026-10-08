@@ -114,3 +114,13 @@ confirmation of the pause state, not just our own code's claim.
 Forensic state preserved as designed: container was not stopped or
 removed, only paused + network-isolated, so its process/filesystem
 state remained inspectable throughout.
+
+## Phase 6 — RESOLVED (2026-10-08): non-firing auto-generated rule was shadowed by Falco `rule_matching: first`
+
+The two earlier Phase 6 entries above (2026-10-01) are kept as investigation history.
+Root cause: Falco 0.45.0 defaults to `rule_matching: first`, so the catch-all
+`Baseline Process Spawn` rule (loaded first) stopped evaluation for every container
+process spawn and the auto-generated rules never ran. With `rule_matching: all`, the
+same `ls`-from-`sh` action fires `Auto_Generated_ls_from_sh_8` at the same timestamp as
+the baseline rule (2026-10-08 07:35:10 UTC). Full evidence and fix: docs/falco_rule_matching.md.
+Remaining caveat: `all` may carry a performance cost per Falco's own docs; not yet measured.

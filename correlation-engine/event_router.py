@@ -43,19 +43,18 @@ OPEN ITEM - flag to Phase 8 owner (teammate):
   save API cost/rate limit), that gate needs to move into the backend's
   incident-creation route, not here. Raise at next sync.
 
-AUTO_ISOLATE is not actually performed here either - response-engine/
-auto_isolate.py is still an unimplemented Phase 10 stub (owned by
-teammate). dispatch_incident() below calls it defensively: if it's not
-yet implemented, it logs what WOULD have happened instead of crashing
-the pipeline, so this module keeps working correctly before and after
-that stub becomes real code.
+AUTO_ISOLATE is performed by response-engine/auto_isolate.py's
+isolate_container() (pauses the container and disconnects its networks).
+dispatch_incident() reports one of three outcomes for that action:
+"isolated", "isolation_failed: <reason>" (the error is logged, never
+raised, so one failed isolation cannot crash the pipeline), or
+"not_implemented_stub" (module missing or has no isolate_container()).
 """
 
 from __future__ import annotations
 
 import importlib.util
 import logging
-import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -205,7 +204,9 @@ def dispatch_incident(incident: dict, decision: RoutingDecision) -> dict:
                 decision.container_id,
                 decision.effective_score,
             )
-            results[ACTION_ANALYST_ALERT] = "paged (log-based placeholder - no real paging channel wired yet)"
+            results[ACTION_ANALYST_ALERT] = (
+                "paged (log-based placeholder - no real paging channel wired yet)"
+            )
 
         elif action == ACTION_AUTO_ISOLATE:
             module = _load_auto_isolate_module()
