@@ -7,7 +7,7 @@ export default function App() {
     <BrowserRouter>
       <div className="app-shell">
         <aside className="sidebar">
-          <h1>ContainerGuard</h1>
+          <h1>SelfSentry</h1>
           <nav>
             <NavLink to="/" end className={({ isActive }) => isActive ? 'active' : ''}>
               Alerts

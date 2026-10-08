@@ -52,7 +52,14 @@ def _validate_rule_yaml(text: str) -> None:
 
 @router.get("/pending")
 async def list_pending_rules(db: Session = Depends(get_db)):
-    return db.query(GeneratedRule).filter(GeneratedRule.status == "pending_review").all()
+    """Rules awaiting action: pending_review, plus approved-but-not-yet-deployed
+    (a failed deployment leaves a rule approved so it can be retried from the queue)."""
+    return (
+        db.query(GeneratedRule)
+        .filter(GeneratedRule.status.in_(("pending_review", "approved")))
+        .order_by(GeneratedRule.id)
+        .all()
+    )
 
 
 @router.post("/", status_code=201)

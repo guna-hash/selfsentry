@@ -171,5 +171,17 @@ class TestRejectRule(RulesApiTestCase):
         self.assertEqual(self.reject(rule_id).status_code, 409)
 
 
+class TestReviewQueueListing(RulesApiTestCase):
+    def test_approved_but_undeployed_rule_stays_in_queue_for_retry(self):
+        rule_id = self.add_rule(status="approved")
+        queue = self.client.get("/rules/pending").json()
+        self.assertEqual([r["id"] for r in queue], [rule_id])
+
+    def test_deployed_and_rejected_rules_are_not_in_queue(self):
+        self.add_rule(status="deployed")
+        self.add_rule(status="rejected")
+        self.assertEqual(self.client.get("/rules/pending").json(), [])
+
+
 if __name__ == "__main__":
     unittest.main()
