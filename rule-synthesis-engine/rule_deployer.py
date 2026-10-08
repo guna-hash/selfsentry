@@ -18,12 +18,19 @@ from __future__ import annotations
 
 import subprocess
 
-import yaml
+import glob
 import os
+
+import yaml
 _REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 AUTO_GENERATED_RULES_PATH = os.path.join(_REPO_ROOT, "falco-rules", "auto-generated-rules.yaml")
 FALCO_SERVICE_NAME = "falco-modern-bpf"
+FALCO_CONFIG_PATH = "/etc/falco/falco.yaml"
+FALCO_CONFIG_DIR = "/etc/falco/config.d"
+# Falco defaults to "first", where the catch-all baseline rule shadows every
+# auto-generated rule. See docs/falco_rule_matching.md.
+REQUIRED_RULE_MATCHING = "all"
 
 class RuleDeploymentError(RuntimeError):
     """Raised when a rule cannot be safely written or Falco cannot be reloaded."""
@@ -52,6 +59,35 @@ def _reload_falco() -> None:
         )
 
 
+def _read_rule_matching_mode() -> str:
+    """Effective Falco rule_matching value. Falco's default is "first" when unset;
+    config.d files are read after falco.yaml, so a later value overrides."""
+    mode = "first"
+    config_files = [FALCO_CONFIG_PATH] + sorted(
+        glob.glob(os.path.join(FALCO_CONFIG_DIR, "*.yaml"))
+    )
+    for path in config_files:
+        try:
+            with open(path) as f:
+                data = yaml.safe_load(f) or {}
+        except (OSError, yaml.YAMLError) as exc:
+            raise RuleDeploymentError(f"cannot read Falco config {path}: {exc}") from exc
+        if isinstance(data, dict) and "rule_matching" in data:
+            mode = str(data["rule_matching"])
+    return mode
+
+
+def _require_rule_matching_all() -> None:
+    """Refuse to deploy while Falco would let earlier rules shadow auto-generated ones."""
+    mode = _read_rule_matching_mode()
+    if mode != REQUIRED_RULE_MATCHING:
+        raise RuleDeploymentError(
+            f"Falco rule_matching is '{mode}', must be '{REQUIRED_RULE_MATCHING}' or "
+            "deployed rules will be shadowed by earlier rules. "
+            "See docs/falco_rule_matching.md."
+        )
+
+
 def deploy_rule(rule_id: str, rule_yaml: str) -> bool:
     """
     Appends an approved rule's YAML text to auto-generated-rules.yaml and
@@ -60,13 +96,22 @@ def deploy_rule(rule_id: str, rule_yaml: str) -> bool:
     rule_yaml must already be the rendered Falco YAML text (from
     rule_template_generator.generate_rule), not a pattern dict.
     """
+    _require_rule_matching_all()
+
+    original = ""
+    if os.path.exists(AUTO_GENERATED_RULES_PATH):
+        with open(AUTO_GENERATED_RULES_PATH) as f:
+            original = f.read()
+
     with open(AUTO_GENERATED_RULES_PATH, "a") as f:
         f.write("\n" + rule_yaml.strip() + "\n")
 
     try:
         _validate_yaml(AUTO_GENERATED_RULES_PATH)
     except RuleDeploymentError:
-        # Don't leave a broken file in place silently — surface it loudly.
+        # Restore the previous file so a broken rule can never stop Falco loading.
+        with open(AUTO_GENERATED_RULES_PATH, "w") as f:
+            f.write(original)
         raise
 
     _reload_falco()
