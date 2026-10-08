@@ -60,6 +60,22 @@ def _reload_falco() -> None:
         )
 
 
+def _rule_names(yaml_text: str) -> set:
+    """Names of the Falco rules defined in a YAML document (empty set if unparseable)."""
+    try:
+        parsed = yaml.safe_load(yaml_text) or []
+    except yaml.YAMLError:
+        return set()
+    if not isinstance(parsed, list):
+        return set()
+    return {r["rule"] for r in parsed if isinstance(r, dict) and "rule" in r}
+
+
+def _rules_already_present(rule_yaml: str, existing_yaml: str) -> bool:
+    names = _rule_names(rule_yaml)
+    return bool(names) and names <= _rule_names(existing_yaml)
+
+
 def _read_rule_matching_mode() -> str:
     """Effective Falco rule_matching value. Falco's default is "first" when unset;
     config.d files are read after falco.yaml, so a later value overrides."""
@@ -103,6 +119,12 @@ def deploy_rule(rule_id: str, rule_yaml: str) -> bool:
     if os.path.exists(AUTO_GENERATED_RULES_PATH):
         with open(AUTO_GENERATED_RULES_PATH) as f:
             original = f.read()
+
+    if _rules_already_present(rule_yaml, original):
+        # An earlier attempt already wrote this rule (e.g. the reload failed):
+        # reload only, never duplicate rule definitions in the rules file.
+        _reload_falco()
+        return True
 
     with open(AUTO_GENERATED_RULES_PATH, "a") as f:
         f.write("\n" + rule_yaml.strip() + "\n")

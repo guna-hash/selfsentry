@@ -95,5 +95,13 @@ class TestDeployRule(DeployerTestCase):
         self.reload_mock.assert_not_called()
 
 
+class TestIdempotentDeploy(DeployerTestCase):
+    def test_redeploying_same_rule_does_not_duplicate_it(self):
+        rule_deployer.deploy_rule("r1", VALID_RULE)
+        rule_deployer.deploy_rule("r1", VALID_RULE)
+        self.assertEqual(self.rules_path.read_text().count("Auto_Generated_Test"), 1)
+        self.assertEqual(self.reload_mock.call_count, 2)
+
+
 if __name__ == "__main__":
     unittest.main()
