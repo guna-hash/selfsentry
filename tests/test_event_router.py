@@ -10,6 +10,7 @@ run", not "is the math right".
 
 import sys
 import unittest
+from unittest.mock import MagicMock, patch
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "correlation-engine"))
@@ -158,12 +159,41 @@ class TestDispatchIncident(unittest.TestCase):
         results = event_router.dispatch_incident(incident, decision)
         self.assertEqual(results[event_router.ACTION_LOG], "done")
 
-    def test_auto_isolate_action_does_not_crash_on_stub(self):
+    def test_auto_isolate_success_reports_isolated(self):
         incident = {"container_id": "c1", "risk_score": 95, "confidence": "high"}
         decision = event_router.route_incident(incident)
-        # This must not raise, even though response-engine/auto_isolate.py
-        # has no real isolate_container() yet.
-        results = event_router.dispatch_incident(incident, decision)
+        fake_module = MagicMock()
+        with patch.object(
+            event_router, "_load_auto_isolate_module", return_value=fake_module
+        ):
+            results = event_router.dispatch_incident(incident, decision)
+        self.assertEqual(results[event_router.ACTION_AUTO_ISOLATE], "isolated")
+        fake_module.isolate_container.assert_called_once()
+        container_id, reason = fake_module.isolate_container.call_args.args
+        self.assertEqual(container_id, "c1")
+        self.assertIn("effective_score=", reason)
+
+    def test_auto_isolate_failure_is_reported_not_raised(self):
+        incident = {"container_id": "c1", "risk_score": 95, "confidence": "high"}
+        decision = event_router.route_incident(incident)
+        fake_module = MagicMock()
+        fake_module.isolate_container.side_effect = RuntimeError("docker down")
+        with patch.object(
+            event_router, "_load_auto_isolate_module", return_value=fake_module
+        ):
+            results = event_router.dispatch_incident(incident, decision)
+        self.assertEqual(
+            results[event_router.ACTION_AUTO_ISOLATE],
+            "isolation_failed: docker down",
+        )
+
+    def test_auto_isolate_missing_module_falls_back_to_stub(self):
+        incident = {"container_id": "c1", "risk_score": 95, "confidence": "high"}
+        decision = event_router.route_incident(incident)
+        with patch.object(
+            event_router, "_load_auto_isolate_module", return_value=None
+        ):
+            results = event_router.dispatch_incident(incident, decision)
         self.assertEqual(
             results[event_router.ACTION_AUTO_ISOLATE], "not_implemented_stub"
         )
