@@ -32,6 +32,7 @@ FALCO_CONFIG_DIR = "/etc/falco/config.d"
 # auto-generated rule. See docs/falco_rule_matching.md.
 REQUIRED_RULE_MATCHING = "all"
 
+
 class RuleDeploymentError(RuntimeError):
     """Raised when a rule cannot be safely written or Falco cannot be reloaded."""
 
@@ -121,7 +122,9 @@ def deploy_rule(rule_id: str, rule_yaml: str) -> bool:
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description="SelfSentry - Deploy an approved rule to live Falco")
+    parser = argparse.ArgumentParser(
+        description="SelfSentry - Deploy an approved rule to live Falco"
+    )
     parser.add_argument("rule_id")
     parser.add_argument("rule_yaml_file", help="Path to a .yaml file containing the approved rule")
     args = parser.parse_args()
