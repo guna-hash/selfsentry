@@ -2,8 +2,16 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from database import engine, Base
-from models.db_models import Container, Incident, ScanResult, ConfirmedIncident, GeneratedRule, RulePerformance
-from routes import incidents, rules
+# Imported so Base.metadata.create_all() sees every table.
+from models.db_models import (  # noqa: F401
+    Container,
+    Incident,
+    ScanResult,
+    ConfirmedIncident,
+    GeneratedRule,
+    RulePerformance,
+)
+from routes import containers, incidents, rules
 
 Base.metadata.create_all(bind=engine)
 
@@ -18,6 +26,7 @@ app.add_middleware(
 
 app.include_router(incidents.router)
 app.include_router(rules.router)
+app.include_router(containers.router)
 
 
 @app.get("/")

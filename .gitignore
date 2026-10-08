@@ -26,3 +26,5 @@ venv/
 # Node.js
 node_modules/
 dist/
+# Runtime state (isolation records)
+state/
