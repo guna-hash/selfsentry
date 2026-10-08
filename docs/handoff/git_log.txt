@@ -1,0 +1,15 @@
+7e838a3 docs: record full end-to-end demo transcript (Phase 10) - Trivy scan through rule deployment, all stages verified
+6a716a8 docs: verify auto_isolate.py against real running container, confirmed pause+network-disconnect
+fde3e37 docs: update CHANGELOG/TODO/ROADMAP for Phase 10 progress (2026-10-01)
+bd6f14d docs: finalize investigation notes on auto-rule firing gap, mechanism confirmed working
+39e96f4 feat(response-engine): implement isolate_container with network disconnect + pause
+85ab5c7 fix(correlation-engine): catch isolation failures in dispatch_incident instead of crashing the pipeline
+7291686 fix(backend-api): persist confirmed incidents to confirmed_incidents table; verified against real incident 16
+503dc94 chore: commit deployed auto-generated rule and review session transcripts
+58e4f14 docs: close out Phase 6 — add phase6_rule_synthesis.md, update CHANGELOG/ROADMAP/TODO
+6f26940 docs: flag Phase 8 /confirm endpoint not persisting to confirmed_incidents
+2e7ce0c feat(rule-synthesis-engine): implement rule_lifecycle_manager.py; verified TP/FP tracking and retirement check against real rule_performance table
+385baa9 docs: document Phase 6 auto-rule condition-matching gap found during live verification
+155b2d6 feat(rule-synthesis-engine): implement rule_deployer.py; verified write+validate+reload on real Falco
+254f3fb feat(rule-synthesis-engine): implement rule_backtester.py, backtests candidate rules against real historical benign Falco events
+b4495f7 feat(rule-synthesis-engine): add falco_rule_template.yaml.j2 and rule_template_generator.py
