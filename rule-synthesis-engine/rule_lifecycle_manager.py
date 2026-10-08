@@ -19,17 +19,21 @@ from __future__ import annotations
 import os
 
 import psycopg2
+from dotenv import load_dotenv
 
-DATABASE_URL = os.environ.get(
-    "DATABASE_URL",
-    "postgresql://selfsentry:devpass123@localhost:5432/selfsentry_db",
-)
+_REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+load_dotenv(os.path.join(_REPO_ROOT, "backend-api", ".env"))
+
+DATABASE_URL = os.environ.get("DATABASE_URL")
 
 RETIREMENT_FP_RATIO_THRESHOLD = 0.5  # if false_positives / total >= this, flag for review
 
 
 def _get_connection():
-    return psycopg2.connect(DATABASE_URL)
+    if not DATABASE_URL:
+        raise RuntimeError("DATABASE_URL is not set (define it in backend-api/.env)")
+    # psycopg2 needs a plain libpq URL, not the SQLAlchemy "+psycopg2" dialect form.
+    return psycopg2.connect(DATABASE_URL.replace("+psycopg2", "", 1))
 
 
 def record_rule_outcome(rule_id: int, was_true_positive: bool) -> None:
@@ -43,7 +47,8 @@ def record_rule_outcome(rule_id: int, was_true_positive: bool) -> None:
         with conn.cursor() as cur:
             cur.execute(
                 """
-                INSERT INTO rule_performance (rule_id, true_positives, false_positives, last_updated)
+                INSERT INTO rule_performance
+                    (rule_id, true_positives, false_positives, last_updated)
                 VALUES (%s, %s, %s, now())
                 ON CONFLICT (rule_id) DO UPDATE
                 SET {col} = rule_performance.{col} + 1, last_updated = now()
@@ -83,7 +88,9 @@ def evaluate_rule_for_retirement(rule_id: int) -> bool:
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description="SelfSentry - Record a rule outcome or check retirement status")
+    parser = argparse.ArgumentParser(
+        description="SelfSentry - Record a rule outcome or check retirement status"
+    )
     sub = parser.add_subparsers(dest="command", required=True)
 
     record_parser = sub.add_parser("record")
