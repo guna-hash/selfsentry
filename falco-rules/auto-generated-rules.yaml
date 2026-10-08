@@ -15,3 +15,10 @@
   output: "Auto-generated rule matched (user=%user.name container=%container.name proc=%proc.name parent=%proc.pname)"
   priority: WARNING
   tags: [auto-generated, selfsentry-ai, source_incident_8]
+
+- rule: Auto_Generated_whoami_from_sh_32
+  desc: "Auto-generated from confirmed incident #32 (pattern: whoami spawned by sh)"
+  condition: spawned_process and proc.name="whoami" and proc.pname="sh"
+  output: "Auto-generated rule matched (user=%user.name container=%container.name proc=%proc.name parent=%proc.pname)"
+  priority: WARNING
+  tags: [auto-generated, selfsentry-ai, source_incident_32]
