@@ -11,8 +11,9 @@ from models.db_models import (  # noqa: F401
     GeneratedRule,
     RulePerformance,
     Deployment,
+    AuditEvent,
 )
-from routes import containers, deployments, incidents, rules
+from routes import audit, containers, deployments, incidents, rules
 
 Base.metadata.create_all(bind=engine)
 
@@ -29,6 +30,7 @@ app.include_router(incidents.router)
 app.include_router(rules.router)
 app.include_router(containers.router)
 app.include_router(deployments.router)
+app.include_router(audit.router)
 
 
 @app.get("/")

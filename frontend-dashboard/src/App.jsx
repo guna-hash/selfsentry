@@ -3,6 +3,7 @@ import Alerts from './pages/Alerts.jsx'
 import RuleReviewQueue from './pages/RuleReviewQueue.jsx'
 import Containers from './pages/Containers.jsx'
 import Deployments from './pages/Deployments.jsx'
+import AuditLog from './pages/AuditLog.jsx'
 
 export default function App() {
   return (
@@ -20,6 +21,9 @@ export default function App() {
             <NavLink to="/containers" className={({ isActive }) => isActive ? 'active' : ''}>
               Containers
             </NavLink>
+            <NavLink to="/audit" className={({ isActive }) => isActive ? 'active' : ''}>
+              Audit log
+            </NavLink>
             <NavLink to="/rules" className={({ isActive }) => isActive ? 'active' : ''}>
               Rule Review Queue
             </NavLink>
@@ -30,6 +34,7 @@ export default function App() {
             <Route path="/" element={<Alerts />} />
             <Route path="/deployments" element={<Deployments />} />
             <Route path="/containers" element={<Containers />} />
+            <Route path="/audit" element={<AuditLog />} />
             <Route path="/rules" element={<RuleReviewQueue />} />
           </Routes>
         </main>

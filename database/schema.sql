@@ -77,3 +77,17 @@ CREATE TABLE IF NOT EXISTS deployments (
     policy_violations JSON,
     created_at        TIMESTAMP DEFAULT NOW()
 );
+
+CREATE TABLE IF NOT EXISTS audit_events (
+    id             SERIAL PRIMARY KEY,
+    event_key      VARCHAR(128) UNIQUE,
+    event_type     VARCHAR(64) NOT NULL,
+    severity       VARCHAR(16) NOT NULL DEFAULT 'info',
+    source         VARCHAR(64) NOT NULL DEFAULT 'monitor',
+    container_id   VARCHAR(128),
+    container_name VARCHAR(256),
+    image_name     VARCHAR(256),
+    detail         JSON,
+    occurred_at    TIMESTAMP,  -- naive UTC
+    created_at     TIMESTAMP DEFAULT NOW()
+);

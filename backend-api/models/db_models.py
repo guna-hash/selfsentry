@@ -87,3 +87,20 @@ class Deployment(Base):
     policy_summary = Column(JSON)
     policy_violations = Column(JSON)
     created_at = Column(DateTime, server_default=func.now())
+
+
+
+class AuditEvent(Base):
+    __tablename__ = "audit_events"
+
+    id = Column(Integer, primary_key=True)
+    event_key = Column(String(128), unique=True)
+    event_type = Column(String(64), nullable=False)
+    severity = Column(String(16), nullable=False, default="info")
+    source = Column(String(64), nullable=False, default="monitor")
+    container_id = Column(String(128))
+    container_name = Column(String(256))
+    image_name = Column(String(256))
+    detail = Column(JSON)
+    occurred_at = Column(DateTime)  # stored as naive UTC
+    created_at = Column(DateTime, server_default=func.now())
