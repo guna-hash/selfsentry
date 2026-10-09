@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# SelfSentry deployment gate. Use like `docker run` (without -d):
+#   bin/selfsentry-run [--override-reason "why"] -- <docker run args>
+REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+exec "$REPO/.venv/bin/python3" "$REPO/deployment-gate/deployment_gate.py" "$@"

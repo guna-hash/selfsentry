@@ -10,8 +10,9 @@ from models.db_models import (  # noqa: F401
     ConfirmedIncident,
     GeneratedRule,
     RulePerformance,
+    Deployment,
 )
-from routes import containers, incidents, rules
+from routes import containers, deployments, incidents, rules
 
 Base.metadata.create_all(bind=engine)
 
@@ -27,6 +28,7 @@ app.add_middleware(
 app.include_router(incidents.router)
 app.include_router(rules.router)
 app.include_router(containers.router)
+app.include_router(deployments.router)
 
 
 @app.get("/")

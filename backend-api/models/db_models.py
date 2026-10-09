@@ -70,3 +70,20 @@ class RulePerformance(Base):
     true_positives = Column(Integer, default=0)
     false_positives = Column(Integer, default=0)
     last_updated = Column(DateTime, server_default=func.now())
+
+
+
+class Deployment(Base):
+    __tablename__ = "deployments"
+
+    id = Column(Integer, primary_key=True)
+    container_name = Column(String(256), nullable=False)
+    container_id = Column(String(128))
+    image_name = Column(String(256), nullable=False)
+    decision = Column(String(16), nullable=False)  # allowed / blocked / overridden
+    override_reason = Column(String(512))
+    requested_by = Column(String(128))
+    scan_result_id = Column(Integer, ForeignKey("scan_results.id"))
+    policy_summary = Column(JSON)
+    policy_violations = Column(JSON)
+    created_at = Column(DateTime, server_default=func.now())

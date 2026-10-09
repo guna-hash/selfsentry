@@ -63,3 +63,17 @@ CREATE TABLE IF NOT EXISTS rule_performance (
     false_positives INTEGER DEFAULT 0,
     last_updated    TIMESTAMP DEFAULT NOW()
 );
+
+CREATE TABLE IF NOT EXISTS deployments (
+    id                SERIAL PRIMARY KEY,
+    container_name    VARCHAR(256) NOT NULL,
+    container_id      VARCHAR(128),
+    image_name        VARCHAR(256) NOT NULL,
+    decision          VARCHAR(16) NOT NULL,  -- allowed / blocked / overridden
+    override_reason   VARCHAR(512),
+    requested_by      VARCHAR(128),
+    scan_result_id    INTEGER REFERENCES scan_results(id),
+    policy_summary    JSON,
+    policy_violations JSON,
+    created_at        TIMESTAMP DEFAULT NOW()
+);

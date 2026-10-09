@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, NavLink } from 'react-router-dom'
 import Alerts from './pages/Alerts.jsx'
 import RuleReviewQueue from './pages/RuleReviewQueue.jsx'
 import Containers from './pages/Containers.jsx'
+import Deployments from './pages/Deployments.jsx'
 
 export default function App() {
   return (
@@ -12,6 +13,9 @@ export default function App() {
           <nav>
             <NavLink to="/" end className={({ isActive }) => isActive ? 'active' : ''}>
               Alerts
+            </NavLink>
+            <NavLink to="/deployments" className={({ isActive }) => isActive ? 'active' : ''}>
+              Deployments
             </NavLink>
             <NavLink to="/containers" className={({ isActive }) => isActive ? 'active' : ''}>
               Containers
@@ -24,6 +28,7 @@ export default function App() {
         <main className="main">
           <Routes>
             <Route path="/" element={<Alerts />} />
+            <Route path="/deployments" element={<Deployments />} />
             <Route path="/containers" element={<Containers />} />
             <Route path="/rules" element={<RuleReviewQueue />} />
           </Routes>
