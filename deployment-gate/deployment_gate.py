@@ -76,7 +76,9 @@ def parse_args(argv: list[str]):
     parser.add_argument("--backend-url", default=DEFAULT_BACKEND_URL)
 
     own, docker_args = [], list(argv)
-    if argv and argv[0].split("=")[0] in OWN_FLAGS:
+    if argv and argv[0] == "--":
+        docker_args = list(argv[1:])
+    elif argv and argv[0].split("=")[0] in OWN_FLAGS:
         if "--" not in argv:
             parser.error("put -- between SelfSentry options and the docker run arguments")
         split = argv.index("--")

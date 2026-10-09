@@ -215,6 +215,13 @@ class TestParseArgs(unittest.TestCase):
         self.assertIsNone(options.override_reason)
         self.assertEqual(docker_args, ["--rm", "alpine", "--", "echo"])
 
+    def test_leading_separator_is_dropped(self):
+        options, docker_args = deployment_gate.parse_args(
+            ["--", "--name", "web", "alpine"]
+        )
+        self.assertIsNone(options.override_reason)
+        self.assertEqual(docker_args, ["--name", "web", "alpine"])
+
     def test_no_docker_arguments_is_an_error(self):
         with self.assertRaises(SystemExit):
             deployment_gate.parse_args([])
