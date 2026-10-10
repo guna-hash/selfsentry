@@ -1,0 +1,48 @@
+== 1. Environment ==
+  PASS  Falco service is active
+  PASS  PostgreSQL is active
+  PASS  Falco alert log is readable
+  PASS  Docker is reachable
+  PASS  Trivy is installed
+  PASS  Backend serves /audit/
+  PASS  selfsentry-test container is running
+
+== 2. Repository state ==
+  FAIL  M1 commit not found  ->  git log --oneline -5 shows: d6ca5aa feat(monitor): continuous monitor M1
+  FAIL  working tree has uncommitted changes  ->  ?? docs/demo/monitor_m1_verification.txt 
+  PASS  HEAD is pushed (matches origin/main)
+  PASS  full test suite passes (282 passed in 15.66s)
+
+== 3. Monitor starts and reports health ==
+  PASS  monitor started and reports running
+  PASS  Falco ingestion reports ok
+  PASS  Docker event stream reports connected
+  PASS  backend (audit delivery) reports ok
+
+== 4. Deployment-gate bypass detection ==
+  PASS  gate allowed m1-gated
+  PASS  plain 'docker run' container flagged UNAPPROVED_CONTAINER_START
+  PASS  gate-launched container recorded as CONTAINER_STARTED (registered)
+  PASS  gate-launched container was NOT flagged unapproved
+  PASS  pre-existing selfsentry-test registered at startup (started outside the gate: flagged)
+
+== 5. Falco ingestion and alert classification ==
+  PASS  Falco lines were ingested and processed after a docker exec
+  PASS  a security alert was classified and counted
+  PASS  baseline-capture events were separated from security alerts
+
+== 6. Container removal ==
+  PASS  removal recorded as CONTAINER_REMOVED
+
+== 7. Graceful shutdown, restart and no event loss ==
+  PASS  monitor stopped within 15 seconds of SIGTERM
+  PASS  graceful shutdown was logged
+  PASS  monitor restarted from its checkpoint
+  PASS  events that occurred while the monitor was down were picked up (no loss)
+  PASS  restart did not duplicate audit events (CONTAINER_STARTED for m1-gated = 1)
+
+== 9. Log hygiene ==
+  PASS  no unhandled exceptions in the monitor log
+
+== SUMMARY: 28 passed, 2 failed, 0 skipped ==
+Monitor log: /tmp/m1-monitor.log
