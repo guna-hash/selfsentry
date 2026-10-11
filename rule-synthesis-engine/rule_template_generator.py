@@ -38,6 +38,12 @@ def generate_rule(pattern: dict, source_incident_id: int) -> str:
             "This incident's Falco alert output did not contain parseable process fields."
         )
 
+    # Process names become literals inside Falco expressions and YAML. Refuse injection.
+    if not all(
+        re.fullmatch(r"[A-Za-z0-9_./:+-]{1,128}", value) for value in (proc_name, parent_proc)
+    ):
+        raise RuleGenerationError("unsafe process literal in candidate pattern")
+
     env = Environment(
         loader=FileSystemLoader(_TEMPLATE_DIR),
         autoescape=select_autoescape(disabled_extensions=("j2",)),
@@ -59,7 +65,9 @@ if __name__ == "__main__":
     import requests
     from pattern_extractor import extract_pattern
 
-    parser = argparse.ArgumentParser(description="SelfSentry - Generate a candidate Falco rule from a confirmed incident")
+    parser = argparse.ArgumentParser(
+        description="SelfSentry - Generate a candidate Falco rule from a confirmed incident"
+    )
     parser.add_argument("incident_id", type=int)
     parser.add_argument("--backend-url", default="http://localhost:8000")
     args = parser.parse_args()

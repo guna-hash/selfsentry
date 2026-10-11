@@ -136,7 +136,10 @@ def _compute_confidence(
     return "low"
 
 
-def compute_risk_score(falco_alerts: list[dict], anomaly_events: list[dict]) -> list[dict]:
+def compute_risk_score(
+    falco_alerts: list[dict], anomaly_events: list[dict],
+    correlation_window: timedelta = CORRELATION_WINDOW,
+) -> list[dict]:
     """
     Public entry point. Correlates two alert streams into a list of
     incident payload dicts, ready to POST one-by-one to backend-api's
@@ -156,7 +159,7 @@ def compute_risk_score(falco_alerts: list[dict], anomaly_events: list[dict]) -> 
                 continue
             if anomaly_event["container_id"] != f_container:
                 continue
-            if abs(_parse_ts(anomaly_event["timestamp"]) - f_ts) <= CORRELATION_WINDOW:
+            if abs(_parse_ts(anomaly_event["timestamp"]) - f_ts) <= correlation_window:
                 matched_event, matched_idx = anomaly_event, idx
                 break
 

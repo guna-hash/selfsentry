@@ -21,9 +21,7 @@ import re
 
 FP_RATE_THRESHOLD = 0.05  # above this, flag for revision rather than approve
 
-_CONDITION_PATTERN = re.compile(
-    r'proc\.name="([^"]+)"\s+and\s+proc\.pname="([^"]+)"'
-)
+_CONDITION_PATTERN = re.compile(r'proc\.name="([^"]+)"\s+and\s+proc\.pname="([^"]+)"')
 _OUTPUT_KV_PATTERN = re.compile(r"(\w[\w.]*)=([^\s]+)")
 
 
@@ -56,10 +54,16 @@ def _event_matches(event: dict, proc_name: str, parent_proc: str) -> bool:
         return False  # only process-spawn events are relevant to this rule type
 
     fields = dict(_OUTPUT_KV_PATTERN.findall(event.get("output", "")))
-    return (
-        fields.get("proc_name") == proc_name
-        and fields.get("parent_proc_name") == parent_proc
+    structured = event.get("output_fields") or {}
+    fields["proc_name"] = (
+        structured.get("proc.name") or event.get("proc_name") or fields.get("proc_name")
     )
+    fields["parent_proc_name"] = (
+        structured.get("proc.pname")
+        or event.get("parent_proc_name")
+        or fields.get("parent_proc_name")
+    )
+    return fields.get("proc_name") == proc_name and fields.get("parent_proc_name") == parent_proc
 
 
 def backtest_rule(candidate_rule_yaml: str, historical_benign_events: list[dict]) -> dict:
@@ -102,7 +106,9 @@ if __name__ == "__main__":
 
     from falco_integration import read_falco_alerts_from_file
 
-    parser = argparse.ArgumentParser(description="SelfSentry - Backtest a candidate rule against real historical benign events")
+    parser = argparse.ArgumentParser(
+        description="SelfSentry - Backtest a candidate rule against real historical benign events"
+    )
     parser.add_argument("rule_yaml_file", help="Path to a .yaml file containing the candidate rule")
     parser.add_argument("--log-path", default="/var/log/falco/alerts.json")
     args = parser.parse_args()

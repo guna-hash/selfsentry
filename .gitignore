@@ -28,3 +28,14 @@ node_modules/
 dist/
 # Runtime state (isolation records)
 state/
+
+# Per-container training data and local validation artifacts
+behavioral-engine/baselines/
+evaluation/corpora/
+evaluation/results/
+evaluation/before-*/
+evaluation/_before*/
+evaluation/_pre_*/
+evaluation/candidate-*.yaml
+evaluation/generated-rules-*.yaml
+monitor-service/*.before-*

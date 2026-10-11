@@ -185,3 +185,34 @@ class TestReviewQueueListing(RulesApiTestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestMonitorRuleSafety(RulesApiTestCase):
+    def test_failed_backtest_is_not_deployable(self):
+        self.assertEqual(self.submit(backtested_fp_rate=0.051).status_code, 422)
+
+    def test_automatic_confirmation_is_not_human_rule_approval(self):
+        rule_id = self.add_rule()
+        with patch.object(rules_module, 'deploy_rule') as deploy:
+            response = self.client.post(f'/rules/{rule_id}/approve',
+                                        params={'reviewed_by': 'selfsentry-auto'})
+        self.assertEqual(response.status_code, 422)
+        deploy.assert_not_called()
+
+    def test_deployment_failure_is_audited(self):
+        from models.db_models import AuditEvent
+        rule_id = self.add_rule()
+        with patch.object(rules_module, 'deploy_rule', side_effect=rules_module.RuleDeploymentError('down')):
+            self.approve(rule_id)
+        with self.Session() as db:
+            events = db.query(AuditEvent).all()
+            self.assertIn('RULE_DEPLOYMENT_FAILED', [e.event_type for e in events])
+
+
+class TestCandidateRecovery(RulesApiTestCase):
+    def test_deployed_candidate_is_found_after_a_lost_submission_response(self):
+        rule_id = self.add_rule(status='deployed')
+        response = self.client.get('/rules/for-confirmed/1')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['id'], rule_id)
+        self.assertEqual(response.json()['status'], 'deployed')

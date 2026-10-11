@@ -28,6 +28,7 @@ from datetime import datetime, timezone
 
 import docker
 import requests
+from backend_auth import backend_headers
 
 from audit_client import make_event_key
 from monitor_config import MonitorConfig
@@ -39,10 +40,7 @@ SEEN_EVENT_WINDOW = 2000
 
 
 class BackendRegistrationLookup:
-    """Looks up gate registrations through the backend (GET /deployments/).
-
-    Only the newest 500 deployment records are considered.
-    """
+    """Looks up exact gate registrations without the dashboard's history limit."""
 
     APPROVED_DECISIONS = ("allowed", "overridden")
 
@@ -54,19 +52,22 @@ class BackendRegistrationLookup:
         """True / False, or None if the lookup itself failed."""
         try:
             response = requests.get(
-                f"{self._backend_url}/deployments/",
-                params={"limit": 500},
+                f"{self._backend_url}/deployments/registration/{short_id}",
                 timeout=self._timeout,
+                headers=backend_headers(),
             )
             response.raise_for_status()
-            deployments = response.json()
+            result = response.json()
         except (requests.RequestException, ValueError) as exc:
             logger.warning("registration lookup failed: %s", exc)
             return None
-        return any(
-            d.get("container_id") == short_id and d.get("decision") in self.APPROVED_DECISIONS
-            for d in deployments
-        )
+        if (
+            not isinstance(result, dict)
+            or result.get("container_id") != short_id
+            or type(result.get("registered")) is not bool
+        ):
+            return None
+        return result["registered"]
 
 
 class DockerInspector:
@@ -153,6 +154,10 @@ class ContainerWatcher:
     def pending_count(self) -> int:
         return len(self._pending)
 
+    @property
+    def container_ids(self):
+        return [item.full_id for item in self._tracked.values() if item.running]
+
     # ---- public entry points -------------------------------------------------
 
     def handle_docker_event(self, event: dict) -> None:
@@ -187,8 +192,12 @@ class ContainerWatcher:
             if known and known.running and known.started_at == info.get("started_at"):
                 continue
             self._on_start(
-                full_id, info.get("name"), info.get("image"), info.get("started_at"),
-                "startup_reconcile", immediate=True,
+                full_id,
+                info.get("name"),
+                info.get("image"),
+                info.get("started_at"),
+                "startup_reconcile",
+                immediate=True,
             )
             count += 1
         return count
@@ -231,6 +240,13 @@ class ContainerWatcher:
         self._tracked[full_id] = tracked
         self._pending.pop(full_id, None)
 
+        if immediate:
+            try:
+                started = datetime.fromisoformat(tracked.started_at.replace("Z", "+00:00"))
+                age = (datetime.now(timezone.utc) - started).total_seconds()
+                immediate = age >= self._config.registration_grace_seconds
+            except (ValueError, TypeError, AttributeError):
+                immediate = False  # unknown start age must not remove the gate grace period
         status = self._lookup.is_registered(full_id[:12])
         if status is True:
             self._resolve_registered(tracked, method)
@@ -252,7 +268,9 @@ class ContainerWatcher:
         if tracked:
             tracked.running = False
         self._emit(
-            "CONTAINER_STOPPED", "info", full_id,
+            "CONTAINER_STOPPED",
+            "info",
+            full_id,
             tracked.name if tracked else name,
             tracked.image if tracked else image,
             {"exit_code": exit_code},
@@ -266,8 +284,12 @@ class ContainerWatcher:
         if resolved_name:
             self._recently_removed[resolved_name] = (full_id[:12], self._clock())
         self._emit(
-            "CONTAINER_REMOVED", "info", full_id, resolved_name,
-            tracked.image if tracked else image, {},
+            "CONTAINER_REMOVED",
+            "info",
+            full_id,
+            resolved_name,
+            tracked.image if tracked else image,
+            {},
             make_event_key("CONTAINER_REMOVED", full_id, _event_stamp(event)),
             _iso_from_event(event),
         )
@@ -289,8 +311,13 @@ class ContainerWatcher:
             tracked.registration = "unknown"
             detail["registration_status"] = "unknown"
             self._emit(
-                "REGISTRATION_UNKNOWN", "warning", tracked.full_id, tracked.name, tracked.image,
-                detail, make_event_key("REGISTRATION_UNKNOWN", tracked.full_id, tracked.started_at),
+                "REGISTRATION_UNKNOWN",
+                "warning",
+                tracked.full_id,
+                tracked.name,
+                tracked.image,
+                detail,
+                make_event_key("REGISTRATION_UNKNOWN", tracked.full_id, tracked.started_at),
                 tracked.started_at,
             )
             return
@@ -300,24 +327,40 @@ class ContainerWatcher:
         detail["policy"] = self._config.unapproved_start_policy
         if self._config.unapproved_start_policy == "alert":
             self._emit(
-                "UNAPPROVED_CONTAINER_START", "warning", tracked.full_id, tracked.name,
-                tracked.image, detail,
+                "UNAPPROVED_CONTAINER_START",
+                "warning",
+                tracked.full_id,
+                tracked.name,
+                tracked.image,
+                detail,
                 make_event_key("UNAPPROVED_CONTAINER_START", tracked.full_id, tracked.started_at),
                 tracked.started_at,
             )
         else:
             self._emit(
-                "CONTAINER_STARTED", "info", tracked.full_id, tracked.name, tracked.image,
-                detail, make_event_key("CONTAINER_STARTED", tracked.full_id, tracked.started_at),
+                "CONTAINER_STARTED",
+                "info",
+                tracked.full_id,
+                tracked.name,
+                tracked.image,
+                detail,
+                make_event_key("CONTAINER_STARTED", tracked.full_id, tracked.started_at),
                 tracked.started_at,
             )
 
     def _resolve_registered(self, tracked: TrackedContainer, method: str) -> None:
         tracked.registration = "registered"
         self._emit(
-            "CONTAINER_STARTED", "info", tracked.full_id, tracked.name, tracked.image,
-            {"registration_status": "registered", "detection_method": method,
-             "started_at": tracked.started_at},
+            "CONTAINER_STARTED",
+            "info",
+            tracked.full_id,
+            tracked.name,
+            tracked.image,
+            {
+                "registration_status": "registered",
+                "detection_method": method,
+                "started_at": tracked.started_at,
+            },
             make_event_key("CONTAINER_STARTED", tracked.full_id, tracked.started_at),
             tracked.started_at,
         )

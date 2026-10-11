@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { API, describeFailure } from '../api.js'
+import { API, apiFetch, describeFailure } from '../api.js'
 
 const SEVERITY_CLASS = { critical: 'sev-high', warning: 'sev-medium', info: 'sev-low' }
 
@@ -10,7 +10,7 @@ export default function AuditLog() {
 
   async function fetchEvents() {
     try {
-      const res = await fetch(`${API}/audit/?limit=200`)
+      const res = await apiFetch(`${API}/audit/?limit=200`)
       if (!res.ok) throw new Error(await describeFailure(res))
       setEvents(await res.json())
       setError(null)

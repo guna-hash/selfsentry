@@ -13,3 +13,27 @@ export async function describeFailure(res) {
     return `HTTP ${res.status}`
   }
 }
+
+export function apiFetch(url, options = {}) {
+  const token = sessionStorage.getItem('selfsentry-api-token')
+  return fetch(url, {
+    ...options,
+    headers: { ...options.headers, ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+  })
+}
+
+// An absent AI summary must not turn a high-risk incident into a low-severity card.
+export function incidentSeverity(incident) {
+  const suggested = incident.ai_summary?.severity?.toLowerCase?.()
+  if (['low', 'medium', 'high', 'critical'].includes(suggested)) return suggested
+  const priority = String(incident.falco_alert?.priority || '').toUpperCase()
+  if (['EMERGENCY', 'ALERT', 'CRITICAL'].includes(priority)) return 'critical'
+  if (['ERROR', 'WARNING'].includes(priority)) return 'high'
+  const value = incident.monitor_evidence?.effective_score ?? incident.risk_score
+  const score = value == null ? NaN : Number(value)
+  if (!Number.isFinite(score)) return 'unknown'
+  if (score >= 90) return 'critical'
+  if (score >= 70) return 'high'
+  if (score >= 40) return 'medium'
+  return 'low'
+}

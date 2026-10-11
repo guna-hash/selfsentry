@@ -91,3 +91,10 @@ CREATE TABLE IF NOT EXISTS audit_events (
     occurred_at    TIMESTAMP,  -- naive UTC
     created_at     TIMESTAMP DEFAULT NOW()
 );
+CREATE TABLE IF NOT EXISTS monitor_incidents (
+    id           SERIAL PRIMARY KEY,
+    event_key    VARCHAR(128) UNIQUE NOT NULL,
+    incident_id  INTEGER UNIQUE NOT NULL REFERENCES incidents(id),
+    evidence     JSON,
+    workflow     JSON
+);

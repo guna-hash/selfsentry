@@ -10,6 +10,7 @@ Defaults are conservative. See docs/monitor_service.md for the full table.
 from __future__ import annotations
 
 import os
+import math
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Mapping
@@ -40,17 +41,52 @@ class MonitorConfig:
     retry_base_seconds: float = 1.0
     retry_max_seconds: float = 30.0
     log_format: str = "text"
+    baseline_dir: Path = _REPO_ROOT / "behavioral-engine" / "baselines"
+    learning_enabled: bool = True
+    learning_seconds: float = 900.0
+    min_samples: int = 20
+    window_seconds: int = 60
+    lateness_seconds: float = 10.0
+    anomaly_threshold: float = 0.8
+    correlation_seconds: float = 60.0
+    auto_confirm_enabled: bool = True
+    auto_confirm_threshold: float = 90.0
+    auto_isolation_enabled: bool = False
+    auto_isolation_threshold: float = 90.0
+    protected_containers: tuple[str, ...] = ()
+    response_max_age_seconds: float = 120.0
+    rule_candidates_enabled: bool = True
+    benign_log_path: str = ""
+    retrain_policy: str = "manual"
 
     def validate(self) -> None:
         problems = []
+        if self.retrain_policy != "manual":
+            problems.append("MONITOR_RETRAIN_POLICY currently supports only manual")
+        for name, value in vars(self).items():
+            if isinstance(value, (int, float)) and not math.isfinite(value):
+                problems.append(f"{name} must be finite")
+        if self.min_samples < 20:
+            problems.append("MONITOR_MIN_SAMPLES must be at least 20")
+        if self.window_seconds < 1:
+            problems.append("MONITOR_WINDOW_SECONDS must be positive")
+        for name in ("learning_seconds", "lateness_seconds"):
+            if getattr(self, name) < 0:
+                problems.append(f"{name} must not be negative")
+        for name in ("correlation_seconds", "response_max_age_seconds"):
+            if getattr(self, name) <= 0:
+                problems.append(f"{name} must be positive")
+        if not 0.5 <= self.anomaly_threshold <= 1:
+            problems.append("MONITOR_ANOMALY_THRESHOLD must be between 0.5 and 1")
+        for name in ("auto_confirm_threshold", "auto_isolation_threshold"):
+            if not 0 <= getattr(self, name) <= 100:
+                problems.append(f"{name} must be between 0 and 100")
         if not self.backend_url.startswith(("http://", "https://")):
             problems.append("SELFSENTRY_BACKEND_URL must start with http:// or https://")
         if self.start_from not in START_FROM_VALUES:
             problems.append(f"MONITOR_START_FROM must be one of {START_FROM_VALUES}")
         if self.unapproved_start_policy not in UNAPPROVED_POLICIES:
-            problems.append(
-                f"MONITOR_UNAPPROVED_START_POLICY must be one of {UNAPPROVED_POLICIES}"
-            )
+            problems.append(f"MONITOR_UNAPPROVED_START_POLICY must be one of {UNAPPROVED_POLICIES}")
         if self.log_format not in LOG_FORMATS:
             problems.append(f"MONITOR_LOG_FORMAT must be one of {LOG_FORMATS}")
         for name in (
@@ -83,6 +119,12 @@ def _read(env: Mapping[str, str], name: str, default, cast):
         raise ConfigError(f"{name} must be a valid {cast.__name__}, got {raw!r}") from exc
 
 
+def _bool(value: str) -> bool:
+    if value.lower() not in ("true", "false"):
+        raise ValueError("expected true or false")
+    return value.lower() == "true"
+
+
 def load_config(env: Mapping[str, str] | None = None) -> MonitorConfig:
     """Build and validate the configuration from environment variables."""
     env = os.environ if env is None else env
@@ -113,6 +155,25 @@ def load_config(env: Mapping[str, str] | None = None) -> MonitorConfig:
             env, "MONITOR_RETRY_MAX_SECONDS", defaults.retry_max_seconds, float
         ),
         log_format=_read(env, "MONITOR_LOG_FORMAT", defaults.log_format, str),
+        baseline_dir=_read(env, "MONITOR_BASELINE_DIR", defaults.baseline_dir, Path),
+        learning_enabled=_read(env, "MONITOR_LEARNING_ENABLED", True, _bool),
+        learning_seconds=_read(env, "MONITOR_LEARNING_SECONDS", 900.0, float),
+        min_samples=_read(env, "MONITOR_MIN_SAMPLES", 20, int),
+        window_seconds=_read(env, "MONITOR_WINDOW_SECONDS", 60, int),
+        lateness_seconds=_read(env, "MONITOR_LATENESS_SECONDS", 10.0, float),
+        anomaly_threshold=_read(env, "MONITOR_ANOMALY_THRESHOLD", 0.8, float),
+        correlation_seconds=_read(env, "MONITOR_CORRELATION_SECONDS", 60.0, float),
+        auto_confirm_enabled=_read(env, "AUTO_CONFIRM_ENABLED", True, _bool),
+        auto_confirm_threshold=_read(env, "AUTO_CONFIRM_THRESHOLD", 90.0, float),
+        auto_isolation_enabled=_read(env, "AUTO_ISOLATION_ENABLED", False, _bool),
+        auto_isolation_threshold=_read(env, "AUTO_ISOLATION_THRESHOLD", 90.0, float),
+        protected_containers=tuple(
+            x.strip() for x in env.get("MONITOR_PROTECTED_CONTAINERS", "").split(",") if x.strip()
+        ),
+        response_max_age_seconds=_read(env, "MONITOR_RESPONSE_MAX_AGE_SECONDS", 120.0, float),
+        rule_candidates_enabled=_read(env, "MONITOR_RULE_CANDIDATES_ENABLED", True, _bool),
+        benign_log_path=_read(env, "MONITOR_BENIGN_LOG_PATH", "", str),
+        retrain_policy=_read(env, "MONITOR_RETRAIN_POLICY", "manual", str),
     )
     config.validate()
     return config

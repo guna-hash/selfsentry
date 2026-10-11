@@ -1,6 +1,6 @@
 - rule: Auto_Generated_{{ rule_slug }}
   desc: "Auto-generated from confirmed incident #{{ source_incident_id }} (pattern: {{ proc_name }} spawned by {{ parent_proc }})"
-  condition: spawned_process and proc.name="{{ proc_name }}" and proc.pname="{{ parent_proc }}"
+  condition: spawned_process and container and proc.name="{{ proc_name }}" and proc.pname="{{ parent_proc }}"
   output: "Auto-generated rule matched (user=%user.name container=%container.name proc=%proc.name parent=%proc.pname)"
   priority: WARNING
   tags: [auto-generated, selfsentry-ai, source_incident_{{ source_incident_id }}]

@@ -26,7 +26,12 @@ from __future__ import annotations
 import argparse
 import sys
 
-import requests
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "monitor-service"))
+from backend_auth import backend_headers  # noqa: E402
+
+import requests  # noqa: E402
 
 DEFAULT_BACKEND_URL = "http://localhost:8000"
 
@@ -58,6 +63,7 @@ def confirm_incident(
             url,
             params={"confirmed_by": confirmed_by},
             timeout=timeout_seconds,
+            headers=backend_headers(),
         )
     except requests.RequestException as exc:
         raise ConfirmationError(f"Could not reach backend at {url}: {exc}") from exc
@@ -80,8 +86,12 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="SelfSentry - Confirm a correlated incident as a real threat"
     )
-    parser.add_argument("incident_id", type=int, help="The incident ID to confirm (from /incidents/)")
-    parser.add_argument("confirmed_by", help="Name/identifier of the human confirming this incident")
+    parser.add_argument(
+        "incident_id", type=int, help="The incident ID to confirm (from /incidents/)"
+    )
+    parser.add_argument(
+        "confirmed_by", help="Name/identifier of the human confirming this incident"
+    )
     parser.add_argument("--backend-url", default=DEFAULT_BACKEND_URL)
     args = parser.parse_args()
 

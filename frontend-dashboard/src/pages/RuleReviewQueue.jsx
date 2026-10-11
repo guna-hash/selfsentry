@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 
-import { API, NOTICE_STYLES, describeFailure } from '../api.js'
+import { API, apiFetch, NOTICE_STYLES, describeFailure } from '../api.js'
 
 function formatFpRate(rate) {
   return rate === null || rate === undefined ? 'n/a' : `${(rate * 100).toFixed(2)}%`
@@ -14,7 +14,7 @@ export default function RuleReviewQueue() {
 
   async function fetchPendingRules() {
     try {
-      const res = await fetch(`${API}/rules/pending`)
+      const res = await apiFetch(`${API}/rules/pending`)
       if (!res.ok) throw new Error('Failed to fetch pending rules')
       setRules(await res.json())
       setError(null)
@@ -32,7 +32,7 @@ export default function RuleReviewQueue() {
   async function submitDecision(ruleId, url, successText) {
     setBusyId(ruleId)
     try {
-      const res = await fetch(url, { method: 'POST' })
+      const res = await apiFetch(url, { method: 'POST' })
       if (res.ok) {
         setNotice({ kind: 'success', text: successText })
       } else {

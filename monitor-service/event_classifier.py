@@ -70,6 +70,8 @@ def classify_line(line: str, event_key: str | None = None) -> ClassifiedEvent | 
 
     event = alert.to_dict()
     event.update(_context(alert.raw.get("output_fields") or {}))
+    event["output_fields"] = alert.raw.get("output_fields") or {}
+    event["raw_line"] = line
     event["event_key"] = event_key
     kind = "baseline" if alert.rule.startswith(BASELINE_RULE_PREFIX) else "alert"
     return ClassifiedEvent(kind=kind, event=event)

@@ -4,6 +4,7 @@ import RuleReviewQueue from './pages/RuleReviewQueue.jsx'
 import Containers from './pages/Containers.jsx'
 import Deployments from './pages/Deployments.jsx'
 import AuditLog from './pages/AuditLog.jsx'
+import Monitor from './pages/Monitor.jsx'
 
 export default function App() {
   return (
@@ -12,6 +13,9 @@ export default function App() {
         <aside className="sidebar">
           <h1>SelfSentry</h1>
           <nav>
+            <NavLink to="/monitor" className={({ isActive }) => isActive ? 'active' : ''}>
+              Monitor
+            </NavLink>
             <NavLink to="/" end className={({ isActive }) => isActive ? 'active' : ''}>
               Alerts
             </NavLink>
@@ -32,8 +36,10 @@ export default function App() {
         <main className="main">
           <Routes>
             <Route path="/" element={<Alerts />} />
+            <Route path="/alerts" element={<Alerts />} />
             <Route path="/deployments" element={<Deployments />} />
             <Route path="/containers" element={<Containers />} />
+            <Route path="/monitor" element={<Monitor />} />
             <Route path="/audit" element={<AuditLog />} />
             <Route path="/rules" element={<RuleReviewQueue />} />
           </Routes>

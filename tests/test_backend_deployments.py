@@ -118,3 +118,17 @@ class TestListDeployments(DeploymentsApiTestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestExactRegistration(DeploymentsApiTestCase):
+    def test_gate_registration_remains_visible_outside_history_limit(self):
+        self.client.post('/deployments/', json=payload())
+        for n in range(501):
+            self.client.post('/deployments/', json=payload(container_id=f'new-{n}'))
+        result = self.client.get('/deployments/registration/abc123def456').json()
+        self.assertTrue(result['registered'])
+
+    def test_name_or_blocked_decision_does_not_grant_registration(self):
+        self.client.post('/deployments/', json=payload(decision='blocked'))
+        self.assertFalse(self.client.get('/deployments/registration/abc123def456').json()['registered'])
+        self.assertFalse(self.client.get('/deployments/registration/web').json()['registered'])

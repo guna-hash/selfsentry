@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { API, NOTICE_STYLES, describeFailure } from '../api.js'
+import { API, apiFetch, NOTICE_STYLES, describeFailure } from '../api.js'
 
 function formatRisk(score) {
   return score === null || score === undefined ? 'no incidents yet' : `latest risk ${score}`
@@ -13,7 +13,7 @@ export default function Containers() {
 
   async function fetchContainers() {
     try {
-      const res = await fetch(`${API}/containers/`)
+      const res = await apiFetch(`${API}/containers/`)
       if (!res.ok) throw new Error(await describeFailure(res))
       setContainers(await res.json())
       setError(null)
@@ -31,7 +31,7 @@ export default function Containers() {
   async function runAction(container, url, successText) {
     setBusyId(container.id)
     try {
-      const res = await fetch(url, { method: 'POST' })
+      const res = await apiFetch(url, { method: 'POST' })
       if (res.ok) {
         setNotice({ kind: 'success', text: successText })
       } else {

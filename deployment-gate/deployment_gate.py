@@ -35,6 +35,9 @@ import sys
 import requests
 
 _REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(_REPO_ROOT, "monitor-service"))
+from backend_auth import backend_headers  # noqa: E402
+
 sys.path.insert(0, os.path.join(_REPO_ROOT, "image-scanner"))
 sys.path.insert(0, os.path.join(_REPO_ROOT, "policy-checker"))
 
@@ -82,7 +85,8 @@ def parse_args(argv: list[str]):
         if "--" not in argv:
             parser.error("put -- between SelfSentry options and the docker run arguments")
         split = argv.index("--")
-        own, docker_args = list(argv[:split]), list(argv[split + 1:])
+        own = list(argv[:split])
+        docker_args = list(argv[slice(split + 1, None)])
     options = parser.parse_args(own)
     options.override_reason = (options.override_reason or "").strip() or None
     if not docker_args:
@@ -140,9 +144,7 @@ def _top_findings(scan) -> list[dict]:
     return findings[:MAX_FINDINGS]
 
 
-def build_record(
-    container_id, image, scan, scan_error, policy, decision, override_reason
-) -> dict:
+def build_record(container_id, image, scan, scan_error, policy, decision, override_reason) -> dict:
     violations = [
         {
             "rule_id": v.rule_id,
@@ -180,7 +182,9 @@ def build_record(
 
 def record_decision(record: dict, backend_url: str) -> bool:
     try:
-        response = requests.post(f"{backend_url}/deployments/", json=record, timeout=15)
+        response = requests.post(
+            f"{backend_url}/deployments/", json=record, timeout=15, headers=backend_headers()
+        )
     except requests.RequestException as exc:
         print(f"WARNING: could not record this decision in the dashboard: {exc}", file=sys.stderr)
         return False

@@ -35,16 +35,18 @@ def _serialize(deployment: Deployment, scan: ScanResult | None) -> dict:
         "created_at": deployment.created_at,
         "policy_summary": deployment.policy_summary,
         "policy_violations": deployment.policy_violations or [],
-        "scan": None
-        if scan is None
-        else {
-            "critical": scan.critical_count,
-            "high": scan.high_count,
-            "total_vulnerabilities": scan.total_vulnerabilities,
-            "secrets_found": scan.secrets_found,
-            "misconfigurations_found": scan.misconfigurations_found,
-            "top_findings": (scan.raw_json or {}).get("top_findings", []),
-        },
+        "scan": (
+            None
+            if scan is None
+            else {
+                "critical": scan.critical_count,
+                "high": scan.high_count,
+                "total_vulnerabilities": scan.total_vulnerabilities,
+                "secrets_found": scan.secrets_found,
+                "misconfigurations_found": scan.misconfigurations_found,
+                "top_findings": (scan.raw_json or {}).get("top_findings", []),
+            }
+        ),
     }
 
 
@@ -98,3 +100,17 @@ def list_deployments(limit: int = 100, db: Session = Depends(get_db)):
         .all()
     )
     return [_serialize(deployment, scan) for deployment, scan in rows]
+
+
+@router.get("/registration/{container_id}")
+def registration(container_id: str, db: Session = Depends(get_db)):
+    """Exact ID lookup over all records, independent of dashboard history pagination."""
+    record = (
+        db.query(Deployment)
+        .filter(
+            Deployment.container_id == container_id,
+            Deployment.decision.in_(("allowed", "overridden")),
+        )
+        .first()
+    )
+    return {"container_id": container_id, "registered": record is not None}

@@ -38,6 +38,8 @@ from event_classifier import MalformedEvent, classify_line
 from falco_ingest import FalcoTailer, IngestUnavailable
 from monitor_config import ConfigError, MonitorConfig, load_config
 from monitor_status import StatusBoard, read_status
+from behavior_pipeline import BehaviorPipeline
+from incident_pipeline import IncidentPipeline
 
 logger = logging.getLogger("selfsentry.monitor")
 
@@ -78,6 +80,7 @@ class MonitorService:
         sink,
         docker_events: queue.Queue,
         pump=None,
+        incident_pipeline=None,
     ):
         self._config = config
         self._tailer = tailer
@@ -87,6 +90,7 @@ class MonitorService:
         self._sink = sink
         self._docker_events = docker_events
         self._pump = pump
+        self._incident_pipeline = incident_pipeline
         self._ingest_ok: bool | None = None
 
     # ---- one iteration -------------------------------------------------------
@@ -95,7 +99,16 @@ class MonitorService:
         processed = self._ingest_falco()
         self._drain_docker_events()
         self._reconcile_if_needed()
+        if hasattr(self._watcher, "container_ids") and hasattr(self._sink, "discover"):
+            for cid in self._watcher.container_ids:
+                self._guarded(
+                    "discovery_errors", "baseline discovery", lambda: self._sink.discover(cid)
+                )
         self._guarded("watcher_errors", "registration re-check", self._watcher.tick)
+        if hasattr(self._sink, "tick"):
+            self._guarded("pipeline_errors", "behavior pipeline", self._sink.tick)
+        if self._incident_pipeline is not None:
+            self._guarded("incident_errors", "incident outbox", self._incident_pipeline.tick)
         self._guarded("audit_flush_errors", "audit spool flush", self._audit.flush_spool)
         self._update_status()
         return processed
@@ -129,6 +142,8 @@ class MonitorService:
         try:
             classified = classify_line(line, key)
         except MalformedEvent as exc:
+            if hasattr(self._sink, "record_rejected_line"):
+                self._sink.record_rejected_line(line, key, str(exc))
             self._status.incr("malformed_events")
             logger.warning("malformed Falco event skipped: %s", exc)
             return
@@ -143,6 +158,9 @@ class MonitorService:
         except Exception:  # noqa: BLE001 - logged and counted, then the next event proceeds
             logger.exception("event processing failed (rule=%s)", classified.event.get("rule"))
             self._status.incr("processing_errors")
+            if hasattr(self._sink, "accept"):
+                # A durable sink failure (e.g. disk full) must stop checkpoint advancement.
+                raise
             return
         self._status.incr("falco_lines_processed")
         self._status.set_value("last_event_at", _now())
@@ -222,7 +240,13 @@ class MonitorService:
         failures = 0
         try:
             while not stop_event.is_set():
-                processed = self.run_once()
+                try:
+                    processed = self.run_once()
+                except Exception:
+                    logger.exception("monitor iteration failed; checkpoint retained for retry")
+                    self._status.incr("iteration_errors")
+                    stop_event.wait(self._config.retry_max_seconds)
+                    continue
                 if self._ingest_ok is False:
                     failures += 1
                     delay = min(
@@ -261,9 +285,7 @@ def setup_logging(log_format: str) -> None:
     if log_format == "json":
         handler.setFormatter(JsonFormatter())
     else:
-        handler.setFormatter(
-            logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s")
-        )
+        handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s"))
     root = logging.getLogger()
     root.handlers = [handler]
     root.setLevel(logging.INFO)
@@ -302,13 +324,15 @@ def build_service(config: MonitorConfig):
         BackendRegistrationLookup(config.backend_url),
         DockerInspector(docker.from_env),
     )
+    pipeline = BehaviorPipeline(config, status, audit)
+    incident_pipeline = IncidentPipeline(pipeline)
     events: queue.Queue = queue.Queue()
     stop_event = threading.Event()
     pump = DockerEventPump(
         docker.from_env, events, stop_event, config.retry_base_seconds, config.retry_max_seconds
     )
     service = MonitorService(
-        config, tailer, watcher, audit, status, CountingSink(status), events, pump
+        config, tailer, watcher, audit, status, pipeline, events, pump, incident_pipeline
     )
     return service, pump, stop_event
 
@@ -332,7 +356,11 @@ def main(argv=None) -> int:
     parser = argparse.ArgumentParser(prog="monitor_service", description=__doc__.split("\n")[1])
     parser.add_argument("--status", action="store_true", help="print the monitor's status")
     parser.add_argument("--once", action="store_true", help="run one iteration and exit")
+    parser.add_argument("--reset-baseline", metavar="CONTAINER_ID")
+    parser.add_argument("--reason", help="required reason for a baseline reset")
     args = parser.parse_args(argv)
+    if args.reset_baseline and not args.reason:
+        parser.error("--reset-baseline requires --reason")
 
     try:
         config = load_config()
@@ -349,15 +377,34 @@ def main(argv=None) -> int:
         print("ERROR: another monitor instance is already running.", file=sys.stderr)
         return 3
 
+    if args.reset_baseline:
+        try:
+            board = StatusBoard(config.state_dir / "status.json")
+            audit = AuditClient(config.backend_url, config.state_dir / "audit_spool.jsonl")
+            pipeline = BehaviorPipeline(config, board, audit)
+            pipeline.reset_baseline(args.reset_baseline, args.reason)
+            pipeline.db.close()
+            print(f"Baseline reset for {args.reset_baseline}; prior data archived.")
+            return 0
+        finally:
+            lock.close()
     service, pump, stop_event = build_service(config)
     signal.signal(signal.SIGINT, lambda *_: stop_event.set())
     signal.signal(signal.SIGTERM, lambda *_: stop_event.set())
     pump.start()
-    if args.once:
-        service.run_once()
+    try:
+        if args.once:
+            service.run_once()
+        else:
+            service.run_forever(stop_event)
         return 0
-    service.run_forever(stop_event)
-    return 0
+    finally:
+        stop_event.set()
+        pump.join(timeout=5)
+        if service._incident_pipeline.executor:
+            service._incident_pipeline.executor.shutdown(wait=False, cancel_futures=True)
+        service._sink.db.close()
+        lock.close()
 
 
 if __name__ == "__main__":

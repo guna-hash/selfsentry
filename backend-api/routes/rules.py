@@ -4,13 +4,13 @@ from datetime import datetime, timezone
 
 import yaml
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "rule-synthesis-engine"))
 
 from database import get_db  # noqa: E402
-from models.db_models import ConfirmedIncident, GeneratedRule  # noqa: E402
+from models.db_models import ConfirmedIncident, GeneratedRule, AuditEvent  # noqa: E402
 from rule_deployer import RuleDeploymentError, deploy_rule  # noqa: E402
 
 router = APIRouter(prefix="/rules", tags=["rules"])
@@ -22,7 +22,19 @@ ACTIVE_STATUSES = ("pending_review", "approved", "deployed")
 class CandidateRuleIn(BaseModel):
     confirmed_incident_id: int
     rule_yaml: str
-    backtested_fp_rate: float
+    backtested_fp_rate: float = Field(ge=0, le=0.05, allow_inf_nan=False)
+
+
+def _audit_rule(db, event_type, rule, detail):
+    db.add(
+        AuditEvent(
+            event_type=event_type,
+            source="backend",
+            severity="info",
+            detail={"rule_id": rule.id, **detail},
+            occurred_at=datetime.now(timezone.utc).replace(tzinfo=None),
+        )
+    )
 
 
 def _get_rule_or_404(db: Session, rule_id: int) -> GeneratedRule:
@@ -62,6 +74,22 @@ async def list_pending_rules(db: Session = Depends(get_db)):
     )
 
 
+@router.get("/for-confirmed/{confirmed_incident_id}")
+def active_candidate(confirmed_incident_id: int, db: Session = Depends(get_db)):
+    rule = (
+        db.query(GeneratedRule)
+        .filter(
+            GeneratedRule.confirmed_incident_id == confirmed_incident_id,
+            GeneratedRule.status.in_(ACTIVE_STATUSES),
+        )
+        .order_by(GeneratedRule.id.desc())
+        .first()
+    )
+    if not rule:
+        raise HTTPException(404, "No active candidate")
+    return rule
+
+
 @router.post("/", status_code=201)
 async def submit_rule(body: CandidateRuleIn, db: Session = Depends(get_db)):
     """Queue a backtested candidate rule for human review. Nothing is deployed here."""
@@ -70,6 +98,7 @@ async def submit_rule(body: CandidateRuleIn, db: Session = Depends(get_db)):
     confirmed = (
         db.query(ConfirmedIncident)
         .filter(ConfirmedIncident.id == body.confirmed_incident_id)
+        .with_for_update()
         .first()
     )
     if not confirmed:
@@ -109,6 +138,8 @@ async def approve_rule(rule_id: int, reviewed_by: str, db: Session = Depends(get
     If deployment fails the rule stays 'approved' (the decision is kept) and the
     request can be retried; deploy_rule() is idempotent.
     """
+    if not reviewed_by.strip() or reviewed_by.strip() == "selfsentry-auto":
+        raise HTTPException(422, "An explicit human reviewer identity is required")
     rule = _get_rule_or_404(db, rule_id)
     if rule.status not in ("pending_review", "approved"):
         raise HTTPException(
@@ -119,28 +150,37 @@ async def approve_rule(rule_id: int, reviewed_by: str, db: Session = Depends(get
     rule.status = "approved"
     rule.reviewed_by = reviewed_by
     rule.reviewed_at = datetime.now(timezone.utc)
+    _audit_rule(db, "RULE_APPROVED", rule, {"reviewed_by": reviewed_by})
     db.commit()
 
     try:
         deploy_rule(str(rule.id), rule.rule_yaml)
     except (RuleDeploymentError, OSError) as exc:
+        _audit_rule(
+            db, "RULE_DEPLOYMENT_FAILED", rule, {"reason": str(exc), "reviewed_by": reviewed_by}
+        )
+        db.commit()
         raise HTTPException(
             status_code=502, detail=f"Rule approved but deployment failed: {exc}"
         ) from exc
 
     rule.status = "deployed"
+    _audit_rule(db, "RULE_DEPLOYED", rule, {"reviewed_by": reviewed_by})
     db.commit()
     return {"status": "deployed", "rule_id": rule_id, "reviewed_by": reviewed_by}
 
 
 @router.post("/{rule_id}/reject")
 async def reject_rule(rule_id: int, reviewed_by: str, reason: str, db: Session = Depends(get_db)):
+    if not reviewed_by.strip() or reviewed_by.strip() == "selfsentry-auto":
+        raise HTTPException(422, "An explicit human reviewer identity is required")
     rule = _get_rule_or_404(db, rule_id)
     if rule.status not in ("pending_review", "approved"):
         raise HTTPException(
             status_code=409,
             detail=f"Rule is '{rule.status}'; expected pending_review or approved",
         )
+    _audit_rule(db, "RULE_REJECTED", rule, {"reviewed_by": reviewed_by, "reason": reason})
     rule.status = "rejected"
     rule.reviewed_by = reviewed_by
     rule.reviewed_at = datetime.now(timezone.utc)

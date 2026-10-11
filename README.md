@@ -1,64 +1,62 @@
-# selfsentry
+# SelfSentry
 
-A hybrid rule-based + behavior-based container runtime security platform with a self-learning rule-generation feature. Academic/capstone project.
+Container security monitoring and response for an academic/capstone project. Trivy scans
+images; a deployment gate checks policy before starting containers. Falco and per-container
+Isolation Forest models supply runtime evidence to the existing correlation/routing engine.
+Confirmed incidents can produce template-generated, backtested Falco rule candidates;
+every rule deployment requires explicit human approval.
 
-## What it does
-Scans container images before deployment (Trivy), validates deployment configuration, monitors running containers with two parallel detection layers (Falco rule-matching + custom ML anomaly detection), correlates both into a unified risk score, uses an LLM to explain incidents in plain English, auto-isolates high-risk containers, and — the core novelty — automatically converts **confirmed** anomaly detections into new, backtested, human-approved Falco rules via a **Rule Synthesis Engine**.
+## Current status
 
-Full design rationale, architecture, and academic materials live in `docs/` and the project's report deliverables (see `ContainerGuard_AI_*.pdf` / `.md` files generated during the design phase).
+M1–M4 features are implemented and verified on the Ubuntu/Docker/Falco/PostgreSQL VM.
+M5 includes a 200-trial controlled full-pipeline evaluation and a retrospective layer
+comparison: 100/100 attack detections, 13/100 benign detections, 5/100 attack auto-confirmations,
+no benign auto-confirmations and no duplicate trial incidents. These are controlled results,
+not production guarantees or evidence of improved attack coverage beyond Falco.
 
-## Status
-🚧 **In active implementation.** Phase 1 (Image Scanner) is complete and validated against real Trivy. Currently on **Phase 2 of 11** (Deployment Policy Checker) — code and tests done, manual `docker inspect` validation pending. See `ROADMAP.md` for the full phase plan and `TODO.md` for current task status.
+PostgreSQL recovery, no-baseline fallback, isolation/resume and protected-container workflow
+checks passed. Invalid-model paths have automated coverage. The reviewed Python suite has
+406 passing tests. AI is advisory, optional and subject to provider limits; isolation defaults off.
+See [measured results](docs/monitor_measured_results_20261011.md) and
+[final review](docs/monitor_final_review.md) for evidence and unmeasured items.
+Independent live comparison variants and separate layer timings were not collected.
 
-## Modules (11 total)
-1. Image Scanner (Trivy) — ✅ complete
-2. Deployment Policy Checker — 🔶 code complete, manual validation pending
-3. Falco Rule Engine
-4. Behavioral Runtime Monitor
-5. Anomaly Detection Model (Isolation Forest / One-Class SVM)
-6. Correlation Engine
-7. **Rule Synthesis Engine** (core novelty)
-8. AI Threat Analysis (LLM)
-9. Attack Timeline
-10. Automated Response
-11. Dashboard & Reports (React)
+Start with [monitor_operations.md](docs/monitor_operations.md) for exact configuration,
+setup and start/stop commands. [monitor_completion_report.md](docs/monitor_completion_report.md)
+lists changes and checks. [monitor_evaluation.md](docs/monitor_evaluation.md) defines the
+remaining controlled measurements. [monitor_spec_checklist.md](docs/monitor_spec_checklist.md)
+tracks acceptance criteria without treating unit tests as live attack measurements.
 
-## Project structure
-```
-selfsentry/
-├── image-scanner/       # Phase 1 — Trivy wrapper
-├── policy-checker/      # Phase 2 — Deployment policy validator
-├── tests/                # Unit tests for all modules
-├── docs/                 # Per-phase documentation
-├── requirements.txt
-├── .env.example
-├── TODO.md
-├── CHANGELOG.md
-└── ROADMAP.md
-```
-(More module directories — `runtime-monitor/`, `behavioral-engine/`, `correlation-engine/`, `rule-synthesis-engine/`, `ai-analysis/`, `response-engine/`, `backend-api/`, `frontend-dashboard/` — are added as their phases begin.)
+## Architecture
 
-## Setup
+- `image-scanner`, `policy-checker`, `deployment-gate`: existing pre-deployment gate.
+- `runtime-monitor`, `falco-rules`: existing normalization and baseline capture rules.
+- `behavioral-engine`: existing feature extractor, JSON baseline store and Isolation Forest.
+- `correlation-engine`: existing risk score and confidence-adjusted routing.
+- `monitor-service`: long-running coordinator, SQLite inbox/outbox and lifecycle states.
+- `backend-api`, `database`: existing FastAPI/PostgreSQL persistence, additive monitor metadata.
+- `response-engine`: pause + network disconnection with recoverable state and verified outcomes.
+- `rule-synthesis-engine`: existing literal templates, backtesting and human approval workflow.
+- `ai-analysis`: optional, advisory incident explanation; no detection or deployment authority.
+- `frontend-dashboard`: alerts, deployments, containers, audit, review queue and monitor health.
+
+## Development
+
 ```bash
-git clone <your-repo-url>
-cd containerguard-ai
+git clone https://github.com/guna-hash/selfsentry.git
+cd selfsentry
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -r requirements.txt
-cp .env.example .env   # fill in real values, never commit .env
+python3 -m pip install -r requirements.txt
+python3 -m pytest tests/ -q
+(cd frontend-dashboard && npm ci && npm run build)
 ```
 
-Phase 1 also requires the **Trivy CLI** installed separately: https://aquasecurity.github.io/trivy/latest/getting-started/installation/
-
-## Running tests
-```bash
-python3 -m unittest discover tests/ -v
-# or
-pytest tests/ -v
-```
-
-## Tech stack
-Python, FastAPI, PostgreSQL, React + WebSockets, Trivy, Falco, eBPF, scikit-learn, Jinja2, OpenAI-compatible LLM API. Target OS: Linux (required for eBPF/Falco).
+Python tests use mocks and isolated SQLite; no live AI key, Trivy download, Docker daemon or
+production PostgreSQL database is needed. Running the actual service needs Linux, Docker,
+Falco with `rule_matching: all`, your database URL and a shared backend write token. Isolation
+defaults to disabled. Read the operations guide before enabling response on disposable containers.
 
 ## License
-TBD (academic project — set before public release if required by institution).
+
+TBD (academic project; choose a license before public release if required).

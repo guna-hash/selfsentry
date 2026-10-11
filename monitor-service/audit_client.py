@@ -21,6 +21,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import requests
+from backend_auth import backend_headers
 
 logger = logging.getLogger(__name__)
 
@@ -102,7 +103,10 @@ class AuditClient:
     def _post(self, payload: dict) -> str:
         try:
             response = requests.post(
-                f"{self._backend_url}/audit/", json=payload, timeout=self._timeout
+                f"{self._backend_url}/audit/",
+                json=payload,
+                timeout=self._timeout,
+                headers=backend_headers(),
             )
         except requests.RequestException as exc:
             logger.warning("audit backend unreachable: %s", exc)
@@ -130,7 +134,7 @@ class AuditClient:
             return []
         except OSError as exc:
             logger.error("cannot read audit spool %s: %s", self._spool_path, exc)
-            return []
+            raise
         events = []
         for raw in raw_lines:
             if not raw.strip():
@@ -147,8 +151,11 @@ class AuditClient:
             path.parent.mkdir(parents=True, exist_ok=True)
             with open(path, "a") as handle:
                 handle.write(line + "\n")
+                handle.flush()
+                os.fsync(handle.fileno())
         except OSError as exc:
             logger.error("cannot write %s: %s", path, exc)
+            raise
 
     def _append_spool(self, payload: dict) -> None:
         self._append_line(self._spool_path, json.dumps(payload))

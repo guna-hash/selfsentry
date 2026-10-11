@@ -1,3 +1,8 @@
+> Current status (2026-10-10): continuous monitor M2–M4 integration is implemented and
+> tested offline. M5 live validation/measurements remain pending. This file contains
+> historical notes; see docs/monitor_completion_report.md and docs/monitor_spec_checklist.md
+> for the current acceptance status.
+
 
 ## Phase 4 — shell_spawned_count does not detect default-ruleset shell alerts (found 2026-09-30)
 

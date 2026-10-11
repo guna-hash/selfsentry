@@ -82,8 +82,17 @@ def extract_pattern(confirmed_incident: dict) -> dict:
         )
 
     output_fields = _parse_output_fields(falco_alert.get("output", ""))
-    proc_name = _first_present(output_fields, PROC_NAME_KEYS)
-    parent_proc = _first_present(output_fields, PARENT_PROC_KEYS)
+    structured = falco_alert.get("output_fields") or {}
+    proc_name = (
+        structured.get("proc.name")
+        or falco_alert.get("proc_name")
+        or _first_present(output_fields, PROC_NAME_KEYS)
+    )
+    parent_proc = (
+        structured.get("proc.pname")
+        or falco_alert.get("parent_proc_name")
+        or _first_present(output_fields, PARENT_PROC_KEYS)
+    )
 
     return {
         "container_id": confirmed_incident.get("container_id"),
@@ -100,7 +109,9 @@ if __name__ == "__main__":
 
     import requests
 
-    parser = argparse.ArgumentParser(description="SelfSentry - Extract a pattern from a confirmed incident")
+    parser = argparse.ArgumentParser(
+        description="SelfSentry - Extract a pattern from a confirmed incident"
+    )
     parser.add_argument("incident_id", type=int)
     parser.add_argument("--backend-url", default="http://localhost:8000")
     args = parser.parse_args()

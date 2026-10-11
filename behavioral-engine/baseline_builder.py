@@ -81,14 +81,18 @@ class BaselineStore:
         # else - stripping would let "../../etc/passwd" quietly become
         # "etcpasswd" and succeed, which defeats the point of the check.
         if not container_id or not container_id.isalnum():
-            raise ValueError(
-                f"invalid container_id for baseline storage: {container_id!r}"
-            )
+            raise ValueError(f"invalid container_id for baseline storage: {container_id!r}")
         return self.storage_dir / f"{container_id}.json"
 
     def append(self, feature_vector: FeatureVector) -> None:
         """Add one more sample to a container's baseline, persisting immediately."""
         dataset = self.load(feature_vector.container_id, allow_missing=True)
+        if any(
+            fv.window_start == feature_vector.window_start
+            and fv.window_end == feature_vector.window_end
+            for fv in dataset.feature_vectors
+        ):
+            return  # replay after a crash must not add the same training sample twice
         dataset.feature_vectors.append(feature_vector)
         self._save(dataset)
         logger.info(
@@ -103,11 +107,11 @@ class BaselineStore:
         if not path.exists():
             if allow_missing:
                 return BaselineDataset(container_id=container_id, feature_vectors=[])
-            raise FileNotFoundError(
-                f"no baseline stored yet for container {container_id!r}"
-            )
+            raise FileNotFoundError(f"no baseline stored yet for container {container_id!r}")
 
         raw = json.loads(path.read_text())
+        if raw.get("container_id") != container_id:
+            raise ValueError("baseline file ownership does not match requested container")
         vectors = []
         for item in raw["feature_vectors"]:
             vectors.append(
@@ -126,7 +130,9 @@ class BaselineStore:
             "container_id": dataset.container_id,
             "feature_vectors": [fv.to_dict() for fv in dataset.feature_vectors],
         }
-        path.write_text(json.dumps(payload, indent=2))
+        temporary = path.with_suffix(".tmp")
+        temporary.write_text(json.dumps(payload, indent=2))
+        temporary.replace(path)
 
     def reset(self, container_id: str) -> None:
         """Wipe a container's stored baseline (e.g. to relearn after a

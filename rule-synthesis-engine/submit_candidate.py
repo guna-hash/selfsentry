@@ -22,12 +22,17 @@ from __future__ import annotations
 import os
 import sys
 
-import requests
+from pathlib import Path
 
-from confirmation_manager import ConfirmationError, confirm_incident
-from pattern_extractor import PatternExtractionError, extract_pattern
-from rule_backtester import BacktestError, backtest_rule
-from rule_template_generator import RuleGenerationError, generate_rule
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "monitor-service"))
+from backend_auth import backend_headers  # noqa: E402
+
+import requests  # noqa: E402
+
+from confirmation_manager import ConfirmationError, confirm_incident  # noqa: E402
+from pattern_extractor import PatternExtractionError, extract_pattern  # noqa: E402
+from rule_backtester import BacktestError, backtest_rule  # noqa: E402
+from rule_template_generator import RuleGenerationError, generate_rule  # noqa: E402
 
 DEFAULT_BACKEND_URL = "http://localhost:8000"
 DEFAULT_LOG_PATH = "/var/log/falco/alerts.json"
@@ -66,7 +71,9 @@ def submit_candidate(
             f"Backend did not return a confirmed_incident_id for incident {incident_id}"
         )
 
-    response = requests.get(f"{backend_url}/incidents/{incident_id}", timeout=timeout_seconds)
+    response = requests.get(
+        f"{backend_url}/incidents/{incident_id}", timeout=timeout_seconds, headers=backend_headers()
+    )
     response.raise_for_status()
     incident = response.json()
 
@@ -96,7 +103,23 @@ def submit_candidate(
             "backtested_fp_rate": backtest["false_positive_rate"],
         },
         timeout=timeout_seconds,
+        headers=backend_headers(),
     )
+    if post.status_code == 409:
+        existing = requests.get(
+            f"{backend_url}/rules/for-confirmed/{confirmed_incident_id}",
+            timeout=timeout_seconds,
+            headers=backend_headers(),
+        )
+        existing.raise_for_status()
+        item = existing.json()
+        if isinstance(item, dict) and item.get("confirmed_incident_id") == confirmed_incident_id:
+            return {
+                "rule_id": item["id"],
+                "status": item["status"],
+                "backtest": backtest,
+                "rule_yaml": item["rule_yaml"],
+            }
     if post.status_code != 201:
         raise SubmissionError(f"Backend rejected the rule: HTTP {post.status_code} - {post.text}")
 

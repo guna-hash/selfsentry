@@ -1,3 +1,13 @@
+> Current reviewed status (12 October 2026 IST): M1–M4 features and controlled VM
+> checks passed; M5 full-run measurements and retrospective comparison are delivered.
+> Final polish verification/release commit remains. The phase notes below are historical;
+> use docs/monitor_final_review.md and docs/monitor_spec_checklist.md for current status.
+
+> Current status (2026-10-10): continuous monitor M2–M4 integration is implemented and
+> tested offline. M5 live validation/measurements remain pending. This file contains
+> historical notes; see docs/monitor_completion_report.md and docs/monitor_spec_checklist.md
+> for the current acceptance status.
+
 # Roadmap
 
 Phase-by-phase build order (see `docs/` for per-phase detail as each is completed).

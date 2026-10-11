@@ -40,6 +40,17 @@ class ScanResult(Base):
     scanned_at = Column(DateTime, server_default=func.now())
 
 
+class MonitorIncident(Base):
+    """Additive monitor metadata; existing Incident columns/API remain compatible."""
+    __tablename__ = "monitor_incidents"
+
+    id = Column(Integer, primary_key=True)
+    event_key = Column(String(128), unique=True, nullable=False)
+    incident_id = Column(Integer, ForeignKey("incidents.id"), unique=True, nullable=False)
+    evidence = Column(JSON)
+    workflow = Column(JSON)
+
+
 class ConfirmedIncident(Base):
     __tablename__ = "confirmed_incidents"
 

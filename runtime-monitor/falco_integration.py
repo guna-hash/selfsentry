@@ -134,11 +134,18 @@ def parse_falco_alert(raw_line: str) -> FalcoAlert:
     except json.JSONDecodeError as exc:
         raise FalcoParseError(f"invalid JSON: {exc}") from exc
 
+    if not isinstance(raw, dict):
+        raise FalcoParseError("Falco event must be a JSON object")
     missing = [k for k in _REQUIRED_RAW_FIELDS if k not in raw]
     if missing:
         raise FalcoParseError(f"missing required field(s): {missing}")
 
+    for key in _REQUIRED_RAW_FIELDS:
+        if not isinstance(raw[key], str):
+            raise FalcoParseError(f"{key} must be a string")
     output_fields = raw.get("output_fields") or {}
+    if not isinstance(output_fields, dict):
+        raise FalcoParseError("output_fields must be an object")
     container_id = _extract_container_id(output_fields)
 
     return FalcoAlert(

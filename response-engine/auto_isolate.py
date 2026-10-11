@@ -96,44 +96,51 @@ def isolate_container(container_id: str, reason: str) -> None:
     client = docker.from_env()
     container = _get_container(client, container_id)
 
+    container.reload()
+    mode = (container.attrs.get("HostConfig") or {}).get("NetworkMode", "")
+    if mode == "host" or mode.startswith("container:"):
+        raise IsolationError("host/shared network namespace cannot be safely disconnected")
     existing = get_isolation_record(container.id)
-    if is_isolated(existing):
-        container.reload()
-        if container.status != "paused":
-            try:
-                container.pause()
-            except docker.errors.APIError as exc:
-                raise IsolationError(f"Failed to pause container {container_id}: {exc}") from exc
-        logger.info("Container %s was already isolated; original record kept", container_id)
-        return
-
     networks = _attached_networks(container)
-    # Written BEFORE anything is changed, so a crash midway can never lose the networks.
-    _write_record(
-        container.id,
-        {
+    if is_isolated(existing) and not networks and container.status == "paused":
+        return
+    # Retain original network attachments even when retrying a partial manual attempt.
+    record = (
+        existing
+        if existing and existing.get("state") != "resumed"
+        else {
             "container_id": container.id,
             "container_name": container.name,
             "reason": reason,
             "isolated_at": _now(),
             "networks": networks,
-            "state": "isolated",
             "resumed_at": None,
             "resumed_by": None,
-        },
+        }
     )
-
+    record["networks"] = {**networks, **record["networks"]}
+    record.update(state="isolating", error=None)
+    _write_record(container.id, record)
+    failures = {}
     for name in networks:
         try:
             client.networks.get(name).disconnect(container, force=True)
         except docker.errors.APIError as exc:
-            logger.warning("Could not disconnect %s from network %s: %s", container_id, name, exc)
-
+            failures[name] = str(exc)
     try:
-        container.pause()
+        if container.status != "paused":
+            container.pause()
+        container.reload()
+        if container.status != "paused" or _attached_networks(container):
+            failures["verification"] = "container is not paused with all networks disconnected"
     except docker.errors.APIError as exc:
-        raise IsolationError(f"Failed to pause container {container_id}: {exc}") from exc
-
+        failures["pause"] = str(exc)
+    if failures:
+        record.update(state="isolation_failed", error=failures)
+        _write_record(container.id, record)
+        raise IsolationError(f"Containment incomplete for {container_id}: {failures}")
+    record.update(state="isolated", error=None)
+    _write_record(container.id, record)
     logger.warning("Isolated container %s (reason: %s)", container_id, reason)
 
 
@@ -151,7 +158,7 @@ def resume_container(container_id: str, resumed_by: str) -> dict:
     container = _get_container(client, container_id)
 
     record = get_isolation_record(container.id)
-    if not is_isolated(record):
+    if not record or record.get("state") not in ("isolated", "isolating", "isolation_failed"):
         raise ResumeError(
             f"No active isolation record for {container_id}; "
             "refusing to resume because its original networks are unknown"

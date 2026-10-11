@@ -1,12 +1,47 @@
 import sys
 import os
+
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "ai-analysis"))
 from fastapi import APIRouter, Depends, HTTPException  # noqa: E402
 from sqlalchemy.orm import Session  # noqa: E402
 
 from database import get_db  # noqa: E402
-from models.db_models import Incident, ConfirmedIncident  # noqa: E402
+from models.db_models import Incident, ConfirmedIncident, MonitorIncident  # noqa: E402
 from root_cause_summarizer import summarize_incident  # noqa: E402
+from sqlalchemy.exc import IntegrityError  # noqa: E402
+from pydantic import BaseModel, Field  # noqa: E402
+from fastapi.encoders import jsonable_encoder  # noqa: E402
+
+
+class IncidentIn(BaseModel):
+    container_id: str = Field(min_length=1, max_length=128)
+    risk_score: float = Field(ge=0, le=100, allow_inf_nan=False)
+    confidence: str | None = None
+    falco_alert: dict | None = None
+    anomaly_features: dict | None = None
+    event_key: str | None = Field(default=None, max_length=128)
+    monitor_evidence: dict | None = None
+    defer_ai: bool = False
+
+
+def serialize(incident, db):
+    db.refresh(incident)
+    result = jsonable_encoder(incident)
+    meta = db.query(MonitorIncident).filter(MonitorIncident.incident_id == incident.id).first()
+    if meta:
+        result.update(
+            event_key=meta.event_key, monitor_evidence=meta.evidence, monitor_workflow=meta.workflow
+        )
+    confirmed = (
+        db.query(ConfirmedIncident).filter(ConfirmedIncident.incident_id == incident.id).first()
+    )
+    result["confirmation"] = (
+        {"confirmed_by": confirmed.confirmed_by, "confirmed_at": confirmed.confirmed_at}
+        if confirmed
+        else None
+    )
+    return result
+
 
 router = APIRouter(prefix="/incidents", tags=["incidents"])
 
@@ -14,7 +49,7 @@ router = APIRouter(prefix="/incidents", tags=["incidents"])
 @router.get("/")
 async def list_incidents(db: Session = Depends(get_db)):
     incidents = db.query(Incident).all()
-    return incidents
+    return [serialize(incident, db) for incident in incidents]
 
 
 @router.get("/{incident_id}")
@@ -22,11 +57,19 @@ async def get_incident(incident_id: int, db: Session = Depends(get_db)):
     incident = db.query(Incident).filter(Incident.id == incident_id).first()
     if not incident:
         raise HTTPException(status_code=404, detail="Incident not found")
-    return incident
+    return serialize(incident, db)
 
 
 @router.post("/")
-async def create_incident(incident_data: dict, db: Session = Depends(get_db)):
+async def create_incident(incident_data: IncidentIn, db: Session = Depends(get_db)):
+    incident_data = incident_data.model_dump()
+    key = incident_data.get("event_key")
+    if key:
+        existing = db.query(MonitorIncident).filter(MonitorIncident.event_key == key).first()
+        if existing:
+            return serialize(
+                db.query(Incident).filter(Incident.id == existing.incident_id).one(), db
+            )
     new_incident = Incident(
         container_id=incident_data["container_id"],
         risk_score=incident_data["risk_score"],
@@ -35,33 +78,47 @@ async def create_incident(incident_data: dict, db: Session = Depends(get_db)):
         anomaly_features=incident_data.get("anomaly_features"),
     )
     db.add(new_incident)
-    db.commit()
+    try:
+        db.flush()
+        if key:
+            db.add(
+                MonitorIncident(
+                    event_key=key,
+                    incident_id=new_incident.id,
+                    evidence=incident_data.get("monitor_evidence"),
+                    workflow={},
+                )
+            )
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        existing = db.query(MonitorIncident).filter(MonitorIncident.event_key == key).first()
+        if not existing:
+            raise
+        return serialize(db.query(Incident).filter(Incident.id == existing.incident_id).one(), db)
     db.refresh(new_incident)
 
-    # Advisory-only: AI explains the already-scored incident, never scores it itself
-    ai_result = summarize_incident({
-        "incident_id": new_incident.id,
-        "container_id": new_incident.container_id,
-        "risk_score": new_incident.risk_score,
-        "falco_alert": new_incident.falco_alert,
-    })
-    new_incident.ai_summary = ai_result
-    db.commit()
-    db.refresh(new_incident)
-
-    return new_incident
+    # Monitor runs explanations after response, keeping provider failures off the critical path.
+    if not incident_data.get("defer_ai"):
+        try:
+            new_incident.ai_summary = summarize_incident(serialize(new_incident, db))
+        except Exception:
+            new_incident.ai_summary = {
+                "status": "unavailable",
+                "plain_summary": "AI explanation unavailable",
+            }
+        db.commit()
+    return serialize(new_incident, db)
 
 
 @router.post("/{incident_id}/confirm")
 async def confirm_incident(incident_id: int, confirmed_by: str, db: Session = Depends(get_db)):
-    incident = db.query(Incident).filter(Incident.id == incident_id).first()
+    incident = db.query(Incident).filter(Incident.id == incident_id).with_for_update().first()
     if not incident:
         raise HTTPException(status_code=404, detail="Incident not found")
 
     existing = (
-        db.query(ConfirmedIncident)
-        .filter(ConfirmedIncident.incident_id == incident_id)
-        .first()
+        db.query(ConfirmedIncident).filter(ConfirmedIncident.incident_id == incident_id).first()
     )
     if existing:
         return {
@@ -71,6 +128,14 @@ async def confirm_incident(incident_id: int, confirmed_by: str, db: Session = De
             "confirmed_incident_id": existing.id,
         }
 
+    if confirmed_by == "selfsentry-auto":
+        from automation_policy import eligible
+        from monitor_config import load_config
+        import time
+
+        permitted, reason = eligible(serialize(incident, db), load_config(), now=time.time())
+        if not permitted:
+            raise HTTPException(409, reason)
     confirmed = ConfirmedIncident(incident_id=incident_id, confirmed_by=confirmed_by)
     db.add(confirmed)
     db.commit()
@@ -89,4 +154,8 @@ async def dismiss_incident(incident_id: int, db: Session = Depends(get_db)):
     incident = db.query(Incident).filter(Incident.id == incident_id).first()
     if not incident:
         raise HTTPException(status_code=404, detail="Incident not found")
+    meta = db.query(MonitorIncident).filter(MonitorIncident.incident_id == incident_id).first()
+    if meta:
+        meta.workflow = {**(meta.workflow or {}), "disposition": {"status": "benign"}}
+        db.commit()
     return {"status": "dismissed", "incident_id": incident_id}

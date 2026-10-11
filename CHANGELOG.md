@@ -80,3 +80,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 - Documented a discovered Falco modern-eBPF probe limitation: `proc.name`
   misresolves to a raw identifier for the first process in a fresh exec
   session (see docs/phase4_behavioral_engine.md).
+
+## 2026-10-10 — Continuous monitor M2–M4 integration and M5 tooling
+
+- Add journaled telemetry/windows, validated per-container baseline lifecycle and real-model training.
+- Reuse existing scoring/routing with explicit learning/unavailable/failed anomaly evidence.
+- Add idempotent incident metadata, durable outbox and independently configured Option B/response.
+- Correct isolation failure reporting and preserve interrupted attempts for operator review.
+- Require authenticated backend writes; retain human-only rule deployment and audit outcomes.
+- Wire existing synthesis/backtest and advisory AI, add monitor status UI and operations/evaluation docs.
+- Live Docker/Falco/PostgreSQL evaluation remains pending; no performance/detection claim is added.

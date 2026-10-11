@@ -237,3 +237,14 @@ class TestReconcile(WatcherTestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestStartupGrace(WatcherTestCase):
+    def test_just_started_container_keeps_grace_period_during_reconcile(self):
+        from datetime import datetime, timezone
+        self.inspector.containers[ID_A]['started_at'] = datetime.now(timezone.utc).isoformat()
+        self.watcher.reconcile()
+        self.assertNotIn('UNAPPROVED_CONTAINER_START', self.audit.types())
+        self.lookup.registered[SHORT_A] = True
+        self.advance(20)
+        self.assertEqual(self.audit.types(), ['CONTAINER_STARTED'])

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { API, describeFailure } from '../api.js'
+import { API, apiFetch, describeFailure } from '../api.js'
 
 const DECISION_CLASS = { blocked: 'sev-high', overridden: 'sev-medium', allowed: 'sev-low' }
 const DECISION_LABEL = { blocked: 'BLOCKED', overridden: 'OVERRIDDEN', allowed: 'ALLOWED' }
@@ -10,7 +10,7 @@ export default function Deployments() {
 
   async function fetchDeployments() {
     try {
-      const res = await fetch(`${API}/deployments/`)
+      const res = await apiFetch(`${API}/deployments/`)
       if (!res.ok) throw new Error(await describeFailure(res))
       setDeployments(await res.json())
       setError(null)

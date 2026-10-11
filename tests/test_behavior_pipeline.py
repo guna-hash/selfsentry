@@ -1,0 +1,235 @@
+"""Windowed M2 integration uses real storage, models and scoring; no Docker daemon."""
+
+import dataclasses
+import json
+import sys
+from datetime import datetime, timezone, timedelta
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "monitor-service"))
+from behavior_pipeline import BehaviorPipeline
+from monitor_config import MonitorConfig, load_config, ConfigError
+from monitor_status import StatusBoard
+from event_classifier import classify_line
+from baseline_builder import BaselineStore
+from feature_extractor import FeatureVector
+import pytest
+
+CID = "a" * 12
+START = 1791532800  # aligned fixed windows
+
+
+class Audit:
+    def __init__(self):
+        self.items = []
+
+    def emit(self, **data):
+        self.items.append(data)
+
+
+def setup(tmp_path, **kwargs):
+    cfg = dataclasses.replace(
+        MonitorConfig(), state_dir=tmp_path / "state", baseline_dir=tmp_path / "baselines", **kwargs
+    )
+    cfg.validate()
+    clock = [START + 1]
+    audit = Audit()
+    pipe = BehaviorPipeline(
+        cfg, StatusBoard(tmp_path / "status.json"), audit, clock=lambda: clock[0]
+    )
+    return pipe, clock, audit
+
+
+def event(cid=CID, second=1, key="one", security=False, proc="nginx"):
+    stamp = datetime.fromtimestamp(START + second, timezone.utc).isoformat()
+    raw = json.dumps(
+        {
+            "rule": "Shell" if security else "Baseline Process Spawn",
+            "time": stamp,
+            "priority": "Warning",
+            "output": "process=sh parent=nginx",
+            "output_fields": {"container.id": cid, "proc.name": proc, "proc.pname": "nginx"},
+        }
+    )
+    return classify_line(raw, key).event
+
+
+def outbox(pipe):
+    return [json.loads(row[0]) for row in pipe.db.execute("SELECT body FROM outbox")]
+
+
+def test_learning_falco_alert_persists_without_fabricated_anomaly(tmp_path):
+    pipe, clock, _ = setup(tmp_path)
+    pipe.handle_baseline_event(event())
+    pipe.handle_alert(event(key="alert", security=True))
+    clock[0] += 80
+    pipe.tick()
+    payload = outbox(pipe)[0]
+    assert payload["anomaly_features"] is None
+    assert payload["monitor_evidence"]["anomaly_status"] == "learning"
+    assert not payload["monitor_evidence"]["cross_layer_agreement"]
+    assert payload["risk_score"] == 50
+    assert pipe.store.load(CID, allow_missing=True).sample_count == 0
+
+
+def test_window_closes_when_quiet_and_replay_does_not_duplicate(tmp_path):
+    pipe, clock, _ = setup(tmp_path)
+    pipe.handle_baseline_event(event())
+    pipe.handle_baseline_event(event())
+    clock[0] += 80
+    pipe.tick()
+    assert pipe.store.load(CID).sample_count == 1
+    pipe.db.close()
+    restarted = BehaviorPipeline(pipe.config, pipe.status, pipe.audit, clock=lambda: clock[0])
+    restarted.handle_baseline_event(event())
+    restarted.tick()
+    assert restarted.store.load(CID).sample_count == 1
+
+
+def test_replacement_and_unrelated_container_cannot_share_baselines(tmp_path):
+    pipe, clock, _ = setup(tmp_path)
+    pipe.handle_baseline_event(event())
+    pipe.discover("b" * 64)
+    clock[0] += 80
+    pipe.tick()
+    assert pipe.store.load("b" * 12, allow_missing=True).sample_count == 0
+    assert pipe.lifecycle["b" * 12]["state"] == "LEARNING"
+
+
+def seed_baseline(pipe, count=20, wrong_owner=False, identical=False):
+    for n in range(count):
+        start = datetime.fromtimestamp(START - 1800 + n * 60, timezone.utc)
+        pipe.store.append(
+            FeatureVector(
+                CID,
+                start,
+                start + timedelta(seconds=60),
+                total_event_count=1 if identical else n + 1,
+                distinct_process_count=1,
+            )
+        )
+    if wrong_owner:
+        path = pipe.config.baseline_dir / f"{CID}.json"
+        body = json.loads(path.read_text())
+        body["feature_vectors"][0]["container_id"] = "b" * 12
+        path.write_text(json.dumps(body))
+
+
+def test_valid_existing_baseline_trains_real_model(tmp_path):
+    pipe, _, _ = setup(tmp_path)
+    seed_baseline(pipe)
+    pipe.discover(CID)
+    assert pipe.lifecycle[CID]["state"] == "MODEL_READY"
+    assert CID in pipe.models
+
+
+@pytest.mark.parametrize("owner,identical", [(True, False), (False, True)])
+def test_invalid_or_degenerate_baseline_is_unavailable(tmp_path, owner, identical):
+    pipe, _, _ = setup(tmp_path)
+    seed_baseline(pipe, wrong_owner=owner, identical=identical)
+    pipe.discover(CID)
+    assert pipe.lifecycle[CID]["state"] == "MODEL_UNAVAILABLE"
+    assert CID not in pipe.models
+
+
+def test_insufficient_samples_cannot_train(tmp_path):
+    pipe, _, _ = setup(tmp_path)
+    seed_baseline(pipe, count=19)
+    pipe.discover(CID)
+    assert pipe.lifecycle[CID]["state"] == "LEARNING"
+
+
+def test_late_alert_is_retained_and_invalidates_model(tmp_path):
+    pipe, clock, audit = setup(tmp_path)
+    pipe.handle_baseline_event(event())
+    clock[0] += 80
+    pipe.tick()
+    pipe.handle_alert(event(key="late", security=True))
+    assert outbox(pipe)[0]["monitor_evidence"]["anomaly_status"] == "late"
+    assert pipe.lifecycle[CID]["state"] == "MODEL_UNAVAILABLE"
+    assert any(x["event_type"] == "LATE_EVENT" for x in audit.items)
+
+
+@pytest.mark.parametrize(
+    "values",
+    [
+        {"MONITOR_POLL_INTERVAL": "nan"},
+        {"MONITOR_LEARNING_SECONDS": "inf"},
+        {"MONITOR_MIN_SAMPLES": "19"},
+        {"AUTO_CONFIRM_ENABLED": "maybe"},
+        {"AUTO_ISOLATION_THRESHOLD": "101"},
+    ],
+)
+def test_bad_configuration_fails_startup(values):
+    with pytest.raises(ConfigError):
+        load_config(values)
+
+
+def test_out_of_order_events_inside_open_window_are_grouped(tmp_path):
+    pipe, clock, _ = setup(tmp_path)
+    pipe.handle_alert(event(second=2, key="later", security=True))
+    pipe.handle_alert(event(second=1, key="earlier", security=True))
+    clock[0] += 80
+    pipe.tick()
+    assert len(outbox(pipe)) == 1
+    assert len(outbox(pipe)[0]["monitor_evidence"]["falco_alerts"]) == 2
+
+
+def test_new_container_automatically_trains_after_twenty_valid_windows(tmp_path):
+    pipe, clock, _ = setup(tmp_path)
+    for window in range(20):
+        clock[0] = START + window * 60 + 10
+        for n in range(1 + window % 3):
+            pipe.handle_baseline_event(event(second=window * 60 + n + 1, key=f"{window}-{n}"))
+        clock[0] = START + window * 60 + 71
+        pipe.tick()
+    assert pipe.lifecycle[CID]["state"] == "MODEL_READY"
+    assert pipe.store.load(CID).sample_count == 20
+
+
+def test_bad_model_output_marks_failed_without_losing_falco(tmp_path):
+    from unittest.mock import Mock
+
+    pipe, clock, _ = setup(tmp_path)
+    seed_baseline(pipe)
+    pipe.discover(CID)
+    pipe.models[CID] = Mock()
+    pipe.models[CID].score_event.side_effect = RuntimeError("bad model")
+    pipe.handle_baseline_event(event())
+    pipe.handle_alert(event(key="alert", security=True))
+    clock[0] += 80
+    pipe.tick()
+    assert outbox(pipe)[0]["monitor_evidence"]["anomaly_status"] == "failed"
+    assert outbox(pipe)[0]["anomaly_features"] is None
+
+
+def test_review_required_baseline_stays_unavailable_after_restart(tmp_path):
+    pipe, clock, _ = setup(tmp_path)
+    seed_baseline(pipe)
+    pipe.handle_baseline_event(event())
+    clock[0] += 80
+    pipe.tick()
+    pipe.handle_alert(event(key="late", security=True))
+    pipe.db.close()
+    restarted = BehaviorPipeline(pipe.config, pipe.status, pipe.audit, clock=lambda: clock[0])
+    restarted.discover(CID)
+    assert restarted.lifecycle[CID]["state"] == "MODEL_UNAVAILABLE"
+    assert CID not in restarted.models
+    restarted.reset_baseline(CID, "clean workload for recapture")
+    assert restarted.lifecycle[CID]["state"] == "LEARNING"
+    assert restarted.store.load(CID, allow_missing=True).sample_count == 0
+
+
+@pytest.mark.parametrize("invalid_score", [float("nan"), 2.0])
+def test_invalid_model_probe_never_activates_anomaly_scoring(tmp_path, invalid_score):
+    from unittest.mock import Mock
+
+    pipe, _, _ = setup(tmp_path)
+    seed_baseline(pipe)
+    model = Mock()
+    model.score_event.return_value.container_id = CID
+    model.score_event.return_value.anomaly_score = invalid_score
+    pipe.model_factory = lambda cid: model
+    pipe.discover(CID)
+    assert pipe.lifecycle[CID]["state"] == "MODEL_UNAVAILABLE"
+    assert CID not in pipe.models
