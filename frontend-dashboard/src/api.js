@@ -1,4 +1,4 @@
-export const API = 'http://localhost:8000'
+export const API = 'http://127.0.0.1:8000'
 
 export const NOTICE_STYLES = {
   success: { background: 'rgba(46, 160, 100, 0.15)', borderLeft: '4px solid #2ea064' },

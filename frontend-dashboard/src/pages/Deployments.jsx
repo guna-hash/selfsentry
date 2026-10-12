@@ -1,12 +1,28 @@
+import {
+  Badge,
+  EmptyState,
+  Loading,
+  PageHeader,
+  Notice,
+} from '../components/ui.jsx'
 import { useState, useEffect } from 'react'
 import { API, apiFetch, describeFailure } from '../api.js'
 
-const DECISION_CLASS = { blocked: 'sev-high', overridden: 'sev-medium', allowed: 'sev-low' }
-const DECISION_LABEL = { blocked: 'BLOCKED', overridden: 'OVERRIDDEN', allowed: 'ALLOWED' }
+const DECISION_CLASS = {
+  blocked: 'sev-high',
+  overridden: 'sev-medium',
+  allowed: 'sev-low',
+}
+const DECISION_LABEL = {
+  blocked: 'BLOCKED',
+  overridden: 'OVERRIDDEN',
+  allowed: 'ALLOWED',
+}
 
 export default function Deployments() {
   const [deployments, setDeployments] = useState([])
   const [error, setError] = useState(null)
+  const [loading, setLoading] = useState(true)
 
   async function fetchDeployments() {
     try {
@@ -16,6 +32,8 @@ export default function Deployments() {
       setError(null)
     } catch (err) {
       setError(err.message)
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -25,36 +43,61 @@ export default function Deployments() {
     return () => clearInterval(interval)
   }, [])
 
-  const blockedCount = deployments.filter((d) => d.decision === 'blocked').length
+  const blockedCount = deployments.filter(
+    (d) => d.decision === 'blocked',
+  ).length
 
   return (
     <div>
-      <h2>Deployments</h2>
-      {error && <p className="error-state">Couldn't load deployments: {error}</p>}
+      <PageHeader title="Deployments">
+        Trace image scans, policy decisions, and deployment overrides.
+      </PageHeader>
+      {loading && <Loading />}
+      {error && (
+        <p className="error-state" role="alert">
+          Couldn't load deployments: {error}
+        </p>
+      )}
       {deployments.length > 0 && (
         <p>
           {deployments.length} recorded, <strong>{blockedCount} blocked</strong>
         </p>
       )}
-      {deployments.length === 0 && !error && (
-        <p className="empty-state">
-          No deployments recorded yet. Deploy through bin/selfsentry-run and every decision
-          appears here.
-        </p>
+      {deployments.length === 0 && !error && !loading && (
+        <EmptyState title="No deployments recorded">
+          Deploy through bin/selfsentry-run to record image scan and policy
+          decisions.
+        </EmptyState>
       )}
       {deployments.map((d) => (
-        <div key={d.id} className={`incident-card ${DECISION_CLASS[d.decision] || 'sev-low'}`}>
+        <div
+          key={d.id}
+          className={`incident-card ${DECISION_CLASS[d.decision] || 'sev-low'}`}
+        >
           <div className="incident-meta">
-            <span>{DECISION_LABEL[d.decision] || d.decision}</span>
+            <Badge
+              tone={
+                d.decision === 'blocked'
+                  ? 'high'
+                  : d.decision === 'overridden'
+                    ? 'medium'
+                    : 'low'
+              }
+            >
+              {DECISION_LABEL[d.decision] || d.decision}
+            </Badge>
             <span>{d.container_name}</span>
             <span>{d.image_name}</span>
             <span>{d.requested_by}</span>
-            {d.created_at && <span>{new Date(d.created_at).toLocaleString()}</span>}
+            {d.created_at && (
+              <span>{new Date(d.created_at).toLocaleString()}</span>
+            )}
           </div>
           {d.scan ? (
             <p>
               <strong>Image scan</strong>
-              critical {d.scan.critical}, high {d.scan.high}, secrets {d.scan.secrets_found}
+              critical {d.scan.critical}, high {d.scan.high}, secrets{' '}
+              {d.scan.secrets_found}
             </p>
           ) : (
             <p>

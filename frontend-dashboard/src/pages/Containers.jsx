@@ -1,13 +1,23 @@
+import {
+  Badge,
+  EmptyState,
+  Loading,
+  PageHeader,
+  Notice,
+} from '../components/ui.jsx'
 import { useState, useEffect } from 'react'
-import { API, apiFetch, NOTICE_STYLES, describeFailure } from '../api.js'
+import { API, apiFetch, describeFailure } from '../api.js'
 
 function formatRisk(score) {
-  return score === null || score === undefined ? 'no incidents yet' : `latest risk ${score}`
+  return score === null || score === undefined
+    ? 'no incidents yet'
+    : `latest risk ${score}`
 }
 
 export default function Containers() {
   const [containers, setContainers] = useState([])
   const [error, setError] = useState(null)
+  const [loading, setLoading] = useState(true)
   const [notice, setNotice] = useState(null)
   const [busyId, setBusyId] = useState(null)
 
@@ -19,6 +29,8 @@ export default function Containers() {
       setError(null)
     } catch (err) {
       setError(err.message)
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -35,7 +47,10 @@ export default function Containers() {
       if (res.ok) {
         setNotice({ kind: 'success', text: successText })
       } else {
-        setNotice({ kind: 'error', text: `${container.name}: ${await describeFailure(res)}` })
+        setNotice({
+          kind: 'error',
+          text: `${container.name}: ${await describeFailure(res)}`,
+        })
       }
     } catch (err) {
       setNotice({
@@ -54,7 +69,7 @@ export default function Containers() {
     runAction(
       container,
       `${API}/containers/${container.id}/resume?resumed_by=${encodeURIComponent(resumedBy)}`,
-      `${container.name} resumed: unpaused and network restored.`
+      `${container.name} resumed: unpaused and network restored.`,
     )
   }
 
@@ -67,25 +82,26 @@ export default function Containers() {
       container,
       `${API}/containers/${container.id}/isolate?isolated_by=${encodeURIComponent(isolatedBy)}` +
         `&reason=${encodeURIComponent(reason)}`,
-      `${container.name} isolated: paused and disconnected from its networks.`
+      `${container.name} isolated: paused and disconnected from its networks.`,
     )
   }
 
   return (
     <div>
-      <h2>Containers</h2>
-      {error && <p className="error-state">Couldn't load containers: {error}</p>}
-      {notice && (
-        <p
-          style={{ padding: '10px 14px', borderRadius: 4, ...NOTICE_STYLES[notice.kind] }}
-          onClick={() => setNotice(null)}
-          title="Click to dismiss"
-        >
-          {notice.text}
+      <PageHeader title="Containers">
+        Inspect runtime inventory and manage container isolation.
+      </PageHeader>
+      {loading && <Loading />}
+      {error && (
+        <p className="error-state" role="alert">
+          Couldn't load containers: {error}
         </p>
       )}
-      {containers.length === 0 && !error && (
-        <p className="empty-state">No containers found on this host.</p>
+      <Notice notice={notice} onDismiss={() => setNotice(null)} />
+      {containers.length === 0 && !error && !loading && (
+        <EmptyState title="No containers found">
+          Discovered containers will appear here automatically.
+        </EmptyState>
       )}
       {containers.map((container) => (
         <div
@@ -95,10 +111,14 @@ export default function Containers() {
           <div className="incident-meta">
             <span>{container.name}</span>
             <span>{container.image}</span>
-            <span>
-              {container.isolated ? 'ISOLATED (paused, network cut)' : container.status}
+            <Badge tone={container.isolated ? 'high' : 'neutral'}>
+              {container.isolated
+                ? 'ISOLATED (paused, network cut)'
+                : container.status}
+            </Badge>
+            <span className="risk-score">
+              {formatRisk(container.latest_risk_score)}
             </span>
-            <span className="risk-score">{formatRisk(container.latest_risk_score)}</span>
           </div>
           {container.isolated && (
             <p>
@@ -109,19 +129,19 @@ export default function Containers() {
           {container.isolated && (
             <button
               className="btn btn-approve"
-              disabled={busyId === container.id}
+              disabled={busyId !== null}
               onClick={() => handleResume(container)}
             >
-              Resume
+              {busyId === container.id ? 'Resuming…' : 'Resume'}
             </button>
           )}
           {!container.isolated && container.status === 'running' && (
             <button
               className="btn btn-reject"
-              disabled={busyId === container.id}
+              disabled={busyId !== null}
               onClick={() => handleIsolate(container)}
             >
-              Isolate
+              {busyId === container.id ? 'Isolating…' : 'Isolate'}
             </button>
           )}
         </div>
