@@ -65,6 +65,25 @@ commands, acceptance evidence and presentation limitations.
 - `ai-analysis`: optional, advisory incident explanation; no detection or deployment authority.
 - `frontend-dashboard`: alerts, deployments, containers, audit, review queue and monitor health.
 
+## Dashboard screenshots
+
+### Monitor
+![Monitor health and connections](docs/screenshots/monitor-live.png)
+
+### Baselines and models
+![Per-container baseline and model status](docs/screenshots/monitor-models-live.png)
+
+### Alerts
+![Incident evidence and observed timeline](docs/screenshots/alerts-live.png)
+
+Incident 190 records controlled automatic isolation using the opt-in SVM.
+The container was subsequently resumed and its bridge network restored.
+
+### Rule review
+![Human review queue](docs/screenshots/rule-review-live.png)
+
+Generated rules require human review and approval before deployment.
+
 ## Development
 
 ```bash
