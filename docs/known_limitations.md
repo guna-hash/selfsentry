@@ -1,8 +1,45 @@
-> Current status (2026-10-10): continuous monitor M2–M4 integration is implemented and
-> tested offline. M5 live validation/measurements remain pending. This file contains
-> historical notes; see docs/monitor_completion_report.md and docs/monitor_spec_checklist.md
-> for the current acceptance status.
+# Known limitations and evidence history
 
+Updated 12 October 2026. M1–M4 implementation and controlled VM checks are recorded;
+M5 full-run measurements and retrospective comparison are delivered. See
+[monitor_final_review.md](monitor_final_review.md) and [TODO.md](../TODO.md).
+Historical entries below retain the original observations and dates.
+
+## Current release gaps
+
+- A1/A2 operator VM acceptance passed on 2026-10-12; see TODO.md for report names.
+- Automatic-response attempts 185–187 were correctly declined by existing policy.
+  The 20-window baseline has only seven distinct vectors; forest boundary saturation
+  gives identical low scores for single/burst binary execution. An opt-in One-Class
+  SVM candidate is implemented. Controlled automatic isolation/resume passed on the VM
+  for incident 190; independent benign/general response validation remains open.
+  See anomaly_model_review.md; default Isolation Forest remains unchanged.
+- Default shell feature mapping is fixed in the monitor scoring path when Falco
+  supplies a known shell process name. Missing process metadata remains uncredited;
+  its security alert is still delivered. Standalone baseline capture remains limited
+  to Baseline rules. Existing measured results predate this change; no rerun is claimed.
+- Observed timelines persist in monitor evidence and render on Alerts. Older
+  incidents are not backfilled. The advisory LLM attack_timeline_builder remains
+  disconnected; its narrative output is not claimed as persisted.
+- Real direct isolation/resume and controlled SVM automatic isolation/resume are
+  recorded in reliability_acceptance_20261013.md. Automatic response was demonstrated
+  for one configured scenario, not across models/workloads or production conditions.
+- Production RBAC, Kubernetes, automatic retraining, retention, soak testing,
+  independent live comparison variants and detailed stage timings remain future work.
+- A known rule description does not prove an attack; shell access can be benign.
+  Shared-token auth is for local demo use. AI is optional and advisory.
+
+## Resolved items (historical evidence)
+
+- /confirm persistence: fixed in backend routes and covered by ORM tests; original
+  2026-10-01 gap below is historical.
+- Generated-rule re-fire: resolved with rule_matching: all on 2026-10-08;
+  see falco_rule_matching.md. Earlier investigation text is historical.
+- Direct live isolation: paused and disconnected a real container on 2026-10-01;
+  later isolation/resume acceptance is recorded in monitor_final_review.md.
+- Default shell counting: source fix and regression tests added 2026-10-12.
+
+## Historical findings
 
 ## Phase 4 — shell_spawned_count does not detect default-ruleset shell alerts (found 2026-09-30)
 

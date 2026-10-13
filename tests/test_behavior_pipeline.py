@@ -233,3 +233,80 @@ def test_invalid_model_probe_never_activates_anomaly_scoring(tmp_path, invalid_s
     pipe.discover(CID)
     assert pipe.lifecycle[CID]["state"] == "MODEL_UNAVAILABLE"
     assert CID not in pipe.models
+
+
+def shell_event(second=1, key="shell", proc="sh"):
+    item = event(second=second, key=key, security=True, proc=proc)
+    raw = json.loads(item["raw_line"])
+    raw["rule"] = "Terminal shell in container"
+    return classify_line(json.dumps(raw), key).event
+
+
+@pytest.mark.parametrize("with_baseline", [False, True])
+@pytest.mark.parametrize("parent", ["nginx", None])
+def test_default_shell_counts_once_and_never_trains_security_window(
+    tmp_path, with_baseline, parent,
+):
+    from unittest.mock import Mock
+    from types import SimpleNamespace
+
+    pipe, clock, _ = setup(tmp_path)
+    pipe.discover(CID)
+    model = Mock()
+    model.score_event.return_value = SimpleNamespace(
+        anomaly_score=0.1, raw_decision_function=0.1, is_anomaly=False,
+    )
+    pipe.models[CID] = model
+    item = shell_event()
+    fields = json.loads(item["raw_line"])
+    fields["output_fields"]["proc.pname"] = parent
+    pipe.handle_alert(classify_line(json.dumps(fields), "shell").event)
+    if with_baseline:
+        pipe.handle_baseline_event(event(key="baseline", proc="sh"))
+    clock[0] += 80
+    pipe.tick()
+    vector = model.score_event.call_args.args[0]
+    assert vector.shell_spawned_count == 1
+    assert vector.total_event_count == 1
+    assert outbox(pipe)[0]["falco_alert"]["rule"] == "Terminal shell in container"
+    assert pipe.store.load(CID, allow_missing=True).sample_count == 0
+
+
+@pytest.mark.parametrize("proc", ["<NA>", "nginx", None])
+def test_default_shell_missing_or_non_shell_process_does_not_invent_features(tmp_path, proc):
+    pipe, clock, _ = setup(tmp_path)
+    pipe.handle_alert(shell_event(proc=proc))
+    clock[0] += 80
+    pipe.tick()
+    payload = outbox(pipe)[0]
+    assert payload["falco_alert"]["rule"] == "Terminal shell in container"
+    assert payload["anomaly_features"] is None
+    assert pipe.store.load(CID, allow_missing=True).sample_count == 0
+
+
+def test_observed_timeline_survives_outbox_restart_in_chronological_order(tmp_path):
+    pipe, clock, _ = setup(tmp_path)
+    pipe.handle_alert(shell_event(second=2, key="later"))
+    pipe.handle_alert(shell_event(second=1, key="earlier"))
+    clock[0] += 80
+    pipe.tick()
+    pipe.db.close()
+    restarted = BehaviorPipeline(pipe.config, pipe.status, pipe.audit, clock=lambda: clock[0])
+    timeline = outbox(restarted)[0]["monitor_evidence"]["observed_timeline"]
+    assert [entry["event_key"] for entry in timeline] == ["earlier", "later"]
+    assert [entry["step"] for entry in timeline] == [1, 2]
+    assert all(entry["source"] == "falco" for entry in timeline)
+
+
+def test_candidate_algorithm_is_recorded_in_model_lifecycle_and_assessment(tmp_path):
+    pipe, clock, _ = setup(tmp_path, anomaly_algorithm="one_class_svm")
+    seed_baseline(pipe)
+    pipe.discover(CID)
+    assert pipe.models[CID].algorithm == "one_class_svm"
+    assert pipe.lifecycle[CID]["model_algorithm"] == "one_class_svm"
+    pipe.handle_baseline_event(event())
+    pipe.handle_alert(shell_event())
+    clock[0] += 80
+    pipe.tick()
+    assessment = outbox(pipe)[0]["monitor_evidence"]["anomaly_assessment"]
+    assert assessment["model_algorithm"] == "one_class_svm"

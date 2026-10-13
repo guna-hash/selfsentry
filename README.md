@@ -29,6 +29,31 @@ tracks acceptance criteria without treating unit tests as live attack measuremen
 
 ## Architecture
 
+```mermaid
+flowchart TD
+    Image["Container image"] --> Scan["Trivy scan"]
+    Scan --> Gate["Deployment policy gate"]
+    Gate --> Docker["Docker containers"]
+    Docker --> Falco["Falco security and baseline rules"]
+    Falco --> Monitor["Monitor: journal and windows"]
+    Monitor --> Model["Per-container behavioral model"]
+    Model --> Correlate["Risk correlation and routing"]
+    Monitor --> Correlate
+    Correlate --> API["FastAPI and PostgreSQL"]
+    API --> Dashboard["Dashboard and observed timeline"]
+    API --> Response["Eligible response: pause and disconnect"]
+    API --> AI["Optional advisory AI"]
+    API --> Confirm["Incident confirmation"]
+    Confirm --> Candidate["Template and backtest"]
+    Candidate --> Review["Human rule approval"]
+    Review --> Falco
+```
+
+The model is unavailable until a valid baseline exists. Falco alerts still reach
+incidents during learning. Isolation is independently configured and defaults off.
+Read [the demo script](docs/demo_script.md) and [release checklist](TODO.md) for
+commands, acceptance evidence and presentation limitations.
+
 - `image-scanner`, `policy-checker`, `deployment-gate`: existing pre-deployment gate.
 - `runtime-monitor`, `falco-rules`: existing normalization and baseline capture rules.
 - `behavioral-engine`: existing feature extractor, JSON baseline store and Isolation Forest.

@@ -24,10 +24,11 @@ for folder in ("behavioral-engine", "correlation-engine"):
 from anomaly_model import AnomalyModel  # noqa: E402
 from baseline_builder import BaselineStore  # noqa: E402
 from baseline_collector import parse_baseline_event  # noqa: E402
-from feature_extractor import extract_features  # noqa: E402
+from feature_extractor import extract_features, security_alert_to_raw_event, EventType  # noqa: E402
 from risk_scorer import compute_risk_score  # noqa: E402
 from event_router import route_incident  # noqa: E402
 from audit_client import make_event_key  # noqa: E402
+from observed_timeline import build_observed_timeline  # noqa: E402
 
 logger = logging.getLogger(__name__)
 STATES = (
@@ -55,10 +56,12 @@ def container_identity(value):
 
 
 class BehaviorPipeline:
-    def __init__(self, config, status, audit, clock=time.time, model_factory=AnomalyModel):
+    def __init__(self, config, status, audit, clock=time.time, model_factory=None):
         self.config, self.status, self.audit, self.clock = config, status, audit, clock
         self.store = BaselineStore(config.baseline_dir)
-        self.model_factory = model_factory
+        self.model_factory = model_factory or (
+            lambda cid: AnomalyModel(cid, algorithm=config.anomaly_algorithm)
+        )
         self.models = {}
         self.lifecycle = {}
         config.state_dir.mkdir(parents=True, exist_ok=True)
@@ -197,6 +200,7 @@ class BehaviorPipeline:
             or not 0 <= probe.anomaly_score <= 1
         ):
             raise ValueError("model failed readiness validation")
+        self.lifecycle[cid]["model_algorithm"] = self.config.anomaly_algorithm
         self._transition(cid, "MODEL_READY")
         self.models[cid] = model
 
@@ -314,6 +318,7 @@ class BehaviorPipeline:
                 bucket + self.config.window_seconds, timezone.utc
             ).isoformat(),
             "falco_alerts": alerts,
+            "observed_timeline": build_observed_timeline(alerts, anomaly),
             "score_formula": (
                 "Falco base + 40*anomaly + 20 agreement; cap 100; confidence adjustment"
             ),
@@ -367,6 +372,21 @@ class BehaviorPipeline:
         raw = [
             parse_baseline_event(event["raw_line"]) for kind, event in events if kind == "baseline"
         ]
+        for alert in alerts:
+            converted = security_alert_to_raw_event(alert)
+            if converted is None:
+                continue
+            # Default-rule output may omit the parent present in baseline output.
+            # Credit the shell once while retaining the richer baseline context.
+            overlap = any(
+                r.event_type == EventType.PROCESS_SPAWN
+                and r.timestamp == converted.timestamp and r.proc_name == converted.proc_name
+                and (not r.parent_proc_name or not converted.parent_proc_name
+                     or r.parent_proc_name == converted.parent_proc_name)
+                for r in raw
+            )
+            if not overlap:
+                raw.append(converted)
         # Falco rule_matching=all may emit the same syscall more than once.
         unique = {
             (
@@ -399,6 +419,7 @@ class BehaviorPipeline:
                     raise ValueError("model produced invalid score")
                 availability = "used"
                 assessment = {
+                    "model_algorithm": self.config.anomaly_algorithm,
                     "anomaly_score": float(result.anomaly_score),
                     "raw_decision_function": float(result.raw_decision_function),
                     "model_is_anomaly": bool(result.is_anomaly),

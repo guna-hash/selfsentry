@@ -213,3 +213,28 @@ def extract_features(
     fv.distinct_parent_child_pairs = len(parent_child_pairs)
 
     return fv
+
+
+def security_alert_to_raw_event(alert: dict) -> Optional[RawEvent]:
+    """Credit a known default shell rule without guessing missing process identity.
+
+    This is an additional scoring input; the monitor still treats the source as a
+    security alert and excludes its window from baseline learning.
+    """
+    if alert.get("rule") != "Terminal shell in container":
+        return None
+    fields = alert.get("output_fields") or {}
+    proc = fields.get("proc.name") or fields.get("proc_name") or alert.get("proc_name")
+    if not isinstance(proc, str) or proc not in SHELL_PROCESS_NAMES:
+        return None
+    parent = fields.get("proc.pname") or fields.get("parent_proc_name")
+    parent = parent or alert.get("parent_proc_name")
+    if not isinstance(parent, str) or parent in ("", "<NA>", "<na>"):
+        parent = None
+    return RawEvent.from_dict({
+        "container_id": alert["container_id"],
+        "timestamp": alert["timestamp"],
+        "event_type": EventType.PROCESS_SPAWN.value,
+        "proc_name": proc,
+        "parent_proc_name": parent,
+    })

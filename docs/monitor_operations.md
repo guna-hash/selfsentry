@@ -177,6 +177,7 @@ All settings come from environment/.env and are validated at startup. Paths can 
 | MONITOR_LATENESS_SECONDS | 10 | Extra time allowed for out-of-order arrivals |
 | MONITOR_ANOMALY_THRESHOLD | 0.8 | Qualifying ML evidence, range 0.5–1 |
 | MONITOR_CORRELATION_SECONDS | 60 | Same-container matching tolerance |
+| MONITOR_ANOMALY_ALGORITHM | isolation_forest | Default forest or experimental one_class_svm; see anomaly_model_review.md |
 | MONITOR_RETRAIN_POLICY | manual | Only supported retraining policy; use reset command |
 | AUTO_CONFIRM_ENABLED / AUTO_CONFIRM_THRESHOLD | true / 90 | Option B; both layers must qualify |
 | AUTO_ISOLATION_ENABLED / AUTO_ISOLATION_THRESHOLD | false / 90 | Independent, explicit response opt-in |

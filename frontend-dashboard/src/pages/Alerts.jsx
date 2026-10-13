@@ -228,6 +228,22 @@ export default function Alerts() {
                 </dl>
               </section>
             </div>
+            {evidence?.observed_timeline?.length > 0 && (
+              <details className="incident-timeline">
+                <summary>Observed timeline ({evidence.observed_timeline.length} events)</summary>
+                <ol>
+                  {evidence.observed_timeline.map((entry) => (
+                    <li key={entry.step}>
+                      <time dateTime={entry.timestamp}>
+                        {new Date(entry.timestamp).toLocaleString()}
+                      </time>{' '}
+                      · {entry.source} · {entry.description}
+                      {entry.output && <p>{entry.output}</p>}
+                    </li>
+                  ))}
+                </ol>
+              </details>
+            )}
             <footer className="incident-footer">
               <div>
                 <span>Confirmation</span>

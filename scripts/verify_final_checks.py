@@ -3,6 +3,7 @@
 from datetime import datetime, timezone
 from pathlib import Path
 import json
+from importlib.metadata import version, PackageNotFoundError
 import subprocess
 import sys
 
@@ -19,6 +20,10 @@ LINT = [
     "backend-api/routes/rules.py",
     "backend-api/routes/deployments.py",
     "behavioral-engine/baseline_builder.py",
+    "behavioral-engine/feature_extractor.py",
+    "behavioral-engine/anomaly_model.py",
+    "evaluation/compare_anomaly_models.py",
+    "scripts/verify_live_reliability.py",
     "response-engine/auto_isolate.py",
     "rule-synthesis-engine/submit_candidate.py",
     "rule-synthesis-engine/confirmation_manager.py",
@@ -36,11 +41,33 @@ CHECKS = [
     (
         "frontend-tests",
         ROOT / "frontend-dashboard",
-        ["npm", "run", "test", "--", "--run", "--pool", "forks", "--poolOptions.forks.singleFork"],
+        ["npm", "run", "test", "--", "--run"],
     ),
     ("frontend-build", ROOT / "frontend-dashboard", ["npm", "run", "build"]),
 ]
-report = {"started_at": datetime.now(timezone.utc).isoformat(), "checks": []}
+
+
+def command_version(command):
+    try:
+        return subprocess.check_output(command, cwd=ROOT, text=True).strip()
+    except (OSError, subprocess.CalledProcessError):
+        return "unavailable"
+
+
+versions = {}
+for package in ("docker", "scikit-learn", "fastapi", "sqlalchemy", "pytest", "flake8"):
+    try:
+        versions[package] = version(package)
+    except PackageNotFoundError:
+        versions[package] = "unavailable"
+report = {
+    "started_at": datetime.now(timezone.utc).isoformat(), "checks": [],
+    "source_commit": command_version(["git", "rev-parse", "HEAD"]),
+    "source_status": command_version(["git", "status", "--short"]),
+    "python": sys.version, "packages": versions,
+    "node": command_version(["node", "--version"]),
+    "npm": command_version(["npm", "--version"]),
+}
 for name, cwd, command in CHECKS:
     print(f"Running {name}...", flush=True)
     log = OUT / f"{name}.log"

@@ -5,6 +5,44 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### 2026-10-13 — Operator VM functional acceptance
+- Record A1 policy inspect and A2 default shell-to-dashboard passes, including the
+  shell recheck after removing temporary Falco metrics configuration.
+- Record direct response probe and controlled SVM automatic isolation for incident
+  190 (effective score 100 at response threshold 90), independently inspected pause
+  and empty network attachments, then SelfSentry resume restoring bridge/running state.
+- Preserve default-forest saturation, small-baseline and independent benign candidate
+  validation limitations. No old 200-trial numbers, default algorithm or thresholds change.
+
+
+### 2026-10-13 — Anomaly model diagnostic and experimental alternative
+- Reproduce boundary saturation on the uploaded 20-window baseline: incidents 186/187
+  share every forest leaf; no scoring/persistence mismatch found.
+- Keep Isolation Forest default; add explicit opt-in scaled RBF One-Class SVM, record
+  algorithm in monitor lifecycle/assessment, and reject unknown algorithms.
+- Add offline replay and leave-one-out comparison; candidate independent benign and
+  live automatic-response acceptance remain open. No historical metric rewrite.
+- Record operator VM A1/A2 and direct isolation/resume passes; auto-response attempts
+  still did not qualify under the existing thresholds.
+
+
+### 2026-10-12 — Reliability closure and demo preparation
+- Credit default Terminal shell in container alerts as process-spawn scoring inputs
+  when a known shell process is present; preserve security routing and training exclusion.
+- Persist chronological observed evidence in monitor metadata and show it on Alerts.
+- Add disposable live policy, shell-delivery and direct isolation/resume probes with
+  pass/fail JSON reports; live dashboard and automatic-policy acceptance remain explicit.
+- Update release checks for current Vitest CLI; baseline runtime files are already untracked.
+- Reconcile TODO, ROADMAP and limitations; add architecture and 5–7 minute demo script.
+
+### 2026-10-12 — Dashboard upgrade (e781e02)
+- Upgrade dashboard/toolchain; add shared status UI, telemetry charts and monitor hook.
+- Improve incident/model/AI workflow visibility and backend frontend-origin support.
+
+Historical entries below describe their state at the recorded date. In particular,
+live isolation, confirmation persistence, rule re-fire and M5 results were subsequently
+validated; use TODO.md for current release work.
+
 ### Added — Phase 1: Image Scanner
 - `image-scanner/trivy_wrapper.py`: Trivy CLI wrapper with typed result model (`ScanResult`, `Vulnerability`, `Secret`, `Misconfiguration`), error handling (missing binary, timeout, malformed JSON), and CLI entry point.
 - `tests/test_trivy_wrapper.py`: 16 unit tests (all mocked, no live Trivy/network dependency), covering installation checks, subprocess error paths, JSON parsing, and derived risk properties.

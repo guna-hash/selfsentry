@@ -1,45 +1,33 @@
-> Current reviewed status (12 October 2026 IST): M1–M4 features and controlled VM
-> checks passed; M5 full-run measurements and retrospective comparison are delivered.
-> Final polish verification/release commit remains. The phase notes below are historical;
-> use docs/monitor_final_review.md and docs/monitor_spec_checklist.md for current status.
+# SelfSentry roadmap
 
-> Current status (2026-10-10): continuous monitor M2–M4 integration is implemented and
-> tested offline. M5 live validation/measurements remain pending. This file contains
-> historical notes; see docs/monitor_completion_report.md and docs/monitor_spec_checklist.md
-> for the current acceptance status.
+Reconciled 13 October 2026. [TODO.md](TODO.md) is the actionable release checklist;
+[monitor_final_review.md](docs/monitor_final_review.md) records previous VM evidence.
 
-# Roadmap
+| Phase | Current status | Remaining acceptance |
+|---|---|---|
+| 1 Image scanning | Implemented; real Trivy validation recorded | Demo preparation |
+| 2 Deployment policy | Implemented and unit tested | A1 VM probe passed; retain report |
+| 3 Falco/eBPF | Live events recorded; monitor/parser implemented | A2 VM probe and dashboard confirmed |
+| 4 Behavioral detection | Per-container baseline and model lifecycle implemented | Forest saturation reproduced; opt-in SVM needs independent benign validation |
+| 5 Correlation | Windowed scoring, durable inbox/outbox, fallback paths implemented | Controlled SVM response passed; demo recording remains |
+| 6 Rule synthesis | Templates, backtest, review/deploy and re-fire recorded | Always retain human approval; review broad legacy rules |
+| 7 Advisory analysis | Optional AI summary implemented | LLM narrative timeline integration; live 429 recovery evidence |
+| 8 API/database | Incident, confirmation, evidence and workflow persistence implemented | Current release PostgreSQL smoke checks |
+| 9 Dashboard | Upgraded at e781e02; observed timeline added | VM screenshots and recording |
+| 10 Evaluation/release | 200-trial full run and retrospective comparison delivered | A1/A2 and SVM automatic response passed; release commit/push remains |
 
-Phase-by-phase build order (see `docs/` for per-phase detail as each is completed).
+## Next release sequence
 
-_Last reconciled: after merging Phase 7/8/9 (teammate) + Phase 4 (this session) into main._
+1. Apply source changes with backend/monitor stopped; preserve runtime state.
+2. Run offline release verification, then restart the services.
+3. Retain passing A1/A2 probe reports and the operator-confirmed dashboard timeline.
+4. Retain SVM incident 190 isolation/resume evidence; leave automatic actions off
+   during ordinary observation. Independent benign candidate evaluation remains open.
+5. Capture three screens, rehearse the 5–7 minute script and record the demo.
+6. Review/stage source changes, commit and push; retain runtime evidence separately.
 
-| # | Phase | Est. duration (solo, part-time) | Status |
-|---|-------|----------------------------------|--------|
-| 0 | Foundations (Linux, Docker, Python, Git) | 1–2 wks | ✅ self-verified |
-| 1 | Image Scanner (Trivy) | 3–5 days | ✅ complete, real Trivy validated, pushed |
-| 2 | Deployment Policy Checker | 2–3 days | 🔶 code complete (25/25 tests), manual `docker inspect` validation unconfirmed |
-| 3 | Falco + eBPF (rule-based layer) | 1.5–2 wks | 🔶 real Falco running + confirmed events, default-ruleset alert path not explicitly re-verified |
-| 4 | Behavioral baseline + anomaly detection | 2–2.5 wks | ✅ complete — validated on real Falco/Docker data |
-| 5 | Correlation Engine | 4–6 days | ✅ done (Stage 5 live validation deferred to Phase 6) |
-| 6 | Rule Synthesis Engine (core novelty) | 2-2.5 wks | ✅ code-complete, verified 2026-10-01 |
-| 7 | AI Analysis Layer (LLM) | 3–5 days | ✅ complete (teammate, merged PR #1) |
-| 8 | Backend + Database | ~1 wk (spread throughout) | ✅ complete (teammate, merged) — verified end-to-end per commit |
-| 9 | Frontend Dashboard + Rule Review Queue | 1.5–2 wks | ✅ complete (teammate, merged PR #3, redesigned) |
-| 10 | Testing, backtesting validation, evaluation writeup | 1-1.5 wks | 🔶 in progress — see TODO.md |
+## Future work
 
-**Real remaining work:** Phase 5 (Correlation Engine — the glue between your detection layers and the backend/dashboard your teammate already built), Phase 6 (Rule Synthesis Engine — the project's core novelty claim, still untouched), and Phase 10 (final integration + writeup).
-
-## Non-negotiable constraints preserved throughout
-- Auto-generated Falco rules must pass backtesting AND get human approval before deployment (Phase 6).
-- Rule generation is template-based (Jinja2), never LLM-freehand (Phase 6).
-- The LLM layer is advisory-only — never the detection source of truth (Phase 7 — confirm this held true in teammate's implementation).
-- Reference/citation work must be verified via live search, never recalled from memory.
-
-## Future scope (explicitly not in current build)
-- Full Kubernetes integration (admission controllers, OPA/Gatekeeper)
-- SHAP explainability, attack-graph/lateral-movement detection, honeytokens, business-context risk scoring, attack-simulation module
-
-## Outstanding housekeeping
-- Grayscale `ContainerGuard_AI_Summary.pdf` conversion with highlighted Novelty section (deferred)
-- Confirm `docs/interfaces.md` (shared data contracts) is current against what Phase 7/8/9 actually implemented, before building Phase 5 against it
+Independent live Falco-only/hybrid/response runs; separate layer/containment timings;
+long-duration fault/soak testing; baseline drift/retraining; RBAC and retention;
+Kubernetes admission/runtime integration. These are outside demonstrated acceptance.

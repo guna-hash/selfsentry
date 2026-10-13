@@ -48,6 +48,7 @@ class MonitorConfig:
     window_seconds: int = 60
     lateness_seconds: float = 10.0
     anomaly_threshold: float = 0.8
+    anomaly_algorithm: str = "isolation_forest"
     correlation_seconds: float = 60.0
     auto_confirm_enabled: bool = True
     auto_confirm_threshold: float = 90.0
@@ -66,6 +67,8 @@ class MonitorConfig:
         for name, value in vars(self).items():
             if isinstance(value, (int, float)) and not math.isfinite(value):
                 problems.append(f"{name} must be finite")
+        if self.anomaly_algorithm not in ("isolation_forest", "one_class_svm"):
+            problems.append("MONITOR_ANOMALY_ALGORITHM must be isolation_forest or one_class_svm")
         if self.min_samples < 20:
             problems.append("MONITOR_MIN_SAMPLES must be at least 20")
         if self.window_seconds < 1:
@@ -162,6 +165,7 @@ def load_config(env: Mapping[str, str] | None = None) -> MonitorConfig:
         window_seconds=_read(env, "MONITOR_WINDOW_SECONDS", 60, int),
         lateness_seconds=_read(env, "MONITOR_LATENESS_SECONDS", 10.0, float),
         anomaly_threshold=_read(env, "MONITOR_ANOMALY_THRESHOLD", 0.8, float),
+        anomaly_algorithm=_read(env, "MONITOR_ANOMALY_ALGORITHM", "isolation_forest", str),
         correlation_seconds=_read(env, "MONITOR_CORRELATION_SECONDS", 60.0, float),
         auto_confirm_enabled=_read(env, "AUTO_CONFIRM_ENABLED", True, _bool),
         auto_confirm_threshold=_read(env, "AUTO_CONFIRM_THRESHOLD", 90.0, float),

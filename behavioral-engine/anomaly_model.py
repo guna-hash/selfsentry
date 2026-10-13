@@ -17,6 +17,8 @@ in Phase 5 and documented in docs/interfaces.md):
     }
 
 Design notes:
+  - IsolationForest remains the default. A scaled One-Class SVM is an
+    opt-in experimental candidate; see docs/anomaly_model_review.md.
   - IsolationForest chosen over One-Class SVM as the default - it's
     faster to train, scales better, and its decision_function output is
     easy to normalize into a stable 0-1 "how anomalous" score.
@@ -49,6 +51,9 @@ from datetime import datetime
 
 import numpy as np
 from sklearn.ensemble import IsolationForest
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.svm import OneClassSVM
 
 from baseline_builder import BaselineDataset, require_ready
 from feature_extractor import FeatureVector
@@ -107,13 +112,24 @@ class AnomalyModel:
         n_estimators: int = 100,
         contamination: float = "auto",
         random_state: int = 42,
+        algorithm: str = "isolation_forest",
     ):
         self.container_id = container_id
-        self._model = IsolationForest(
-            n_estimators=n_estimators,
-            contamination=contamination,
-            random_state=random_state,
-        )
+        self.algorithm = algorithm
+        if algorithm == "isolation_forest":
+            self._model = IsolationForest(
+                n_estimators=n_estimators,
+                contamination=contamination,
+                random_state=random_state,
+            )
+        elif algorithm == "one_class_svm":
+            # Experimental novelty model. Scaling is fit only on the baseline;
+            # no live incident data is used to choose its decision boundary.
+            self._model = make_pipeline(
+                StandardScaler(), OneClassSVM(kernel="rbf", nu=0.05, gamma="scale")
+            )
+        else:
+            raise ValueError(f"unsupported anomaly algorithm: {algorithm!r}")
         self._trained = False
         self._train_score_mean: float = 0.0
         self._train_score_std: float = 1.0
@@ -184,7 +200,10 @@ class AnomalyModel:
         """
         shifted = (self._train_score_mean - raw_score) / self._train_score_std
         steepness = 2.5
-        score = 1.0 / (1.0 + np.exp(-steepness * shifted))
+        # Extreme RBF margins can exceed exp's numeric range. This bound only
+        # prevents overflow; it does not alter practical decision thresholds.
+        exponent = float(np.clip(-steepness * shifted, -700.0, 700.0))
+        score = 1.0 / (1.0 + np.exp(exponent))
         return float(np.clip(score, 0.0, 1.0))
 
 

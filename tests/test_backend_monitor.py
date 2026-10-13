@@ -170,3 +170,18 @@ def test_dismissed_monitor_incident_cannot_be_auto_confirmed(client):
         ).status_code
         == 409
     )
+
+
+def test_observed_timeline_persists_in_database_without_ai(client):
+    http, session = client
+    data = body()
+    timeline = [{"step": 1, "source": "falco", "timestamp": "2026-10-12T10:00:00Z",
+                 "description": "Terminal shell in container", "event_key": "observed"}]
+    data["monitor_evidence"]["observed_timeline"] = timeline
+    saved = http.post("/incidents/", json=data).json()
+    with session() as db:
+        meta = db.query(MonitorIncident).filter_by(incident_id=saved["id"]).one()
+        assert meta.evidence["observed_timeline"] == timeline
+    fetched = http.get(f"/incidents/{saved['id']}").json()
+    assert fetched["monitor_evidence"]["observed_timeline"] == timeline
+    assert fetched["ai_summary"] is None
