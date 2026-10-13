@@ -10,6 +10,7 @@
 # STATUS: empty. Will be populated starting in Phase 6.
 
 - rule: Auto_Generated_ls_from_sh_8
+  enabled: false
   desc: "Auto-generated from confirmed incident #8 (pattern: ls spawned by sh)"
   condition: spawned_process and proc.name="ls" and proc.pname="sh"
   output: "Auto-generated rule matched (user=%user.name container=%container.name proc=%proc.name parent=%proc.pname)"
@@ -22,3 +23,10 @@
   output: "Auto-generated rule matched (user=%user.name container=%container.name proc=%proc.name parent=%proc.pname)"
   priority: WARNING
   tags: [auto-generated, selfsentry-ai, source_incident_32]
+
+- rule: Auto_Generated_validation_true_from_sh_37
+  desc: "Auto-generated from confirmed incident #37 (pattern: validation-true spawned by sh)"
+  condition: spawned_process and container and proc.name="validation-true" and proc.pname="sh"
+  output: "Auto-generated rule matched (user=%user.name container=%container.name proc=%proc.name parent=%proc.pname)"
+  priority: WARNING
+  tags: [auto-generated, selfsentry-ai, source_incident_37]
