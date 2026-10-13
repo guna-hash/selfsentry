@@ -33,17 +33,16 @@ passes and unmeasured quality/performance claims are identified separately.
 - [x] A6 source hygiene: no baseline JSON is tracked under behavioral-engine/baselines;
   ignore rules retain runtime files locally. Release verifier updated for current Vitest.
 - [x] A6 VM offline checks: 424 Python tests, release lint, 7 frontend tests and build passed.
-- [ ] A6 VM release: review/stage intended source/docs, commit and push the final VM
-  source; keep runtime evidence separately. Do not stage state/, .env or baselines.
+- [x] A6 VM release: source/docs committed and pushed in 3cb1e83;
+  reviewed runtime rule snapshot pushed in 96f9827. Runtime evidence remains separate.
 
 ## Phase C — Demo and presentation
 
 - [x] C1: exact 5–7 minute script in [docs/demo_script.md](docs/demo_script.md).
 - [ ] C2: rehearse and record the real VM demo; no recording claimed by source checks.
 - [x] C3: Mermaid architecture in README.
-- [ ] C4: capture Monitor, Alerts (expanded timeline) and Rule Review from the VM.
-  Screenshot commands and captions are in the demo script; keep real live evidence
-  separate from any fixture-based UI preview.
+- [x] C4: four real VM screenshots reviewed and published with README captions
+  in 56cef9e: Monitor, baseline/model status, incident 190 timeline and Rule Review.
 - [x] C5: concise limitations/future work section in [docs/demo_script.md](docs/demo_script.md).
 
 ## Phase D — Documentation
