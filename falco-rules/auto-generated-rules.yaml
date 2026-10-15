@@ -30,3 +30,10 @@
   output: "Auto-generated rule matched (user=%user.name container=%container.name proc=%proc.name parent=%proc.pname)"
   priority: WARNING
   tags: [auto-generated, selfsentry-ai, source_incident_37]
+
+- rule: Auto_Generated_ss_study_true_from_sh_200
+  desc: "Auto-generated from confirmed incident #200 (pattern: ss-study-true spawned by sh)"
+  condition: spawned_process and container and proc.name="ss-study-true" and proc.pname="sh"
+  output: "Auto-generated rule matched (user=%user.name container=%container.name proc=%proc.name parent=%proc.pname)"
+  priority: WARNING
+  tags: [auto-generated, selfsentry-ai, source_incident_200]
