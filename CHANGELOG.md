@@ -5,6 +5,26 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### 2026-10-15 — Reviewed supervised adaptation mini-study
+- Audit the operator-supplied 17-capture archive and reproduce the three process
+  backtests (0/36, 3/36 and 8/36). Preserve benign anomaly-only incident 199.
+- Record incident 200 → approved rule 18 → native re-fire in incident 204, plus
+  rejected rule 19 absent from YAML and supplied raw alerts. Three later normal
+  windows have no generated-rule hits or incidents.
+- Publish the filled results table and machine-readable artifact audit; reconcile
+  README, demo, case matrix and academic narrative. No added attack coverage,
+  failed-submission trace, B2/B3 after-run, new timing or recording is claimed.
+
+### 2026-10-15 — Academic evidence and supervised adaptation protocol
+- Align README and the 6:40 demo with the exact hybrid/adaptive thesis; keep
+  Isolation Forest default, standard isolation off and human deployment approval.
+- Add a three-behavior mini-study, reject-path control, designed-case evidence
+  matrix, conservative evaluation interpretation, viva answers and report outline.
+- State unsupported anomaly-only synthesis, template context loss, SVM benign
+  false positives and recurring VM/Falco timestamp skew explicitly.
+- Add a single-window research capture helper; invalid clock/pipeline evidence
+  stops that capture. No new VM study results or C2 recording are claimed.
+
 ### 2026-10-13 — Operator VM functional acceptance
 - Record A1 policy inspect and A2 default shell-to-dashboard passes, including the
   shell recheck after removing temporary Falco metrics configuration.

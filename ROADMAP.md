@@ -1,33 +1,36 @@
-# SelfSentry roadmap
+# SelfSentry academic roadmap
 
-Reconciled 13 October 2026. [TODO.md](TODO.md) is the actionable release checklist;
-[monitor_final_review.md](docs/monitor_final_review.md) records previous VM evidence.
+Updated 15 October 2026. [TODO.md](TODO.md) tracks actions; the
+[academic evidence pack](docs/academic_evidence_pack.md) defines the current thesis,
+protocol and evidence boundaries. Production platform expansion is outside scope.
 
-| Phase | Current status | Remaining acceptance |
+| Priority | Deliverable | Current state / next evidence |
 |---|---|---|
-| 1 Image scanning | Implemented; real Trivy validation recorded | Demo preparation |
-| 2 Deployment policy | Implemented and unit tested | A1 VM probe passed; retain report |
-| 3 Falco/eBPF | Live events recorded; monitor/parser implemented | A2 VM probe and dashboard confirmed |
-| 4 Behavioral detection | Per-container baseline and model lifecycle implemented | Forest saturation reproduced; opt-in SVM needs independent benign validation |
-| 5 Correlation | Windowed scoring, durable inbox/outbox, fallback paths implemented | Controlled SVM response passed; demo recording remains |
-| 6 Rule synthesis | Templates, backtest, review/deploy and re-fire recorded | Always retain human approval; review broad legacy rules |
-| 7 Advisory analysis | Optional AI summary implemented | LLM narrative timeline integration; live 429 recovery evidence |
-| 8 API/database | Incident, confirmation, evidence and workflow persistence implemented | Current release PostgreSQL smoke checks |
-| 9 Dashboard | Upgraded at e781e02; observed timeline added | VM screenshots and recording |
-| 10 Evaluation/release | 200-trial full run and retrospective comparison delivered | A1/A2 and SVM automatic response passed; release commit/push remains |
+| P0 | Supported adaptive-loop mini-study | Reviewed 17 captures: one approved re-fire chain, two preview failures, explicit rejection; no extra coverage |
+| P0 | Designed-case matrix | Study-artifact passes distinguished from historical tests; live restart/fault extensions remain unrun |
+| P0 | Clear demo proof | Updated 6:40 talk track; isolation OFF; C2 rehearsal/recording explicitly deferred |
+| P1 | Evaluation interpretation | Historical 200-trial denominators, timing endpoints, retrospective layers and threats documented |
+| P1 | Narrative/report/viva | Thesis-aligned architecture, limitations script, examiner answers and report outline ready |
+| P2 | Hybrid contribution analysis | Report Falco-only/ML-only/both/unscored separately; no demonstrated extra attack coverage |
+| Reliability | Timestamp skew | Clock validation detects skew; restart is temporary recovery, root cause unresolved |
+| Model research | Representative baseline/validation | Default IF preserved; small baseline and experimental SVM false positives remain documented |
 
-## Next release sequence
+Completed implementation/release: image/policy checks; runtime ingestion; per-container
+model lifecycle; correlation/persistence; direct isolation/resume and one experimental
+SVM automatic response; default-shell mapping; observed timeline; human rule review;
+dashboard screenshots; source commits through f465de1. These are bounded functional
+results, not production or unseen-workload guarantees.
 
-1. Apply source changes with backend/monitor stopped; preserve runtime state.
-2. Run offline release verification, then restart the services.
-3. Retain passing A1/A2 probe reports and the operator-confirmed dashboard timeline.
-4. Retain SVM incident 190 isolation/resume evidence; leave automatic actions off
-   during ordinary observation. Independent benign candidate evaluation remains open.
-5. Capture three screens, rehearse the 5–7 minute script and record the demo.
-6. Review/stage source changes, commit and push; retain runtime evidence separately.
+## Next sequence
 
-## Future work
+1. Apply/review this documentation and research helper; preserve all runtime evidence.
+2. Freeze default-IF/manual-study configuration and verify fresh event timestamps.
+3. Retain the reviewed mini-study artifacts and publish its measured results with
+   hashes/IDs, preview failures, calibration false positive and unperformed cases.
+4. Extend only as needed: actual failed submissions, other after-runs or broader
+   comparisons require new evidence; one workflow success is not new attack coverage.
+5. Resume C2 only when requested; link a real checked recording after it exists.
 
-Independent live Falco-only/hybrid/response runs; separate layer/containment timings;
-long-duration fault/soak testing; baseline drift/retraining; RBAC and retention;
-Kubernetes admission/runtime integration. These are outside demonstrated acceptance.
+Future academic research: more representative baselines; independent live comparisons;
+richer supported extraction for anomaly-only evidence; measured stage timings and
+controlled fault recovery. No automatic generated-rule deployment is proposed.

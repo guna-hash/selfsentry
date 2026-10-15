@@ -1,6 +1,11 @@
 # Phase 6 — Rule Synthesis Engine (Core Novelty)
 
-**Status:** code-complete, all 6 sub-modules verified against real infrastructure (Falco, Postgres, backend-api). Two findings documented in `docs/known_limitations.md`, not hidden.
+**Historical implementation notes:** this page records the initial Phase 6 session,
+including findings subsequently fixed. Confirmation persistence and native re-fire
+were resolved later; see [current limits](known_limitations.md) and
+[rule matching evidence](falco_rule_matching.md). For the current academic claim,
+protocol and unrun study table use [academic_study.md](academic_study.md).
+Historical manual DB insertion below is not the supported study procedure.
 
 ## What this phase delivers
 A pipeline that converts a confirmed incident into a new, backtested, deployed Falco detection rule — with mandatory human approval and no LLM involved in writing rule syntax.

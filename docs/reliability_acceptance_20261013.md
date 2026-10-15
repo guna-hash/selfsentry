@@ -62,7 +62,19 @@ That file captures post-resume state, not an independently captured pre-resume i
 snapshot; the paused/empty-network observation is retained in the operator console
 transcript. The isolated workflow is historical; resume does not rewrite that outcome.
 
-## What remains open
+## Later academic closeout — 15 October 2026
+
+Source/docs were released in 3cb1e83, reviewed runtime rules in 96f9827, screenshots
+in 56cef9e and SVM benign validation/runner in f465de1. The four-window SVM follow-up
+produced two anomaly-only benign incidents; see svm_benign_validation_20261013.md.
+Recording C2 remains deferred. The later operator-supplied 15 October study now
+supports one complete incident 200 → rule 18 → native incident 204 chain and one
+explicit rule-19 rejection. Two pattern previews failed backtests; three later
+benign windows were clean, with one calibration false positive retained. See
+academic_results_20261015.md for the exact scope and unperformed cases.
+These additions do not extend the scope of incident 190 or alter the frozen evaluation.
+
+## What remained open at the 13 October acceptance snapshot
 
 - Independent, representative benign evaluation of the opt-in SVM. The 20 training
   windows contain seven distinct vectors; offline LOO flagged 2/20 candidate samples.

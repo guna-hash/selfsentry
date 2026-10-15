@@ -1,9 +1,38 @@
 # Known limitations and evidence history
 
-Updated 12 October 2026. M1–M4 implementation and controlled VM checks are recorded;
+Updated 15 October 2026. M1–M4 implementation and controlled VM checks are recorded;
 M5 full-run measurements and retrospective comparison are delivered. See
 [monitor_final_review.md](monitor_final_review.md) and [TODO.md](../TODO.md).
 Historical entries below retain the original observations and dates.
+
+## Academic claim boundaries — 15 October 2026
+
+SelfSentry is a hybrid container runtime security system that combines Falco rule matching with per-container behavioral anomaly detection, correlates both into incidents, and converts confirmed anomalies into template-generated, backtested, human-approved Falco rules — demonstrating a supervised adaptive detection loop under controlled evaluation.
+
+- Current synthesis requires process metadata from a Falco alert. Anomaly-only
+  incidents cannot generate a supported rule. The thesis's confirmed-anomaly loop
+  is scoped to representable patterns; no ML-only discovery path is claimed.
+- Process/parent templates discard file/TTY context and apply across containers.
+  Corpus backtesting estimates an event-level match rate for the supported shape,
+  not a production false-positive rate or a complete native-engine replay.
+- The frozen 200-trial comparison adds three benign detections and no additional
+  labeled attack detections over stored Falco flags. Independent live ablations
+  remain unrun. The separate 15 October rule-loop study now supports one native
+  approved re-fire chain, not additional coverage.
+- The opt-in SVM produced anomaly-only incidents on two of four valid benign windows
+  (195/196); it remains experimental. See svm_benign_validation_20261013.md.
+- Recurring Falco timestamp skew invalidated 19 windows of the earlier SVM batch.
+  Restart restored accuracy temporarily; the root cause/permanent fix is unresolved.
+  A healthy process heartbeat does not establish correct event timestamps.
+- The reviewed 15 October study completed one approved native re-fire chain and
+  one explicit rejection. Two other pattern previews failed backtests; actual failed
+  submissions and their after-runs were not performed. Three later benign windows
+  were clean, but calibration retained IF false-positive incident 199. See
+  academic_results_20261015.md; no additional coverage was demonstrated. C2 is deferred.
+- Future academic work prioritizes representative baselines, controlled layer
+  comparisons and richer supported pattern extraction. Fleet/commercial features
+  mentioned in older documents are outside the present thesis, not requirements.
+
 
 ## Current release gaps
 

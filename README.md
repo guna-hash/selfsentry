@@ -1,10 +1,21 @@
 # SelfSentry
 
-Container security monitoring and response for an academic/capstone project. Trivy scans
-images; a deployment gate checks policy before starting containers. Falco and per-container
-Isolation Forest models supply runtime evidence to the existing correlation/routing engine.
-Confirmed incidents can produce template-generated, backtested Falco rule candidates;
-every rule deployment requires explicit human approval.
+SelfSentry is a hybrid container runtime security system that combines Falco rule matching with per-container behavioral anomaly detection, correlates both into incidents, and converts confirmed anomalies into template-generated, backtested, human-approved Falco rules — demonstrating a supervised adaptive detection loop under controlled evaluation.
+
+The implemented rule-synthesis path requires concrete process metadata from a Falco
+alert; anomaly-only-to-rule synthesis is not supported yet. “Adaptive” means supervised
+rule-set expansion, not autonomous deployment or automatic model retraining.
+Isolation Forest remains default; One-Class SVM is experimental. Isolation is off
+for the standard academic study and demo.
+
+Start with the [academic evidence pack](docs/academic_evidence_pack.md):
+[mini-study](docs/academic_study.md), [case matrix](docs/academic_case_matrix.md),
+[evaluation interpretation](docs/academic_evaluation.md),
+[timed demo](docs/demo_script.md), and [viva/report guide](docs/academic_narrative.md).
+The [15 October study](docs/academic_results_20261015.md) records one complete approved
+rule re-fire chain, one human rejection, two failed backtest previews and three later
+benign windows without rule hits. All primary behaviors already had Falco detections;
+no added attack coverage is claimed. C2 recording remains deferred.
 
 ## Current status
 
@@ -15,8 +26,9 @@ no benign auto-confirmations and no duplicate trial incidents. These are control
 not production guarantees or evidence of improved attack coverage beyond Falco.
 
 PostgreSQL recovery, no-baseline fallback, isolation/resume and protected-container workflow
-checks passed. Invalid-model paths have automated coverage. The reviewed Python suite has
-406 passing tests. AI is advisory, optional and subject to provider limits; isolation defaults off.
+checks passed. Invalid-model paths have automated coverage. The 12 October VM release checks recorded
+424 Python tests, 7 frontend tests, lint and build passing; these are historical checks.
+AI is advisory, optional and subject to provider limits; isolation defaults off.
 See [measured results](docs/monitor_measured_results_20261011.md) and
 [final review](docs/monitor_final_review.md) for evidence and unmeasured items.
 Independent live comparison variants and separate layer timings were not collected.
@@ -31,26 +43,23 @@ tracks acceptance criteria without treating unit tests as live attack measuremen
 
 ```mermaid
 flowchart TD
-    Image["Container image"] --> Scan["Trivy scan"]
-    Scan --> Gate["Deployment policy gate"]
-    Gate --> Docker["Docker containers"]
-    Docker --> Falco["Falco security and baseline rules"]
-    Falco --> Monitor["Monitor: journal and windows"]
-    Monitor --> Model["Per-container behavioral model"]
-    Model --> Correlate["Risk correlation and routing"]
-    Monitor --> Correlate
-    Correlate --> API["FastAPI and PostgreSQL"]
-    API --> Dashboard["Dashboard and observed timeline"]
-    API --> Response["Eligible response: pause and disconnect"]
-    API --> AI["Optional advisory AI"]
-    API --> Confirm["Incident confirmation"]
-    Confirm --> Candidate["Template and backtest"]
-    Candidate --> Review["Human rule approval"]
-    Review --> Falco
+    F["Falco rules and baseline telemetry"] --> J["Durable monitor and feature windows"]
+    J --> M["Per-container Isolation Forest"]
+    J --> C["Correlated incident and timeline"]
+    M --> C
+    C --> H["Operator confirmation"]
+    H --> P["Supported process pattern"]
+    P --> T["Literal template and benign backtest"]
+    T --> R{"Human review"}
+    R -->|Reject| X["Record rejection; no deployment"]
+    R -->|Approve| D["Deploy and reload Falco"]
+    D --> F
+    D --> E["Repeat trigger; verify native re-fire"]
 ```
 
-The model is unavailable until a valid baseline exists. Falco alerts still reach
-incidents during learning. Isolation is independently configured and defaults off.
+Image scanning and deployment policy provide supporting pre-deployment checks.
+The feedback loop above is the academic focus. The model is unavailable until a valid
+baseline exists. Falco alerts still reach incidents during learning. Isolation is independently configured and defaults off.
 Read [the demo script](docs/demo_script.md) and [release checklist](TODO.md) for
 commands, acceptance evidence and presentation limitations.
 
@@ -64,6 +73,18 @@ commands, acceptance evidence and presentation limitations.
 - `rule-synthesis-engine`: existing literal templates, backtesting and human approval workflow.
 - `ai-analysis`: optional, advisory incident explanation; no detection or deployment authority.
 - `frontend-dashboard`: alerts, deployments, containers, audit, review queue and monitor health.
+
+## Supervised adaptation evidence
+
+The operator-supplied study archive was reviewed offline: 17 valid captures, unchanged
+baseline, default Isolation Forest and all automatic actions off. Incident 200 became
+human-approved rule 18, which natively re-fired in incident 204. Rule 19 from control
+incident 203 was rejected and remained absent. Sensitive-read and terminal-shell
+pattern previews matched 3/36 and 8/36 benign events and were not submitted. One
+anomaly-only benign incident (199) is retained. Three later normal windows produced
+no generated-rule matches or incidents; these are repeated lab workloads, not a
+production FPR estimate. See the [full table and limits](docs/academic_results_20261015.md)
+and [artifact audit](docs/academic_results_20261015.json).
 
 ## Dashboard screenshots
 

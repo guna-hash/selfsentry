@@ -68,3 +68,20 @@ retrospective: it demonstrates no additional attack coverage beyond Falco.
 
 See docs/anomaly_model_review.md. Candidate replay passes are not live acceptance or
 a production false-positive-rate measurement; default algorithm and thresholds remain.
+
+## Academic evidence priorities — 15 October 2026
+
+- [x] Prepare thesis-aligned mini-study protocol and capture helper; subsequent VM results linked below.
+- [x] Prepare designed-case evidence matrix, conservative evaluation interpretation,
+  timed talk track, limitations script, examiner answers and report outline.
+- [x] Review supplied mini-study: 17 valid captures; one primary approved native re-fire
+  chain (200 → rule 18 → 204), one human-rejected control (203 → rule 19), two failed
+  backtest previews, three later benign windows with no hits/incidents. Calibration
+  IF false-positive 199 retained; no extra attack coverage. See docs/academic_results_20261015.md.
+- [ ] Optional study extension: actual failed-submission traces and sensitive/terminal
+  after-runs were not performed; keep these labeled unrun, not required positive outcomes.
+- [ ] Diagnose recurring Falco timestamp skew; restart is a temporary recovery only.
+- [ ] C2 rehearsal/recording remains explicitly deferred by the operator.
+
+See docs/academic_evidence_pack.md. No SVM default change, autonomous rule deployment,
+production CWPP, fleet or Kubernetes expansion is part of this academic work.

@@ -1,0 +1,473 @@
+{
+  "study": "academic-loop-20261015T085928Z",
+  "archive_sha256": "0fa955f30775b8c1edbc2638d87d334091e95c56f1311523024dc0e912383981",
+  "scope": "Offline audit of operator-supplied artifacts; not independent VM execution",
+  "captures": [
+    {
+      "capture": "benign-1-admin",
+      "valid": true,
+      "window_start": "2026-10-15T09:01:00+00:00",
+      "raw_alert_count": 24,
+      "accepted_events": {
+        "baseline": 24
+      },
+      "falco_rules": [
+        "Baseline File Write",
+        "Baseline Process Spawn",
+        "Baseline Sensitive Syscall"
+      ],
+      "incident_ids": []
+    },
+    {
+      "capture": "benign-1-config",
+      "valid": true,
+      "window_start": "2026-10-15T09:07:00+00:00",
+      "raw_alert_count": 22,
+      "accepted_events": {
+        "baseline": 22
+      },
+      "falco_rules": [
+        "Baseline File Write",
+        "Baseline Process Spawn",
+        "Baseline Sensitive Syscall"
+      ],
+      "incident_ids": []
+    },
+    {
+      "capture": "benign-1-http",
+      "valid": true,
+      "window_start": "2026-10-15T09:10:00+00:00",
+      "raw_alert_count": 20,
+      "accepted_events": {
+        "baseline": 20
+      },
+      "falco_rules": [
+        "Baseline File Write",
+        "Baseline Process Spawn",
+        "Baseline Sensitive Syscall"
+      ],
+      "incident_ids": []
+    },
+    {
+      "capture": "benign-2-admin",
+      "valid": true,
+      "window_start": "2026-10-15T09:13:00+00:00",
+      "raw_alert_count": 24,
+      "accepted_events": {
+        "baseline": 23
+      },
+      "falco_rules": [
+        "Baseline File Write",
+        "Baseline Process Spawn",
+        "Baseline Sensitive Syscall"
+      ],
+      "incident_ids": [
+        199
+      ]
+    },
+    {
+      "capture": "benign-2-config",
+      "valid": true,
+      "window_start": "2026-10-15T09:16:00+00:00",
+      "raw_alert_count": 22,
+      "accepted_events": {
+        "baseline": 22
+      },
+      "falco_rules": [
+        "Baseline File Write",
+        "Baseline Process Spawn",
+        "Baseline Sensitive Syscall"
+      ],
+      "incident_ids": []
+    },
+    {
+      "capture": "benign-2-http",
+      "valid": true,
+      "window_start": "2026-10-15T09:19:00+00:00",
+      "raw_alert_count": 20,
+      "accepted_events": {
+        "baseline": 20
+      },
+      "falco_rules": [
+        "Baseline File Write",
+        "Baseline Process Spawn",
+        "Baseline Sensitive Syscall"
+      ],
+      "incident_ids": []
+    },
+    {
+      "capture": "benign-3-admin",
+      "valid": true,
+      "window_start": "2026-10-15T09:22:00+00:00",
+      "raw_alert_count": 24,
+      "accepted_events": {
+        "baseline": 24
+      },
+      "falco_rules": [
+        "Baseline File Write",
+        "Baseline Process Spawn",
+        "Baseline Sensitive Syscall"
+      ],
+      "incident_ids": []
+    },
+    {
+      "capture": "benign-3-config",
+      "valid": true,
+      "window_start": "2026-10-15T09:25:00+00:00",
+      "raw_alert_count": 22,
+      "accepted_events": {
+        "baseline": 22
+      },
+      "falco_rules": [
+        "Baseline File Write",
+        "Baseline Process Spawn",
+        "Baseline Sensitive Syscall"
+      ],
+      "incident_ids": []
+    },
+    {
+      "capture": "benign-3-http",
+      "valid": true,
+      "window_start": "2026-10-15T09:28:00+00:00",
+      "raw_alert_count": 22,
+      "accepted_events": {
+        "baseline": 22
+      },
+      "falco_rules": [
+        "Baseline File Write",
+        "Baseline Process Spawn",
+        "Baseline Sensitive Syscall"
+      ],
+      "incident_ids": []
+    },
+    {
+      "capture": "binary-after",
+      "valid": true,
+      "window_start": "2026-10-15T10:12:00+00:00",
+      "raw_alert_count": 26,
+      "accepted_events": {
+        "baseline": 24,
+        "alert": 2
+      },
+      "falco_rules": [
+        "Auto_Generated_ss_study_true_from_sh_200",
+        "Baseline File Write",
+        "Baseline Process Spawn",
+        "Baseline Sensitive Syscall",
+        "Drop and execute new binary in container"
+      ],
+      "incident_ids": [
+        204
+      ]
+    },
+    {
+      "capture": "binary-before",
+      "valid": true,
+      "window_start": "2026-10-15T09:34:00+00:00",
+      "raw_alert_count": 25,
+      "accepted_events": {
+        "baseline": 24,
+        "alert": 1
+      },
+      "falco_rules": [
+        "Baseline File Write",
+        "Baseline Process Spawn",
+        "Baseline Sensitive Syscall",
+        "Drop and execute new binary in container"
+      ],
+      "incident_ids": [
+        200
+      ]
+    },
+    {
+      "capture": "binary-reject-before",
+      "valid": true,
+      "window_start": "2026-10-15T09:48:00+00:00",
+      "raw_alert_count": 25,
+      "accepted_events": {
+        "baseline": 24,
+        "alert": 1
+      },
+      "falco_rules": [
+        "Baseline File Write",
+        "Baseline Process Spawn",
+        "Baseline Sensitive Syscall",
+        "Drop and execute new binary in container"
+      ],
+      "incident_ids": [
+        203
+      ]
+    },
+    {
+      "capture": "holdout-admin",
+      "valid": true,
+      "window_start": "2026-10-15T10:17:00+00:00",
+      "raw_alert_count": 24,
+      "accepted_events": {
+        "baseline": 24
+      },
+      "falco_rules": [
+        "Baseline File Write",
+        "Baseline Process Spawn",
+        "Baseline Sensitive Syscall"
+      ],
+      "incident_ids": []
+    },
+    {
+      "capture": "holdout-config",
+      "valid": true,
+      "window_start": "2026-10-15T10:20:00+00:00",
+      "raw_alert_count": 22,
+      "accepted_events": {
+        "baseline": 22
+      },
+      "falco_rules": [
+        "Baseline File Write",
+        "Baseline Process Spawn",
+        "Baseline Sensitive Syscall"
+      ],
+      "incident_ids": []
+    },
+    {
+      "capture": "holdout-http",
+      "valid": true,
+      "window_start": "2026-10-15T10:23:00+00:00",
+      "raw_alert_count": 22,
+      "accepted_events": {
+        "baseline": 22
+      },
+      "falco_rules": [
+        "Baseline File Write",
+        "Baseline Process Spawn",
+        "Baseline Sensitive Syscall"
+      ],
+      "incident_ids": []
+    },
+    {
+      "capture": "sensitive-before",
+      "valid": true,
+      "window_start": "2026-10-15T09:37:00+00:00",
+      "raw_alert_count": 23,
+      "accepted_events": {
+        "baseline": 22,
+        "alert": 1
+      },
+      "falco_rules": [
+        "Baseline File Write",
+        "Baseline Process Spawn",
+        "Baseline Sensitive Syscall",
+        "Read sensitive file untrusted"
+      ],
+      "incident_ids": [
+        201
+      ]
+    },
+    {
+      "capture": "terminal-before",
+      "valid": true,
+      "window_start": "2026-10-15T09:40:00+00:00",
+      "raw_alert_count": 20,
+      "accepted_events": {
+        "baseline": 19,
+        "alert": 1
+      },
+      "falco_rules": [
+        "Baseline File Write",
+        "Baseline Process Spawn",
+        "Baseline Sensitive Syscall",
+        "Terminal shell in container"
+      ],
+      "incident_ids": [
+        202
+      ]
+    }
+  ],
+  "valid_captures": 17,
+  "invalid_captures_in_archive": 0,
+  "baseline_sha256": "f354809d2ad5fa7406e34024bb65c9f3aea37815493050b92741debac412fbba",
+  "source_commit": "f465de1930df502c3ea4b426f0804a47298a2e72",
+  "source_working_tree_dirty": true,
+  "calibration": {
+    "windows": 9,
+    "process_spawn_events": 36,
+    "incident_ids": [
+      199
+    ],
+    "corpus_sha256": "7ce5a6fcc58c9403264e59aad7a2339422489895108727aaa42a24d36955dc38"
+  },
+  "backtests_recomputed": {
+    "binary": {
+      "incident_id": 200,
+      "pattern": {
+        "container_id": "12160024642b",
+        "rule_name": "Drop and execute new binary in container",
+        "proc_name": "ss-study-true",
+        "parent_proc": "sh",
+        "action": "spawned_process"
+      },
+      "false_positive_rate": 0.0,
+      "matched_events": 0,
+      "events_tested": 36,
+      "verdict": "pass"
+    },
+    "sensitive": {
+      "incident_id": 201,
+      "pattern": {
+        "container_id": "12160024642b",
+        "rule_name": "Read sensitive file untrusted",
+        "proc_name": "cat",
+        "parent_proc": "sh",
+        "action": "spawned_process"
+      },
+      "false_positive_rate": 0.0833,
+      "matched_events": 3,
+      "events_tested": 36,
+      "verdict": "flag_for_revision"
+    },
+    "terminal": {
+      "incident_id": 202,
+      "pattern": {
+        "container_id": "12160024642b",
+        "rule_name": "Terminal shell in container",
+        "proc_name": "sh",
+        "parent_proc": "containerd-shim",
+        "action": "spawned_process"
+      },
+      "false_positive_rate": 0.2222,
+      "matched_events": 8,
+      "events_tested": 36,
+      "verdict": "flag_for_revision"
+    }
+  },
+  "decisions": [
+    {
+      "rule_id": 18,
+      "incident_id": 200,
+      "confirmed_by": "guna-academic-review",
+      "status": "deployed",
+      "reviewed_by": "guna-review",
+      "reviewed_at": "2026-10-15 15:40:09.002237",
+      "backtested_fp_rate": 0.0,
+      "rule_yaml": "- rule: Auto_Generated_ss_study_true_from_sh_200\n  desc: \"Auto-generated from confirmed incident #200 (pattern: ss-study-true spawned by sh)\"\n  condition: spawned_process and container and proc.name=\"ss-study-true\" and proc.pname=\"sh\"\n  output: \"Auto-generated rule matched (user=%user.name container=%container.name proc=%proc.name parent=%proc.pname)\"\n  priority: WARNING\n  tags: [auto-generated, selfsentry-ai, source_incident_200]"
+    },
+    {
+      "rule_id": 19,
+      "incident_id": 203,
+      "confirmed_by": "guna-academic-review",
+      "status": "rejected",
+      "reviewed_by": "guna-review",
+      "reviewed_at": "2026-10-15 15:35:54.355332",
+      "backtested_fp_rate": 0.0,
+      "rule_yaml": "- rule: Auto_Generated_ss_study_true_from_sh_203\n  desc: \"Auto-generated from confirmed incident #203 (pattern: ss-study-true spawned by sh)\"\n  condition: spawned_process and container and proc.name=\"ss-study-true\" and proc.pname=\"sh\"\n  output: \"Auto-generated rule matched (user=%user.name container=%container.name proc=%proc.name parent=%proc.pname)\"\n  priority: WARNING\n  tags: [auto-generated, selfsentry-ai, source_incident_203]"
+    }
+  ],
+  "native_refire": {
+    "rule": "Auto_Generated_ss_study_true_from_sh_200",
+    "incident_id": 204,
+    "timestamp": "2026-10-15T10:12:02.312672440Z",
+    "also_detected_by_existing_Falco_rule": true
+  },
+  "rejection_control": {
+    "rule_id": 19,
+    "status": "rejected",
+    "reviewed_by": "guna-review",
+    "reviewed_at": "2026-10-15 15:35:54.355332",
+    "rejected_rule_absent": true,
+    "rules_file_unchanged": true,
+    "rule_18_status": "pending_review"
+  },
+  "holdout": {
+    "valid_windows": 3,
+    "generated_rule_hits": 0,
+    "incident_windows": 0
+  },
+  "rule_file_sha256_before": "59874ffbd84bad5c80c8a75271d1425d58a4ce3c260e6800fb06867097e601d6",
+  "rule_file_sha256_after": "99ad05160795da3d62787cbd39af3d648821cd2385a21f43f5f5eabcce3425a4",
+  "not_measured": [
+    "new_attack_coverage",
+    "learning_loop_latency",
+    "reload_duration",
+    "native_reload_journal",
+    "sensitive_or_terminal_after_runs",
+    "actual_failed_candidate_submission_for_201_202"
+  ],
+  "file_hashes": {
+    "benign-1-admin/capture.json": "f1df80b90a5a9323a6d58e070754fa8f6ae432eb9726780ff599396da3294919",
+    "benign-1-admin/clock.json": "59d520e97976194c3593e473e5472bedeee779dbda7a1d31c67564758ab3a046",
+    "benign-1-admin/falco.jsonl": "2d346add1e7223dc518c06e5bd69e4bfcde31ded81cb1d6bdf1d72f8cbd80aed",
+    "benign-1-admin/incidents.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "benign-1-config/capture.json": "f858447d631b16cf4cc29cd1e831adcfa8d3126b77216d0d844fa87d862a5ada",
+    "benign-1-config/clock.json": "418a6a577e79c554542e1d0212067c02d604d01b5e7c9fd60a6865bc50e4d239",
+    "benign-1-config/falco.jsonl": "88d0010ac368632a00b12d15bd0cc898621b5292b4005599dfdf4c818c6b65b0",
+    "benign-1-config/incidents.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "benign-1-http/capture.json": "36eb3dd0b14275674ae11a0bb70293f2bc74a88ba221f5ac0a3a642396b2174a",
+    "benign-1-http/clock.json": "f8137eb00d84071563b082b6e5abae75c40a4d12aa84dbebdd7df6ca520b9781",
+    "benign-1-http/falco.jsonl": "00f25b91f52c61f960a74933d5ae99d0bbebc44b5931dd7a47f1fdb9e635c20c",
+    "benign-1-http/incidents.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "benign-2-admin/capture.json": "2178f4ae8833117faa5d74e36fbb17756196185a20c1af9287f2f927d96e153a",
+    "benign-2-admin/clock.json": "3ba27fee33c1f3272894361520236a432fc5d946adf0ada74532acbb4ca697a6",
+    "benign-2-admin/falco.jsonl": "5221dfd9275df9de5f1b0cac1453425a08eaf40373782ddd6df5e0428b77f3ac",
+    "benign-2-admin/incidents.json": "131ba842700d5c4aed7ff03e69338c2870b0be496aef80242c76a0034899bd5d",
+    "benign-2-config/capture.json": "fbf8aa7e5f0694bf9f1cd2fb7922d96a044720b1554089d58b777f16bc353c4d",
+    "benign-2-config/clock.json": "e11fdd85f7c2df05d80795030cebaf9218a2e7ffde09113e74261f97969942cd",
+    "benign-2-config/falco.jsonl": "92c43b0f3a150cd03fdaf69dccf2b809c507e0e71611dc02d404cd4ccd45c8db",
+    "benign-2-config/incidents.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "benign-2-http/capture.json": "4a285c2e8b2fe0aff767def7fa3e0358102e63e0e8c7595d6158df7fa5e557fc",
+    "benign-2-http/clock.json": "c1e4ad19835374674010edb51cb678cf2b321fc83bae4a3e6c3d4c0a72ecb44e",
+    "benign-2-http/falco.jsonl": "759e58170c16d308e5b4cce9b40acffcc4f538fcb97855e3af2422f1a4582522",
+    "benign-2-http/incidents.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "benign-3-admin/capture.json": "50910e4863384ed9d470423c632c6cf27b1ff85b92ca7bd20c1da6b690d4ed77",
+    "benign-3-admin/clock.json": "758295c43e9f1f4308b868ab7fdd14bca774d8849f7d777ce7cd212791465477",
+    "benign-3-admin/falco.jsonl": "e99120ee4a9db663f72ca30c46cc756394bbfb555d2aa1ebf00503591bba9fd0",
+    "benign-3-admin/incidents.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "benign-3-config/capture.json": "04bbfeedecdbca0a13de6924dad580d5e58b914886049d59bddfe349790e8317",
+    "benign-3-config/clock.json": "e5cd92d2d1ba10b60d0b0d241a9d55c9a048a057273c9b3c2af0938440e0ba6b",
+    "benign-3-config/falco.jsonl": "440b3c96bf46b6b48f6f787edd683281a4a758c36b453d24c67b0c73563698d0",
+    "benign-3-config/incidents.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "benign-3-http/capture.json": "593767a9014fbb58bc087d5b62fadb19e6c7c6b2750e1b90c0761e28f27d2db1",
+    "benign-3-http/clock.json": "e74a3457eab2d492282a3b27e7dd7f7fc5ecf3616c022ac30aae588aa0c134b9",
+    "benign-3-http/falco.jsonl": "c9fb721b93f5e0cc449205174f19ea31d9a2a86b2f44c4f229d518233d43cb04",
+    "benign-3-http/incidents.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "benign-calibration.jsonl": "7ce5a6fcc58c9403264e59aad7a2339422489895108727aaa42a24d36955dc38",
+    "benign-calibration.sha256": "7d6586ea67ab09de2671ccc329372733235dfcd7597df993b3b7f914df3d6787",
+    "binary-after/capture.json": "f133d82b868e8b19b8100f5da909929c07b008336609f394293cdb675521b809",
+    "binary-after/clock.json": "8c4c4568edea01791c969f369671b8cc26a0ecc92644aef135885333996d2535",
+    "binary-after/falco.jsonl": "2327c301d6b194ada78fc9895760e512b74f43d544317bf7a35f6304a2b82421",
+    "binary-after/incidents.json": "4c31bae8b538c854e6c6836d9eff9929a08e571624c61ce729847157640de688",
+    "binary-before/capture.json": "df7fede566161572b5771c3350e13f6c0ab44db8bc49b55fdfe3059af1c9c6c7",
+    "binary-before/clock.json": "b31a5fd3b1377c4ce4f25ae83b21dde0c839ab3c9f057988ec27f439f7b0cdd2",
+    "binary-before/falco.jsonl": "9a4ac875366165262d14a5d76dc9a22d28bc34fadc44df5493bdc6125f5a238a",
+    "binary-before/incidents.json": "d72a55253f415578c0dc9273c07ae90807bf6a62c899a8468d0748389d3d7378",
+    "binary-candidate.json": "6fe84befa95507695d6d2a7d43945a6320cc4b9b8f78b51c3e3f1209a4e80db0",
+    "binary-candidate.yaml": "67c3f8de92c99339b6841f2d32234ec2c3ed384e3e223fd1d1d6e4332c252cfe",
+    "binary-reject-before/capture.json": "f451f5aa007189f87490a5d7d3e146757b0d28ebe295bd607765e80ac8140f53",
+    "binary-reject-before/clock.json": "3cd26ce9d4c7fe7223e20462ece6f5a53f87de42940f4577599dddedcca95e94",
+    "binary-reject-before/falco.jsonl": "6493dbe3e6db6bf93aed7c9712e9e3cb0b0cc285acfe6a7f4bda950a25e5650d",
+    "binary-reject-before/incidents.json": "bac2f0b0b15fd314f5a823673ffb850b3016b05df3f5a0b56c2fd52e9c248e2e",
+    "binary-reject-candidate.json": "3a33d0861c12ae808fa4e9594adb8556f0bf254ac8d80219b78647a7de6a45ff",
+    "binary-reject-candidate.yaml": "af24e5aaacd3b927e2aab35d52fc4dc725a0157d8bab0d239da4384811356c38",
+    "holdout-admin/capture.json": "fc5afde8636a999dd5c7a259a98cab98b32f8b30f2ca823134c15b301d7a6146",
+    "holdout-admin/clock.json": "7c0b78fe155479ff47ae7dd830fea0f72334878d475bbd5a09b8f2a03fc5081d",
+    "holdout-admin/falco.jsonl": "745eaae156190c345b16c16bce11283bfa4f79a947121175cdc701b3fdf3d7e8",
+    "holdout-admin/incidents.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "holdout-config/capture.json": "b83b3212a1215a7659d2faf78e6946a347b0f73257651451868cd9a82176a5df",
+    "holdout-config/clock.json": "8dab1d847fc9f392268e6c8c16de4eb88b0f90687d9bf245c76fac274ecf36bf",
+    "holdout-config/falco.jsonl": "fd906a80f5689b9380bfd3cc7c84996de6165172b84520ad8fe4cfdcdc28ce50",
+    "holdout-config/incidents.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "holdout-http/capture.json": "57084aa882c64535dc4da59370c4c9d507b0d1f3ab7875b7f8e52eec472a21ec",
+    "holdout-http/clock.json": "361e90a5b41a41f24ad1bb85e518bf75d5c37378cb22cd916c03090306cccb7d",
+    "holdout-http/falco.jsonl": "496a4bc6c9220298cdbf4d87f9d47b52fc7612499a701bcd3350b8723dc687de",
+    "holdout-http/incidents.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "rejection-verification.json": "171a3e8d6297eb453a6296711288c4b4e9e5c0fb34b738104ff5411824b7df69",
+    "reviewed-rules.json": "31e344998d2bbbcfd1895f00a8ca840adb56360e9cde1e1a4d782991658a11d3",
+    "rules-after.yaml": "99ad05160795da3d62787cbd39af3d648821cd2385a21f43f5f5eabcce3425a4",
+    "sensitive-before/capture.json": "0b57c34e7adfe778d87731e8286b9e83d42b5d97edc9f69ec5e3ca8016edc122",
+    "sensitive-before/clock.json": "f98493f146d395fb01ca6860bfcf7c6ce05ea64d3e1f3b2162753dca8250ec89",
+    "sensitive-before/falco.jsonl": "2e11c7ddfe683ee668ceec8c05313e4618d85d4d780f1fba32d91589ae2a7895",
+    "sensitive-before/incidents.json": "646eddbac0e217bd1d0f45c625133d07e92de6caa47e73f28f020178e1a09eec",
+    "terminal-before/capture.json": "60e3bcba610d926e674d6fe1195a4f664ec195660e8e7c8885778520f201976e",
+    "terminal-before/clock.json": "fb3d4e0a2c1ce3ff773663f661977d4d26921013b1014394a2b107ff20fd3ab3",
+    "terminal-before/falco.jsonl": "7ef8caa3de0dcd5ac5a8bf21fe6befca99cab853a8116395796a1b03bb467425",
+    "terminal-before/incidents.json": "55036378b0e37c76d57f8a966dc023d2b0dd5574830740b830d7b05d2b645d97"
+  }
+}
