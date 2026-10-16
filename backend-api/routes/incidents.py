@@ -7,7 +7,9 @@ from sqlalchemy.orm import Session  # noqa: E402
 
 from database import get_db  # noqa: E402
 from models.db_models import Incident, ConfirmedIncident, MonitorIncident  # noqa: E402
-from root_cause_summarizer import summarize_incident  # noqa: E402
+
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "correlation-engine"))
+from risk_explanation import explain_incident  # noqa: E402
 from sqlalchemy.exc import IntegrityError  # noqa: E402
 from pydantic import BaseModel, Field  # noqa: E402
 from fastapi.encoders import jsonable_encoder  # noqa: E402
@@ -40,6 +42,9 @@ def serialize(incident, db):
         if confirmed
         else None
     )
+    result["risk_explanation"] = (incident.ai_summary or {}).get(
+        "risk_explanation"
+    ) or explain_incident(result)
     return result
 
 
@@ -47,13 +52,13 @@ router = APIRouter(prefix="/incidents", tags=["incidents"])
 
 
 @router.get("/")
-async def list_incidents(db: Session = Depends(get_db)):
+def list_incidents(db: Session = Depends(get_db)):
     incidents = db.query(Incident).all()
     return [serialize(incident, db) for incident in incidents]
 
 
 @router.get("/{incident_id}")
-async def get_incident(incident_id: int, db: Session = Depends(get_db)):
+def get_incident(incident_id: int, db: Session = Depends(get_db)):
     incident = db.query(Incident).filter(Incident.id == incident_id).first()
     if not incident:
         raise HTTPException(status_code=404, detail="Incident not found")
@@ -61,7 +66,7 @@ async def get_incident(incident_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/")
-async def create_incident(incident_data: IncidentIn, db: Session = Depends(get_db)):
+def create_incident(incident_data: IncidentIn, db: Session = Depends(get_db)):
     incident_data = incident_data.model_dump()
     key = incident_data.get("event_key")
     if key:
@@ -77,9 +82,13 @@ async def create_incident(incident_data: IncidentIn, db: Session = Depends(get_d
         falco_alert=incident_data.get("falco_alert"),
         anomaly_features=incident_data.get("anomaly_features"),
     )
+    new_incident.ai_summary = {"risk_explanation": explain_incident(incident_data)}
     db.add(new_incident)
     try:
         db.flush()
+        from routes.rules import record_native_refires
+
+        record_native_refires(db, new_incident, incident_data)
         if key:
             db.add(
                 MonitorIncident(
@@ -98,21 +107,12 @@ async def create_incident(incident_data: IncidentIn, db: Session = Depends(get_d
         return serialize(db.query(Incident).filter(Incident.id == existing.incident_id).one(), db)
     db.refresh(new_incident)
 
-    # Monitor runs explanations after response, keeping provider failures off the critical path.
-    if not incident_data.get("defer_ai"):
-        try:
-            new_incident.ai_summary = summarize_incident(serialize(new_incident, db))
-        except Exception:
-            new_incident.ai_summary = {
-                "status": "unavailable",
-                "plain_summary": "AI explanation unavailable",
-            }
-        db.commit()
+    # Deterministic guidance is persisted before response. Optional AI runs in the monitor worker.
     return serialize(new_incident, db)
 
 
 @router.post("/{incident_id}/confirm")
-async def confirm_incident(incident_id: int, confirmed_by: str, db: Session = Depends(get_db)):
+def confirm_incident(incident_id: int, confirmed_by: str, db: Session = Depends(get_db)):
     incident = db.query(Incident).filter(Incident.id == incident_id).with_for_update().first()
     if not incident:
         raise HTTPException(status_code=404, detail="Incident not found")
@@ -150,7 +150,7 @@ async def confirm_incident(incident_id: int, confirmed_by: str, db: Session = De
 
 
 @router.post("/{incident_id}/dismiss")
-async def dismiss_incident(incident_id: int, db: Session = Depends(get_db)):
+def dismiss_incident(incident_id: int, db: Session = Depends(get_db)):
     incident = db.query(Incident).filter(Incident.id == incident_id).first()
     if not incident:
         raise HTTPException(status_code=404, detail="Incident not found")

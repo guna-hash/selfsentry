@@ -5,6 +5,8 @@ is the real one, so these tests exercise the real allow/block rules.
 """
 
 import json
+import os
+import tempfile
 import subprocess
 import sys
 import unittest
@@ -37,9 +39,7 @@ ROOT_SPEC = {
 
 
 def completed(stdout="", returncode=0, stderr=""):
-    return subprocess.CompletedProcess(
-        args=[], returncode=returncode, stdout=stdout, stderr=stderr
-    )
+    return subprocess.CompletedProcess(args=[], returncode=returncode, stdout=stdout, stderr=stderr)
 
 
 class FakeDocker:
@@ -77,8 +77,11 @@ def critical_scan():
     scan = trivy_wrapper.ScanResult(image="alpine:3.20")
     scan.vulnerabilities.append(
         trivy_wrapper.Vulnerability(
-            id="CVE-2026-0001", pkg_name="openssl", installed_version="1.0",
-            fixed_version="1.1", severity="CRITICAL",
+            id="CVE-2026-0001",
+            pkg_name="openssl",
+            installed_version="1.0",
+            fixed_version="1.1",
+            severity="CRITICAL",
         )
     )
     return scan
@@ -86,6 +89,11 @@ def critical_scan():
 
 class GateTestCase(unittest.TestCase):
     def setUp(self):
+        temporary_state = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary_state.cleanup)
+        env = patch.dict(os.environ, {"SELFSENTRY_STATE_DIR": temporary_state.name})
+        env.start()
+        self.addCleanup(env.stop)
         self.docker = None
         self.scan = patch.object(deployment_gate, "scan_image", return_value=clean_scan())
         self.scan_mock = self.scan.start()
@@ -216,9 +224,7 @@ class TestParseArgs(unittest.TestCase):
         self.assertEqual(docker_args, ["--rm", "alpine", "--", "echo"])
 
     def test_leading_separator_is_dropped(self):
-        options, docker_args = deployment_gate.parse_args(
-            ["--", "--name", "web", "alpine"]
-        )
+        options, docker_args = deployment_gate.parse_args(["--", "--name", "web", "alpine"])
         self.assertIsNone(options.override_reason)
         self.assertEqual(docker_args, ["--name", "web", "alpine"])
 

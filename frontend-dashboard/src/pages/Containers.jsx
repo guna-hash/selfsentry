@@ -1,3 +1,4 @@
+import RiskExplanation from '../components/RiskExplanation.jsx'
 import {
   Badge,
   EmptyState,
@@ -68,7 +69,7 @@ export default function Containers() {
     if (!resumedBy) return
     runAction(
       container,
-      `${API}/containers/${container.id}/resume?resumed_by=${encodeURIComponent(resumedBy)}`,
+      `${API}/containers/${container.id}/resume?recheck=true&resumed_by=${encodeURIComponent(resumedBy)}`,
       `${container.name} resumed: unpaused and network restored.`,
     )
   }
@@ -113,13 +114,21 @@ export default function Containers() {
             <span>{container.image}</span>
             <Badge tone={container.isolated ? 'high' : 'neutral'}>
               {container.isolated
-                ? 'ISOLATED (paused, network cut)'
+                ? container.containment_label
                 : container.status}
             </Badge>
             <span className="risk-score">
               {formatRisk(container.latest_risk_score)}
             </span>
           </div>
+          <p>
+            <Badge tone={container.monitoring?.active ? 'low' : 'medium'}>
+              {error ? 'Monitoring status unavailable' : container.monitoring?.label || 'Monitoring unknown'}
+            </Badge>{' '}
+            {container.protected && <Badge tone="accent">Protected from isolation</Badge>}
+          </p>
+          {container.risk_explanation && <RiskExplanation value={container.risk_explanation} />}
+          {container.isolation_error && <p role="alert">Recovery needs attention: {JSON.stringify(container.isolation_error)}</p>}
           {container.isolated && (
             <p>
               <strong>Isolated</strong>
@@ -135,7 +144,7 @@ export default function Containers() {
               {busyId === container.id ? 'Resuming…' : 'Resume'}
             </button>
           )}
-          {!container.isolated && container.status === 'running' && (
+          {!container.isolated && !container.protected && container.status === 'running' && (
             <button
               className="btn btn-reject"
               disabled={busyId !== null}

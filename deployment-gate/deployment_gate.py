@@ -37,6 +37,7 @@ import requests
 _REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(_REPO_ROOT, "monitor-service"))
 from backend_auth import backend_headers  # noqa: E402
+from deployment_outbox import enqueue, acknowledge  # noqa: E402
 
 sys.path.insert(0, os.path.join(_REPO_ROOT, "image-scanner"))
 sys.path.insert(0, os.path.join(_REPO_ROOT, "policy-checker"))
@@ -181,6 +182,7 @@ def build_record(container_id, image, scan, scan_error, policy, decision, overri
 
 
 def record_decision(record: dict, backend_url: str) -> bool:
+    enqueue(record)
     try:
         response = requests.post(
             f"{backend_url}/deployments/", json=record, timeout=15, headers=backend_headers()
@@ -195,6 +197,7 @@ def record_decision(record: dict, backend_url: str) -> bool:
             file=sys.stderr,
         )
         return False
+    acknowledge(record["event_key"])
     return True
 
 
@@ -222,7 +225,11 @@ def run_gate(
             raise
 
     record = build_record(container_id, image, scan, scan_error, policy, decision, override_reason)
-    recorded = record_decision(record, backend_url)
+    try:
+        recorded = record_decision(record, backend_url)
+    except OSError as exc:
+        print(f"WARNING: deployment journal unavailable: {type(exc).__name__}", file=sys.stderr)
+        recorded = False
     return {
         "decision": decision,
         "container_id": container_id[:12],

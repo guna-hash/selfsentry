@@ -42,6 +42,14 @@ def status(db: Session = Depends(get_db)):
     except SQLAlchemyError:
         result["unconfirmed_incidents"] = None
         result.setdefault("components", {})["database"] = {"state": "unavailable"}
+    result["configuration"] = {
+        "auto_isolation_enabled": cfg.auto_isolation_enabled,
+        "auto_isolation_threshold": cfg.auto_isolation_threshold,
+        "protected_containers": list(cfg.protected_containers),
+        "auto_confirm_enabled": cfg.auto_confirm_enabled,
+        "anomaly_proposals_enabled": cfg.auto_confirm_anomaly_enabled,
+        "rule_candidates_enabled": cfg.rule_candidates_enabled,
+    }
     result["status_age_seconds"] = age
     result["healthy"] = bool(result.get("running")) and age is not None and 0 <= age < 30
     return result
@@ -60,6 +68,9 @@ def workflow(incident_id: int, body: dict, db: Session = Depends(get_db)):
         incident = db.query(Incident).filter(Incident.id == incident_id).first()
         explanation = body["explanation"]
         if explanation.get("status") == "ready":
-            incident.ai_summary = explanation.get("result")
+            incident.ai_summary = {
+                **(explanation.get("result") or {}),
+                "risk_explanation": (incident.ai_summary or {}).get("risk_explanation"),
+            }
     db.commit()
     return meta.workflow

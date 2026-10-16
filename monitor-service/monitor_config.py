@@ -52,6 +52,8 @@ class MonitorConfig:
     correlation_seconds: float = 60.0
     auto_confirm_enabled: bool = True
     auto_confirm_threshold: float = 90.0
+    auto_confirm_anomaly_enabled: bool = True
+    auto_confirm_anomaly_threshold: float = 0.95
     auto_isolation_enabled: bool = False
     auto_isolation_threshold: float = 90.0
     protected_containers: tuple[str, ...] = ()
@@ -79,6 +81,8 @@ class MonitorConfig:
         for name in ("correlation_seconds", "response_max_age_seconds"):
             if getattr(self, name) <= 0:
                 problems.append(f"{name} must be positive")
+        if not 0.8 <= self.auto_confirm_anomaly_threshold <= 1:
+            problems.append("AUTO_CONFIRM_ANOMALY_THRESHOLD must be between 0.8 and 1")
         if not 0.5 <= self.anomaly_threshold <= 1:
             problems.append("MONITOR_ANOMALY_THRESHOLD must be between 0.5 and 1")
         for name in ("auto_confirm_threshold", "auto_isolation_threshold"):
@@ -167,6 +171,8 @@ def load_config(env: Mapping[str, str] | None = None) -> MonitorConfig:
         anomaly_threshold=_read(env, "MONITOR_ANOMALY_THRESHOLD", 0.8, float),
         anomaly_algorithm=_read(env, "MONITOR_ANOMALY_ALGORITHM", "isolation_forest", str),
         correlation_seconds=_read(env, "MONITOR_CORRELATION_SECONDS", 60.0, float),
+        auto_confirm_anomaly_enabled=_read(env, "AUTO_CONFIRM_ANOMALY_ENABLED", True, _bool),
+        auto_confirm_anomaly_threshold=_read(env, "AUTO_CONFIRM_ANOMALY_THRESHOLD", 0.95, float),
         auto_confirm_enabled=_read(env, "AUTO_CONFIRM_ENABLED", True, _bool),
         auto_confirm_threshold=_read(env, "AUTO_CONFIRM_THRESHOLD", 90.0, float),
         auto_isolation_enabled=_read(env, "AUTO_ISOLATION_ENABLED", False, _bool),

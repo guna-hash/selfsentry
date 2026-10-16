@@ -52,6 +52,21 @@ class RulesApiTestCase(unittest.TestCase):
         app.include_router(rules_module.router)
         app.dependency_overrides[rules_module.get_db] = override_get_db
         self.client = TestClient(app)
+        # Route tests use a verified corpus result; separate tests exercise real validation.
+        verification = patch.object(
+            rules_module,
+            "_verified_backtest",
+            return_value={
+                "false_positive_rate": 0.02,
+                "false_positives": 2,
+                "true_negatives": 98,
+                "events_tested": 100,
+                "verdict": "pass",
+                "benign_sha256": "test-corpus",
+            },
+        )
+        verification.start()
+        self.addCleanup(verification.stop)
 
         with self.Session() as db:
             db.add(Incident(id=1, container_id="c1", risk_score=90.0))
@@ -62,8 +77,10 @@ class RulesApiTestCase(unittest.TestCase):
     def add_rule(self, status="pending_review"):
         with self.Session() as db:
             rule = GeneratedRule(
-                confirmed_incident_id=1, rule_yaml=RULE_YAML,
-                backtested_fp_rate=0.02, status=status,
+                confirmed_incident_id=1,
+                rule_yaml=RULE_YAML,
+                backtested_fp_rate=0.02,
+                status=status,
             )
             db.add(rule)
             db.commit()
@@ -193,26 +210,30 @@ class TestMonitorRuleSafety(RulesApiTestCase):
 
     def test_automatic_confirmation_is_not_human_rule_approval(self):
         rule_id = self.add_rule()
-        with patch.object(rules_module, 'deploy_rule') as deploy:
-            response = self.client.post(f'/rules/{rule_id}/approve',
-                                        params={'reviewed_by': 'selfsentry-auto'})
+        with patch.object(rules_module, "deploy_rule") as deploy:
+            response = self.client.post(
+                f"/rules/{rule_id}/approve", params={"reviewed_by": "selfsentry-auto"}
+            )
         self.assertEqual(response.status_code, 422)
         deploy.assert_not_called()
 
     def test_deployment_failure_is_audited(self):
         from models.db_models import AuditEvent
+
         rule_id = self.add_rule()
-        with patch.object(rules_module, 'deploy_rule', side_effect=rules_module.RuleDeploymentError('down')):
+        with patch.object(
+            rules_module, "deploy_rule", side_effect=rules_module.RuleDeploymentError("down")
+        ):
             self.approve(rule_id)
         with self.Session() as db:
             events = db.query(AuditEvent).all()
-            self.assertIn('RULE_DEPLOYMENT_FAILED', [e.event_type for e in events])
+            self.assertIn("RULE_DEPLOYMENT_FAILED", [e.event_type for e in events])
 
 
 class TestCandidateRecovery(RulesApiTestCase):
     def test_deployed_candidate_is_found_after_a_lost_submission_response(self):
-        rule_id = self.add_rule(status='deployed')
-        response = self.client.get('/rules/for-confirmed/1')
+        rule_id = self.add_rule(status="deployed")
+        response = self.client.get("/rules/for-confirmed/1")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()['id'], rule_id)
-        self.assertEqual(response.json()['status'], 'deployed')
+        self.assertEqual(response.json()["id"], rule_id)
+        self.assertEqual(response.json()["status"], "deployed")

@@ -1,4 +1,5 @@
 """Separate, observation-only live benign validation; never retrains the model."""
+
 import argparse
 import hashlib
 import json
@@ -16,9 +17,9 @@ from dotenv import dotenv_values
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path[:0] = [str(ROOT / "evaluation"), str(ROOT / "monitor-service")]
-from clock_guard import AlertTail, judge_events, run_preflight
-from monitor_config import load_config
-from scenarios import SCENARIOS
+from clock_guard import AlertTail, judge_events, run_preflight  # noqa: E402
+from monitor_config import load_config  # noqa: E402
+from scenarios import SCENARIOS  # noqa: E402
 
 COMMANDS = {
     name: "set -eu; " + SCENARIOS[name]["command"]
@@ -57,8 +58,11 @@ def check_status(status, cid):
 
 
 def checked_environment(pid):
-    env = dict(part.split("=", 1) for part in
-               Path(f"/proc/{pid}/environ").read_bytes().decode().split("\0") if "=" in part)
+    env = dict(
+        part.split("=", 1)
+        for part in Path(f"/proc/{pid}/environ").read_bytes().decode().split("\0")
+        if "=" in part
+    )
     if env.get("MONITOR_ANOMALY_ALGORITHM") != "one_class_svm":
         raise RuntimeError("Running monitor must explicitly select one_class_svm")
     for key in FLAGS:
@@ -69,16 +73,25 @@ def checked_environment(pid):
 
 def pipeline_evidence(path, cid, bucket):
     with sqlite3.connect(path.resolve().as_uri() + "?mode=ro", uri=True) as db:
-        kinds = Counter(row[0] for row in db.execute(
-            "SELECT kind FROM events WHERE container=? AND bucket=?", (cid, bucket)))
-        closed = bool(db.execute("SELECT 1 FROM windows WHERE container=? AND bucket=?",
-                                 (cid, bucket)).fetchone())
+        kinds = Counter(
+            row[0]
+            for row in db.execute(
+                "SELECT kind FROM events WHERE container=? AND bucket=?", (cid, bucket)
+            )
+        )
+        closed = bool(
+            db.execute(
+                "SELECT 1 FROM windows WHERE container=? AND bucket=?", (cid, bucket)
+            ).fetchone()
+        )
         stages = []
         delivered_ids = []
         for body, stage, incident_id in db.execute("SELECT body, stage, incident_id FROM outbox"):
             data = json.loads(body)
             evidence = data.get("monitor_evidence") or {}
-            if data.get("container_id", "").startswith(cid) and evidence.get("window_start") == stamp(bucket):
+            if data.get("container_id", "").startswith(cid) and evidence.get(
+                "window_start"
+            ) == stamp(bucket):
                 stages.append(stage)
                 if stage == "done" and incident_id is not None:
                     delivered_ids.append(incident_id)
@@ -89,8 +102,12 @@ def pipeline_evidence(path, cid, bucket):
         reasons.append("no_accepted_baseline_events")
     if any(stage != "done" for stage in stages):
         reasons.append("incident_delivery_not_done")
-    return {"event_counts": dict(kinds), "window_closed": closed,
-            "outbox_stages": stages, "delivered_incident_ids": delivered_ids}, reasons
+    return {
+        "event_counts": dict(kinds),
+        "window_closed": closed,
+        "outbox_stages": stages,
+        "delivered_incident_ids": delivered_ids,
+    }, reasons
 
 
 def main():
@@ -115,22 +132,36 @@ def main():
     if config.window_seconds < 35:
         raise RuntimeError("This batch requires monitor windows of at least 35 seconds")
     baseline = config.baseline_dir / f"{cid}.json"
-    sources = [baseline, ROOT / "behavioral-engine/anomaly_model.py",
-               ROOT / "behavioral-engine/feature_extractor.py",
-               ROOT / "monitor-service/monitor_config.py",
-               ROOT / "falco-rules/baseline-capture-rules.yaml",
-               ROOT / "falco-rules/auto-generated-rules.yaml", Path(__file__).resolve()]
+    sources = [
+        baseline,
+        ROOT / "behavioral-engine/anomaly_model.py",
+        ROOT / "behavioral-engine/feature_extractor.py",
+        ROOT / "monitor-service/monitor_config.py",
+        ROOT / "falco-rules/baseline-capture-rules.yaml",
+        ROOT / "falco-rules/auto-generated-rules.yaml",
+        Path(__file__).resolve(),
+    ]
     sources.extend(p for p in (ROOT / ".env", Path("/etc/falco/falco_rules.yaml")) if p.exists())
-    hashes = {str(p.relative_to(ROOT)) if p.is_relative_to(ROOT) else str(p): digest(p) for p in sources}
+    hashes = {
+        str(p.relative_to(ROOT)) if p.is_relative_to(ROOT) else str(p): digest(p) for p in sources
+    }
     started = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     out = ROOT / "state/evaluation" / f"svm-benign-{started}"
     out.mkdir(parents=True, exist_ok=False)
-    manifest = {"started_at": stamp(time.time()), "container_id": info["Id"],
-                "image_id": info["Image"], "monitor_pid": pid, "algorithm": "one_class_svm",
-                "automatic_actions": {key: env[key] for key in FLAGS}, "seed": args.seed,
-                "commands": COMMANDS, "hashes": hashes, "window_seconds": config.window_seconds,
-                "lateness_seconds": config.lateness_seconds,
-                "scope": "24 lab benign windows by default; separate from original benchmark"}
+    manifest = {
+        "started_at": stamp(time.time()),
+        "container_id": info["Id"],
+        "image_id": info["Image"],
+        "monitor_pid": pid,
+        "algorithm": "one_class_svm",
+        "automatic_actions": {key: env[key] for key in FLAGS},
+        "seed": args.seed,
+        "commands": COMMANDS,
+        "hashes": hashes,
+        "window_seconds": config.window_seconds,
+        "lateness_seconds": config.lateness_seconds,
+        "scope": "24 lab benign windows by default; separate from original benchmark",
+    }
     save(out / "manifest.json", manifest)
     preflight = run_preflight(args.container, config.falco_log_path, out / "clock_check.json")
     if not preflight["passed"]:
@@ -146,17 +177,33 @@ def main():
         current = get(base, "/monitor/status")
         check_status(current, cid)
         if current["pid"] != pid or checked_environment(pid) != env:
-            raise RuntimeError("Monitor restarted or environment changed; partial evidence retained")
-        if any(digest(p) != hashes[str(p.relative_to(ROOT)) if p.is_relative_to(ROOT) else str(p)] for p in sources):
-            raise RuntimeError("Baseline, model, rules or runner changed; partial evidence retained")
+            raise RuntimeError(
+                "Monitor restarted or environment changed; partial evidence retained"
+            )
+        if any(
+            digest(p) != hashes[str(p.relative_to(ROOT)) if p.is_relative_to(ROOT) else str(p)]
+            for p in sources
+        ):
+            raise RuntimeError(
+                "Baseline, model, rules or runner changed; partial evidence retained"
+            )
         tail = AlertTail(config.falco_log_path)
         tail.mark()
-        row = {"trial": index, "scenario": scenario, "window_start": stamp(boundary),
-               "bucket": boundary, "invalid_reasons": []}
+        row = {
+            "trial": index,
+            "scenario": scenario,
+            "window_start": stamp(boundary),
+            "bucket": boundary,
+            "invalid_reasons": [],
+        }
         before = time.time()
         try:
-            result = subprocess.run(["docker", "exec", args.container, "/bin/sh", "-c", COMMANDS[scenario]],
-                                    capture_output=True, text=True, timeout=min(30, window - 3))
+            result = subprocess.run(
+                ["docker", "exec", args.container, "/bin/sh", "-c", COMMANDS[scenario]],
+                capture_output=True,
+                text=True,
+                timeout=min(30, window - 3),
+            )
             row["returncode"] = result.returncode
             if result.returncode:
                 row["invalid_reasons"].append("workload_failed")
@@ -170,43 +217,69 @@ def main():
         rows.append(row)
         with (out / "schedule.jsonl").open("a") as stream:
             stream.write(json.dumps(row) + "\n")
-        print(f"{index}/{len(schedule)} {scenario}: captured; awaiting final validation", flush=True)
+        print(
+            f"{index}/{len(schedule)} {scenario}: captured; awaiting final validation", flush=True
+        )
         boundary += window
     print("Waiting for final window processing and incident delivery...", flush=True)
     time.sleep(config.lateness_seconds + 90)
     current = get(base, "/monitor/status")
     check_status(current, cid)
-    unchanged = current["pid"] == pid and checked_environment(pid) == env and all(
-        digest(p) == hashes[str(p.relative_to(ROOT)) if p.is_relative_to(ROOT) else str(p)] for p in sources)
+    unchanged = (
+        current["pid"] == pid
+        and checked_environment(pid) == env
+        and all(
+            digest(p) == hashes[str(p.relative_to(ROOT)) if p.is_relative_to(ROOT) else str(p)]
+            for p in sources
+        )
+    )
     incidents = get(base, "/incidents/")
     selected = []
     for row in rows:
-        pipeline, reasons = pipeline_evidence(config.state_dir / "pipeline.sqlite", cid, row["bucket"])
+        pipeline, reasons = pipeline_evidence(
+            config.state_dir / "pipeline.sqlite", cid, row["bucket"]
+        )
         row["pipeline"] = pipeline
         row["invalid_reasons"].extend(reasons)
         if not unchanged:
             row["invalid_reasons"].append("configuration_changed")
-        matches = [i for i in incidents if i.get("container_id", "").startswith(cid)
-                   and (i.get("monitor_evidence") or {}).get("window_start") == row["window_start"]]
+        matches = [
+            i
+            for i in incidents
+            if i.get("container_id", "").startswith(cid)
+            and (i.get("monitor_evidence") or {}).get("window_start") == row["window_start"]
+        ]
         selected.extend(matches)
         row["incident_ids"] = [i["id"] for i in matches]
         if not set(pipeline["delivered_incident_ids"]).issubset(row["incident_ids"]):
             row["invalid_reasons"].append("delivered_incident_missing_from_api")
-        if any((i.get("monitor_evidence") or {}).get("anomaly_assessment", {}).get(
-                "model_algorithm") not in (None, "one_class_svm") for i in matches):
+        if any(
+            (i.get("monitor_evidence") or {}).get("anomaly_assessment", {}).get("model_algorithm")
+            not in (None, "one_class_svm")
+            for i in matches
+        ):
             row["invalid_reasons"].append("unexpected_model_algorithm")
         row["incident_detected"] = bool(matches)
         row["valid"] = not row["invalid_reasons"]
-    summary = {"algorithm": "one_class_svm", "total_windows": len(rows),
-               "valid_windows": sum(r["valid"] for r in rows),
-               "invalid_windows": sum(not r["valid"] for r in rows),
-               "valid_windows_with_incidents": sum(r["valid"] and r["incident_detected"] for r in rows),
-               "by_scenario": {}, "limitations": "Small repeated lab workloads; not production FPR. No retraining or threshold tuning."}
+    summary = {
+        "algorithm": "one_class_svm",
+        "total_windows": len(rows),
+        "valid_windows": sum(r["valid"] for r in rows),
+        "invalid_windows": sum(not r["valid"] for r in rows),
+        "valid_windows_with_incidents": sum(r["valid"] and r["incident_detected"] for r in rows),
+        "by_scenario": {},
+        "limitations": (
+            "Small repeated lab workloads; not production FPR. "
+            "No retraining or threshold tuning."
+        ),
+    }
     for name in COMMANDS:
         group = [r for r in rows if r["scenario"] == name]
         summary["by_scenario"][name] = {
-            "valid": sum(r["valid"] for r in group), "invalid": sum(not r["valid"] for r in group),
-            "valid_with_incidents": sum(r["valid"] and r["incident_detected"] for r in group)}
+            "valid": sum(r["valid"] for r in group),
+            "invalid": sum(not r["valid"] for r in group),
+            "valid_with_incidents": sum(r["valid"] and r["incident_detected"] for r in group),
+        }
     (out / "trials.jsonl").write_text("".join(json.dumps(r) + "\n" for r in rows))
     save(out / "incidents.json", selected)
     save(out / "summary.json", summary)

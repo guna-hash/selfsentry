@@ -1,5 +1,13 @@
 # Phase 6 — Rule Synthesis Engine (Core Novelty)
 
+**16 October extension:** process/parent and process/file-write templates are supported.
+Anomaly-only proposals require a retained literal witness and a ready qualifying model.
+Backend submission and human approval both recompute backtests on the configured benign
+corpus; failed tests cannot be bypassed. Detailed results and native re-fire links appear
+in rule lifecycle history. See [completion notes](final_completion_notes.md). The original
+v1 verification below describes its historical source, not the extension's live evidence.
+
+
 **Historical implementation notes:** this page records the initial Phase 6 session,
 including findings subsequently fixed. Confirmation persistence and native re-fire
 were resolved later; see [current limits](known_limitations.md) and

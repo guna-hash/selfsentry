@@ -1,5 +1,32 @@
 # SelfSentry release checklist
 
+
+## Completion extension — 16 October 2026
+
+- [x] Deterministic explanations, risk rationale and 1–3 fixes for every incident severity
+  and deployment decision; persisted through existing JSON fields and historical backfill.
+- [x] Local host lifecycle CLI: start/stop/status/restart, prerequisite validation, readiness,
+  rollback, private logs and safe PID identity checks.
+- [x] Resume request/result/failure audits; partial recovery visible/retryable, protected
+  containers enforced at the shared response boundary, optional policy re-check.
+- [x] Falco ingestion/windows isolated from slow control workflows; bounded parallel model
+  fitting, durable audit/deployment replay and conservative per-container health badges.
+- [x] Backend-authoritative backtests on submission and approval, process/file-write templates,
+  ready-model anomaly witness proposals, lifecycle history and observed native re-fire links.
+- [x] Unified dashboard overview, guidance cards, confirmation badges and operational docs.
+- [x] Operator-reported VM functional acceptance: startup, Isolation Forest configuration,
+  two-container continuity, audited resume, protection, PostgreSQL recovery, complete
+  guidance, native rule re-fire and authoritative failed submission. See
+  docs/completion_acceptance_20261016.md.
+- [x] Final completion VM regression rerun: 472 Python tests, lint, 7 frontend tests and build.
+- [x] Visibility follow-up: 475 VM Python tests, lint, 7 frontend tests and build passed; operator confirmed the label and audit lookups.
+- [ ] New anomaly-only live chain and native process/file-write rule acceptance.
+- [ ] Measure representative detection quality/load/dropped events for the new release;
+  historical study results do not validate the extension automatically.
+
+Earlier checked results below are preserved as historical evidence, not a claim that the
+completion extension passed every possible live acceptance case.
+
 Reconciled 13 October 2026 against source base `e781e02`, applied reliability/model
 patches and operator-reported VM evidence. See [current acceptance](docs/reliability_acceptance_20261013.md)
 and [earlier final review](docs/monitor_final_review.md). Source checks, live functional

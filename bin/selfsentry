@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+set -euo pipefail
+REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+if [[ ! -x "$REPO/.venv/bin/python3" ]]; then
+  echo 'ERROR: Missing .venv. Run python3 -m venv .venv and .venv/bin/pip install -r requirements.txt.' >&2
+  exit 2
+fi
+exec "$REPO/.venv/bin/python3" "$REPO/ops/selfsentry_cli.py" "$@"

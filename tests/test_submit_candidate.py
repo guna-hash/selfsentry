@@ -15,10 +15,15 @@ import submit_candidate  # noqa: E402
 
 PATTERN = {"proc_name": "whoami", "parent_proc": "sh", "action": "spawned_process"}
 PASS_RESULT = {
-    "false_positive_rate": 0.02, "matched_events": 2, "events_tested": 100, "verdict": "pass",
+    "false_positive_rate": 0.02,
+    "matched_events": 2,
+    "events_tested": 100,
+    "verdict": "pass",
 }
 FLAGGED_RESULT = {
-    "false_positive_rate": 0.4, "matched_events": 40, "events_tested": 100,
+    "false_positive_rate": 0.4,
+    "matched_events": 40,
+    "events_tested": 100,
     "verdict": "flag_for_revision",
 }
 
@@ -62,10 +67,11 @@ class TestSubmitCandidate(SubmitCandidateTestCase):
             self.run_submit()
         self.requests.post.assert_not_called()
 
-    def test_flagged_candidate_can_be_queued_with_explicit_override(self):
+    def test_flagged_candidate_cannot_be_queued_even_with_old_override_flag(self):
         self.backtest.return_value = FLAGGED_RESULT
-        result = self.run_submit(allow_flagged=True)
-        self.assertEqual(result["status"], "pending_review")
+        with self.assertRaises(submit_candidate.SubmissionError):
+            self.run_submit(allow_flagged=True)
+        self.requests.post.assert_not_called()
 
     def test_zero_events_tested_is_refused(self):
         self.backtest.return_value = {**PASS_RESULT, "events_tested": 0}

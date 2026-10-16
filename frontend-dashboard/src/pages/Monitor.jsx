@@ -97,6 +97,8 @@ export default function Monitor() {
           </div>
         </section>
       )}
+      <p>Automatic isolation: {status?.configuration ? (status.configuration.auto_isolation_enabled ? 'Enabled' : 'Disabled') : 'Unknown'}.
+        Protected containers: {status?.configuration?.protected_containers?.join(', ') || 'None configured'}.</p>
       <div className="section-heading">
         <h3>Connections</h3>
         <span>{components.length} services</span>

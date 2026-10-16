@@ -1,3 +1,4 @@
+import RiskExplanation from '../components/RiskExplanation.jsx'
 import { API, apiFetch, incidentSeverity, describeFailure } from '../api.js'
 import { useState, useEffect, useRef } from 'react'
 import { ShieldAlert, Bell, ShieldCheck, Activity } from 'lucide-react'
@@ -155,6 +156,7 @@ export default function Alerts() {
                 <span>RISK / 100</span>
               </div>
             </div>
+            <RiskExplanation value={incident.risk_explanation} />
             <div className="incident-sections">
               <section>
                 <h4>
@@ -246,7 +248,9 @@ export default function Alerts() {
             )}
             <footer className="incident-footer">
               <div>
-                <span>Confirmation</span>
+                <Badge tone={incident.confirmation ? (incident.confirmation.confirmed_by === "selfsentry-auto" ? "accent" : "low") : "medium"}>
+                  {incident.confirmation ? (incident.confirmation.confirmed_by === "selfsentry-auto" ? "Auto-confirmed" : "Human-confirmed") : "Pending"}
+                </Badge>
                 <strong>
                   {incident.confirmation
                     ? `Confirmed by ${incident.confirmation.confirmed_by}`

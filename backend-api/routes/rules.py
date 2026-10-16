@@ -1,5 +1,7 @@
 import os
 import sys
+import hashlib
+from pathlib import Path
 from datetime import datetime, timezone
 
 import yaml
@@ -12,6 +14,12 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "rule-synthe
 from database import get_db  # noqa: E402
 from models.db_models import ConfirmedIncident, GeneratedRule, AuditEvent  # noqa: E402
 from rule_deployer import RuleDeploymentError, deploy_rule  # noqa: E402
+from rule_backtester import backtest_rule, BacktestError  # noqa: E402
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "monitor-service"))
+from monitor_config import load_config  # noqa: E402
+from submit_candidate import _load_benign_events  # noqa: E402
+from fastapi.encoders import jsonable_encoder  # noqa: E402
 
 router = APIRouter(prefix="/rules", tags=["rules"])
 
@@ -35,6 +43,23 @@ def _audit_rule(db, event_type, rule, detail):
             occurred_at=datetime.now(timezone.utc).replace(tzinfo=None),
         )
     )
+
+
+def _verified_backtest(rule_yaml):
+    path = load_config().benign_log_path
+    if not path:
+        raise HTTPException(503, "Validated benign corpus not configured")
+    try:
+        before = hashlib.sha256(Path(path).read_bytes()).hexdigest()
+        result = backtest_rule(rule_yaml, _load_benign_events(path))
+        after = hashlib.sha256(Path(path).read_bytes()).hexdigest()
+        if before != after:
+            raise HTTPException(409, "Benign corpus changed during backtest; retry")
+    except (OSError, BacktestError, ValueError) as exc:
+        raise HTTPException(422, f"Backtest unavailable: {type(exc).__name__}") from exc
+    if result["verdict"] != "pass" or not result["events_tested"]:
+        raise HTTPException(422, {"reason": "Candidate failed authoritative backtest", **result})
+    return {**result, "benign_sha256": before}
 
 
 def _get_rule_or_404(db: Session, rule_id: int) -> GeneratedRule:
@@ -62,8 +87,35 @@ def _validate_rule_yaml(text: str) -> None:
         )
 
 
+@router.get("/history")
+def rule_history(db: Session = Depends(get_db)):
+    rows = db.query(GeneratedRule).order_by(GeneratedRule.id.desc()).limit(100).all()
+    audits = db.query(AuditEvent).filter(AuditEvent.event_type.like("RULE_%")).all()
+    result = []
+    for rule in rows:
+        item = jsonable_encoder(rule)
+        confirmed = db.get(ConfirmedIncident, rule.confirmed_incident_id)
+        events = [jsonable_encoder(a) for a in audits if (a.detail or {}).get("rule_id") == rule.id]
+        item.update(
+            incident_id=confirmed.incident_id if confirmed else None,
+            confirmation_source=confirmed.confirmed_by if confirmed else None,
+            lifecycle_events=events,
+            backtest=next(
+                (
+                    (a.get("detail") or {}).get("backtest")
+                    for a in reversed(events)
+                    if (a.get("detail") or {}).get("backtest")
+                ),
+                None,
+            ),
+            native_refires=[a for a in events if a["event_type"] == "RULE_NATIVE_REFIRE"],
+        )
+        result.append(item)
+    return result
+
+
 @router.get("/pending")
-async def list_pending_rules(db: Session = Depends(get_db)):
+def list_pending_rules(db: Session = Depends(get_db)):
     """Rules awaiting action: pending_review, plus approved-but-not-yet-deployed
     (a failed deployment leaves a rule approved so it can be retried from the queue)."""
     return (
@@ -91,7 +143,7 @@ def active_candidate(confirmed_incident_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/", status_code=201)
-async def submit_rule(body: CandidateRuleIn, db: Session = Depends(get_db)):
+def submit_rule(body: CandidateRuleIn, db: Session = Depends(get_db)):
     """Queue a backtested candidate rule for human review. Nothing is deployed here."""
     _validate_rule_yaml(body.rule_yaml)
 
@@ -119,20 +171,44 @@ async def submit_rule(body: CandidateRuleIn, db: Session = Depends(get_db)):
             f"(status: {duplicate.status})",
         )
 
+    try:
+        verified = _verified_backtest(body.rule_yaml)
+    except HTTPException as exc:
+        db.add(
+            AuditEvent(
+                event_type="RULE_CANDIDATE_BLOCKED",
+                source="backend",
+                severity="warning",
+                detail={
+                    "incident_id": confirmed.incident_id,
+                    "confirmed_incident_id": confirmed.id,
+                    "reason": exc.detail,
+                },
+            )
+        )
+        db.commit()
+        raise
     rule = GeneratedRule(
         confirmed_incident_id=body.confirmed_incident_id,
         rule_yaml=body.rule_yaml,
-        backtested_fp_rate=body.backtested_fp_rate,
+        backtested_fp_rate=verified["false_positive_rate"],
         status="pending_review",
     )
     db.add(rule)
+    db.flush()
+    _audit_rule(
+        db,
+        "RULE_CANDIDATE_CREATED",
+        rule,
+        {"backtest": verified, "incident_id": confirmed.incident_id},
+    )
     db.commit()
     db.refresh(rule)
     return {"id": rule.id, "status": rule.status}
 
 
 @router.post("/{rule_id}/approve")
-async def approve_rule(rule_id: int, reviewed_by: str, db: Session = Depends(get_db)):
+def approve_rule(rule_id: int, reviewed_by: str, db: Session = Depends(get_db)):
     """Record the human approval, then deploy through the guarded rule_deployer.
 
     If deployment fails the rule stays 'approved' (the decision is kept) and the
@@ -147,6 +223,14 @@ async def approve_rule(rule_id: int, reviewed_by: str, db: Session = Depends(get
             detail=f"Rule is '{rule.status}'; expected pending_review or approved",
         )
 
+    try:
+        verified = _verified_backtest(rule.rule_yaml)
+    except HTTPException as exc:
+        _audit_rule(db, "RULE_BACKTEST_BLOCKED_DEPLOYMENT", rule, {"reason": exc.detail})
+        db.commit()
+        raise
+    rule.backtested_fp_rate = verified["false_positive_rate"]
+    _audit_rule(db, "RULE_BACKTEST_REVALIDATED", rule, {"backtest": verified})
     rule.status = "approved"
     rule.reviewed_by = reviewed_by
     rule.reviewed_at = datetime.now(timezone.utc)
@@ -171,7 +255,7 @@ async def approve_rule(rule_id: int, reviewed_by: str, db: Session = Depends(get
 
 
 @router.post("/{rule_id}/reject")
-async def reject_rule(rule_id: int, reviewed_by: str, reason: str, db: Session = Depends(get_db)):
+def reject_rule(rule_id: int, reviewed_by: str, reason: str, db: Session = Depends(get_db)):
     if not reviewed_by.strip() or reviewed_by.strip() == "selfsentry-auto":
         raise HTTPException(422, "An explicit human reviewer identity is required")
     rule = _get_rule_or_404(db, rule_id)
@@ -180,6 +264,8 @@ async def reject_rule(rule_id: int, reviewed_by: str, reason: str, db: Session =
             status_code=409,
             detail=f"Rule is '{rule.status}'; expected pending_review or approved",
         )
+    if not reason.strip():
+        raise HTTPException(422, "Rejection reason is required")
     _audit_rule(db, "RULE_REJECTED", rule, {"reviewed_by": reviewed_by, "reason": reason})
     rule.status = "rejected"
     rule.reviewed_by = reviewed_by
@@ -189,10 +275,35 @@ async def reject_rule(rule_id: int, reviewed_by: str, reason: str, db: Session =
 
 
 @router.post("/{rule_id}/deprecate")
-async def deprecate_rule(rule_id: int, reviewed_by: str, db: Session = Depends(get_db)):
+def deprecate_rule(rule_id: int, reviewed_by: str, db: Session = Depends(get_db)):
     rule = _get_rule_or_404(db, rule_id)
     rule.status = "retired"
     rule.reviewed_by = reviewed_by
     rule.reviewed_at = datetime.now(timezone.utc)
     db.commit()
     return {"status": "retired", "rule_id": rule_id}
+
+
+def record_native_refires(db, incident, payload):
+    """Observed native matches are evidence, not automatically labeled true positives."""
+    alerts = list((payload.get("monitor_evidence") or {}).get("falco_alerts") or [])
+    if payload.get("falco_alert"):
+        alerts.append(payload["falco_alert"])
+    names = {a.get("rule") for a in alerts}
+    if not any(str(name).startswith("Auto_Generated_") for name in names):
+        return
+    for rule in db.query(GeneratedRule).filter(GeneratedRule.status == "deployed").all():
+        definitions = yaml.safe_load(rule.rule_yaml) or []
+        for definition in definitions:
+            if definition.get("rule") in names:
+                _audit_rule(
+                    db,
+                    "RULE_NATIVE_REFIRE",
+                    rule,
+                    {
+                        "incident_id": incident.id,
+                        "container_id": incident.container_id,
+                        "native_rule_name": definition["rule"],
+                        "evidence": [a for a in alerts if a.get("rule") == definition["rule"]],
+                    },
+                )

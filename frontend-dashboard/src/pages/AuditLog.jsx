@@ -3,7 +3,6 @@ import {
   EmptyState,
   Loading,
   PageHeader,
-  Notice,
 } from '../components/ui.jsx'
 import { useState, useEffect } from 'react'
 import { API, apiFetch, describeFailure } from '../api.js'
@@ -20,29 +19,60 @@ export default function AuditLog() {
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('')
 
-  async function fetchEvents() {
-    try {
-      const res = await apiFetch(`${API}/audit/?limit=200`)
-      if (!res.ok) throw new Error(await describeFailure(res))
-      setEvents(await res.json())
-      setError(null)
-    } catch (err) {
-      setError(err.message)
-    } finally {
-      setLoading(false)
-    }
-  }
+  const [eventId, setEventId] = useState('')
+  const [beforeId, setBeforeId] = useState(null)
+  const [knownTypes, setKnownTypes] = useState([
+    'CONTAINER_RESUMED', 'CONTAINER_RESUME_REQUESTED',
+    'CONTAINER_RESUME_RECHECK', 'RULE_NATIVE_REFIRE',
+  ])
 
   useEffect(() => {
+    let active = true
+    let pending = false
+    const controller = new AbortController()
+    setLoading(true)
+    setEvents([])
+    async function fetchEvents() {
+      if (pending) return
+      if (eventId && !/^[1-9][0-9]*$/.test(eventId)) {
+        setError('Enter a positive whole-number audit ID.')
+        setLoading(false)
+        return
+      }
+      pending = true
+      try {
+        const params = new URLSearchParams({ limit: '200' })
+        if (filter) params.set('event_type', filter)
+        if (eventId) params.set('event_id', eventId)
+        if (beforeId) params.set('before_id', String(beforeId))
+        const res = await apiFetch(`${API}/audit/?${params}`, {
+          signal: controller.signal,
+        })
+        if (!res.ok) throw new Error(await describeFailure(res))
+        const items = await res.json()
+        if (active) {
+          setEvents(items)
+          setKnownTypes((old) => [...new Set([...old, ...items.map((e) => e.event_type)])])
+          setError(null)
+        }
+      } catch (err) {
+        if (active) setError(err.message)
+      } finally {
+        pending = false
+        if (active) setLoading(false)
+      }
+    }
     fetchEvents()
     const interval = setInterval(fetchEvents, 3000)
-    return () => clearInterval(interval)
-  }, [])
+    return () => {
+      active = false
+      controller.abort()
+      clearInterval(interval)
+    }
+  }, [filter, eventId, beforeId])
 
-  const eventTypes = [...new Set(events.map((e) => e.event_type))].sort()
-  const visible = filter
-    ? events.filter((e) => e.event_type === filter)
-    : events
+  const eventTypes = [...knownTypes].sort()
+  const visible = events
 
   return (
     <div>
@@ -59,7 +89,7 @@ export default function AuditLog() {
         <select
           aria-label="Filter audit events by type"
           value={filter}
-          onChange={(e) => setFilter(e.target.value)}
+          onChange={(e) => { setFilter(e.target.value); setBeforeId(null) }}
         >
           <option value="">All event types</option>
           {eventTypes.map((type) => (
@@ -67,14 +97,39 @@ export default function AuditLog() {
               {type}
             </option>
           ))}
-        </select>
+        </select>{' '}
+        <input
+          type="number"
+          min="1"
+          step="1"
+          aria-label="Find audit ID"
+          placeholder="Audit ID (e.g. 829)"
+          value={eventId}
+          onChange={(e) => { setEventId(e.target.value); setBeforeId(null) }}
+        />
+      </p>
+      <p>
+        {eventId ? `Audit ID ${eventId}` : 'Up to 200 records per page, newest first.'}{' '}
+        Filters search the stored audit history.
+      </p>
+      <p>
+        <button type="button" disabled={!beforeId} onClick={() => setBeforeId(null)}>
+          Latest records
+        </button>{' '}
+        <button
+          type="button"
+          disabled={loading || !!error || !!eventId || events.length < 200}
+          onClick={() => setBeforeId(events[events.length - 1].id)}
+        >
+          Older records
+        </button>
       </p>
       {visible.length === 0 && !error && !loading && (
         <EmptyState
-          title={filter ? 'No matching events' : 'No audit events yet'}
+          title={filter || eventId || beforeId ? 'No matching events' : 'No audit events yet'}
         >
-          {filter
-            ? 'Choose another event type to explore the audit trail.'
+          {filter || eventId || beforeId
+            ? 'Clear the audit ID or choose another event type to explore the audit trail.'
             : 'Container activity will appear when the monitor reports events.'}
         </EmptyState>
       )}
@@ -95,6 +150,7 @@ export default function AuditLog() {
             >
               {e.severity}
             </Badge>
+            <span>Audit #{e.id}</span>
             <span>{e.event_type}</span>
             <span>{e.container_name || e.container_id || 'host'}</span>
             {e.image_name && <span>{e.image_name}</span>}

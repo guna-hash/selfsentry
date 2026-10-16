@@ -1,98 +1,100 @@
-"""
-rule_backtester.py
-----------------------
-Rule Synthesis Engine — Rule Backtester.
-
-CRITICAL DESIGN CONSTRAINT: mandatory before any auto-generated rule
-goes live. Tests a candidate rule against stored historical BENIGN
-traffic to estimate its false-positive rate. A rule with an
-unacceptable FP rate must never reach the human-approval queue marked
-"ready" — it gets flagged for revision instead.
-
-Source of "historical benign events": this project's own baseline
-capture (Phase 4) already produces real, confirmed-normal activity via
-the custom "Baseline Process Spawn" Falco rule. That is the benign
-corpus used here — no synthetic/invented data.
-"""
+"""Backtest only supported literal templates; never approximate arbitrary Falco conditions."""
 
 from __future__ import annotations
-
 import re
+import yaml
 
-FP_RATE_THRESHOLD = 0.05  # above this, flag for revision rather than approve
-
-_CONDITION_PATTERN = re.compile(r'proc\.name="([^"]+)"\s+and\s+proc\.pname="([^"]+)"')
+FP_RATE_THRESHOLD = 0.05
+_LITERAL = r"[A-Za-z0-9_./:+-]{1,256}"
+_PROCESS = re.compile(
+    rf'^spawned_process and container and proc.name="({_LITERAL})" '
+    rf'and proc.pname="({_LITERAL})"$'
+)
+_FILE = re.compile(
+    rf'^open_write and container and proc.name="({_LITERAL})" ' rf'and fd.name="(/{_LITERAL})"$'
+)
 _OUTPUT_KV_PATTERN = re.compile(r"(\w[\w.]*)=([^\s]+)")
 
 
 class BacktestError(RuntimeError):
-    """Raised when the candidate rule YAML cannot be parsed for backtesting."""
+    pass
 
 
-def _extract_condition_fields(candidate_rule_yaml: str) -> tuple[str, str]:
-    """
-    Parses proc.name and proc.pname out of the rendered rule's condition
-    line. This tests the REAL generated artifact (what Falco would
-    actually load), not just the original input pattern dict.
-    """
-    match = _CONDITION_PATTERN.search(candidate_rule_yaml)
-    if not match:
-        raise BacktestError(
-            "Could not find a proc.name=... and proc.pname=... condition in the "
-            "candidate rule YAML — backtesting only supports this rule shape currently."
-        )
-    return match.group(1), match.group(2)
+def condition_fields(candidate_rule_yaml):
+    try:
+        items = yaml.safe_load(candidate_rule_yaml)
+    except yaml.YAMLError as exc:
+        raise BacktestError("Invalid candidate YAML") from exc
+    if not isinstance(items, list) or len(items) != 1 or not isinstance(items[0], dict):
+        raise BacktestError("Exactly one supported template rule is required")
+    condition = items[0].get("condition", "")
+    if not isinstance(condition, str):
+        raise BacktestError("Invalid candidate condition")
+    match = _PROCESS.fullmatch(condition)
+    if match:
+        return "Baseline Process Spawn", *match.groups()
+    match = _FILE.fullmatch(condition)
+    if match:
+        return "Baseline File Write", *match.groups()
+    raise BacktestError("Unsupported Falco condition; refusing an approximate backtest")
 
 
-def _event_matches(event: dict, proc_name: str, parent_proc: str) -> bool:
-    """
-    Checks whether a single historical benign event (a parsed Falco
-    alert dict, shape #1) would have been wrongly flagged by the
-    candidate rule's process-spawn condition.
-    """
-    if event.get("rule") != "Baseline Process Spawn":
-        return False  # only process-spawn events are relevant to this rule type
+def _extract_condition_fields(candidate_rule_yaml):
+    return condition_fields(candidate_rule_yaml)[1:]
 
+
+def _event_matches(event, proc_name, parent_proc, kind="Baseline Process Spawn"):
+    if event.get("rule") != kind:
+        return False
     fields = dict(_OUTPUT_KV_PATTERN.findall(event.get("output", "")))
     structured = event.get("output_fields") or {}
-    fields["proc_name"] = (
-        structured.get("proc.name") or event.get("proc_name") or fields.get("proc_name")
-    )
-    fields["parent_proc_name"] = (
-        structured.get("proc.pname")
-        or event.get("parent_proc_name")
-        or fields.get("parent_proc_name")
-    )
-    return fields.get("proc_name") == proc_name and fields.get("parent_proc_name") == parent_proc
+    process = structured.get("proc.name") or event.get("proc_name") or fields.get("proc_name")
+    if kind == "Baseline File Write":
+        other = structured.get("fd.name") or event.get("file_path") or fields.get("file_path")
+    else:
+        other = (
+            structured.get("proc.pname")
+            or event.get("parent_proc_name")
+            or fields.get("parent_proc_name")
+        )
+    return process == proc_name and other == parent_proc
 
 
-def backtest_rule(candidate_rule_yaml: str, historical_benign_events: list[dict]) -> dict:
-    """
-    Returns {"false_positive_rate": float, "matched_events": int,
-    "events_tested": int, "verdict": "pass" | "flag_for_revision"}.
-
-    A "match" here means the candidate rule's condition would have
-    fired on a historical event we already know was benign — i.e. a
-    false positive.
-    """
-    proc_name, parent_proc = _extract_condition_fields(candidate_rule_yaml)
-
-    process_spawn_events = [
-        e for e in historical_benign_events if e.get("rule") == "Baseline Process Spawn"
-    ]
-    events_tested = len(process_spawn_events)
-    matched_events = sum(
-        1 for e in process_spawn_events if _event_matches(e, proc_name, parent_proc)
-    )
-
-    fp_rate = (matched_events / events_tested) if events_tested > 0 else 0.0
-    verdict = "pass" if fp_rate <= FP_RATE_THRESHOLD else "flag_for_revision"
-
+def backtest_rule(candidate_rule_yaml, historical_benign_events):
+    kind, process, other = condition_fields(candidate_rule_yaml)
+    events = [e for e in historical_benign_events if e.get("rule") == kind]
+    # Missing comparison fields are unknown, never counted as benign negatives.
+    usable = []
+    for event in events:
+        fields = {
+            **dict(_OUTPUT_KV_PATTERN.findall(event.get("output", ""))),
+            **(event.get("output_fields") or {}),
+        }
+        proc = fields.get("proc.name") or event.get("proc_name") or fields.get("proc_name")
+        second = (
+            (fields.get("fd.name") or event.get("file_path") or fields.get("file_path"))
+            if kind == "Baseline File Write"
+            else (
+                fields.get("proc.pname")
+                or event.get("parent_proc_name")
+                or fields.get("parent_proc_name")
+            )
+        )
+        if proc and second and proc not in ("<NA>", "<na>") and second not in ("<NA>", "<na>"):
+            usable.append(event)
+    count = len(usable)
+    matched = sum(_event_matches(e, process, other, kind) for e in usable)
+    rate = matched / count if count else 0
     return {
-        "false_positive_rate": round(fp_rate, 4),
-        "matched_events": matched_events,
-        "events_tested": events_tested,
-        "verdict": verdict,
+        "false_positive_rate": round(rate, 4),
+        "matched_events": matched,
+        "false_positives": matched,
+        "true_negatives": count - matched,
+        "true_positives": None,
+        "true_positives_reason": "Benign-only corpus; TP not measured",
+        "events_tested": count,
+        "unusable_events": len(events) - count,
+        "verdict": "pass" if count and rate <= FP_RATE_THRESHOLD else "flag_for_revision",
     }
 
 
@@ -100,22 +102,16 @@ if __name__ == "__main__":
     import argparse
     import json
     import sys
+    from pathlib import Path
 
-    sys.path.insert(0, "../runtime-monitor")
-    sys.path.insert(0, "runtime-monitor")  # works whether run from repo root or this folder
-
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "runtime-monitor"))
     from falco_integration import read_falco_alerts_from_file
 
-    parser = argparse.ArgumentParser(
-        description="SelfSentry - Backtest a candidate rule against real historical benign events"
-    )
-    parser.add_argument("rule_yaml_file", help="Path to a .yaml file containing the candidate rule")
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("rule_yaml_file")
     parser.add_argument("--log-path", default="/var/log/falco/alerts.json")
     args = parser.parse_args()
-
-    with open(args.rule_yaml_file) as f:
-        candidate_rule_yaml = f.read()
-
-    benign_events = read_falco_alerts_from_file(args.log_path)
-    result = backtest_rule(candidate_rule_yaml, benign_events)
+    result = backtest_rule(
+        Path(args.rule_yaml_file).read_text(), read_falco_alerts_from_file(args.log_path)
+    )
     print(json.dumps(result, indent=2))

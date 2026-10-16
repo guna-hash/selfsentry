@@ -1,16 +1,23 @@
 from typing import Literal
+import sys
+from pathlib import Path
 
-from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
-from sqlalchemy.orm import Session
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "correlation-engine"))
+from risk_explanation import explain_deployment  # noqa: E402
 
-from database import get_db
-from models.db_models import Deployment, ScanResult
+from fastapi import APIRouter, Depends, HTTPException  # noqa: E402
+from pydantic import BaseModel, Field  # noqa: E402
+from sqlalchemy.orm import Session  # noqa: E402
+from sqlalchemy.exc import IntegrityError  # noqa: E402
+
+from database import get_db  # noqa: E402
+from models.db_models import Deployment, ScanResult, AuditEvent  # noqa: E402
 
 router = APIRouter(prefix="/deployments", tags=["deployments"])
 
 
 class DeploymentIn(BaseModel):
+    event_key: str | None = Field(default=None, max_length=128)
     container_name: str
     container_id: str | None = None
     image_name: str
@@ -24,7 +31,7 @@ class DeploymentIn(BaseModel):
 
 
 def _serialize(deployment: Deployment, scan: ScanResult | None) -> dict:
-    return {
+    result = {
         "id": deployment.id,
         "container_name": deployment.container_name,
         "container_id": deployment.container_id,
@@ -49,6 +56,11 @@ def _serialize(deployment: Deployment, scan: ScanResult | None) -> dict:
         ),
     }
 
+    result["risk_explanation"] = (deployment.policy_summary or {}).get(
+        "risk_explanation"
+    ) or explain_deployment(result)
+    return result
+
 
 @router.post("/", status_code=201)
 def record_deployment(body: DeploymentIn, db: Session = Depends(get_db)):
@@ -56,6 +68,12 @@ def record_deployment(body: DeploymentIn, db: Session = Depends(get_db)):
     if body.decision == "overridden" and not (body.override_reason or "").strip():
         raise HTTPException(status_code=422, detail="an override requires override_reason")
 
+    if body.event_key:
+        existing = db.query(AuditEvent).filter(AuditEvent.event_key == body.event_key).first()
+        if existing:
+            if "deployment_id" not in (existing.detail or {}):
+                raise HTTPException(409, "Event key belongs to another operation")
+            return {"id": existing.detail["deployment_id"], "decision": existing.detail["decision"]}
     scan_result_id = None
     if body.scan_summary:
         summary = body.scan_summary
@@ -80,11 +98,39 @@ def record_deployment(body: DeploymentIn, db: Session = Depends(get_db)):
         override_reason=body.override_reason,
         requested_by=body.requested_by,
         scan_result_id=scan_result_id,
-        policy_summary=body.policy_summary,
+        policy_summary={
+            **body.policy_summary,
+            "risk_explanation": explain_deployment(body.model_dump()),
+        },
         policy_violations=body.policy_violations,
     )
     db.add(deployment)
-    db.commit()
+    db.flush()
+    db.add(
+        AuditEvent(
+            event_type="DEPLOYMENT_" + body.decision.upper(),
+            source="gate",
+            severity="warning" if body.decision != "allowed" else "info",
+            container_id=body.container_id,
+            container_name=body.container_name,
+            image_name=body.image_name,
+            event_key=body.event_key,
+            detail={
+                "deployment_id": deployment.id,
+                "decision": body.decision,
+                "requested_by": body.requested_by,
+                "override_reason": body.override_reason,
+            },
+        )
+    )
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        existing = db.query(AuditEvent).filter(AuditEvent.event_key == body.event_key).first()
+        if existing and "deployment_id" in (existing.detail or {}):
+            return {"id": existing.detail["deployment_id"], "decision": existing.detail["decision"]}
+        raise
     db.refresh(deployment)
     return {"id": deployment.id, "decision": deployment.decision}
 

@@ -1,27 +1,69 @@
 # SelfSentry continuous monitor: setup and operation
 
-This extends M1 using the existing modules; it does not rebuild SelfSentry. Tested source base:
-`d6ca5aa` (continuous monitor M1). The new monitor_incidents table is additive; it stores the
-unique incident key, evidence and workflow linked to the existing incidents table. Starting
-the backend creates it through the existing SQLAlchemy create_all flow. database/schema.sql
-also includes it. Existing PostgreSQL data and .env are not replaced.
+The completion extension builds on source `0dc6374`. Existing modules, tables and data are
+preserved. Explanations use the existing Incident.ai_summary JSON (a deterministic
+risk_explanation member); deployment guidance uses Deployment.policy_summary JSON. Rule
+backtest/lifecycle/native-match evidence uses AuditEvent.detail. No schema migration is needed.
 
-## Apply the downloadable patch
+Operator-reported functional acceptance and its limits are recorded in
+[16 October acceptance](completion_acceptance_20261016.md). Startup regression fixes close
+Docker SDK context-manager compatibility and false port conflicts after shutdown.
 
-Stop the running monitor and backend before applying. In ~/selfsentry, inspect git status
-and retain any local changes. The patch was made against M1; if check fails, stop and resolve
-the mismatch instead of forcing it.
+Monitoring of running workloads has no alert-triggered suspension path: ingest/window work
+continues independently of control delivery and other containers' isolation. Paused workloads
+remain inventoried and audited; they cannot generate fresh process activity while paused.
+
+## Single-command host operation
+
+One-time setup on your existing VM:
 
 ```bash
 cd ~/selfsentry
-git status --short
-git apply --check ~/Downloads/selfsentry-monitor-m2-m5.patch
-git apply ~/Downloads/selfsentry-monitor-m2-m5.patch
-source .venv/bin/activate
-python3 -m pip install -r requirements.txt
-python3 -m pytest tests/ -q
+python3 -m venv .venv             # only if the environment does not exist
+.venv/bin/python -m pip install -r requirements.txt
 (cd frontend-dashboard && npm ci && npm run build)
+# Configure .env as described below; do not replace an existing .env.
+bin/selfsentry start
+bin/selfsentry status
 ```
+
+The CLI starts the local FastAPI backend (8000), monitor and built dashboard (5173), in
+that order, after checking critical prerequisites. It rolls back processes it started when
+readiness fails. It creates private logs in state/logs and stores PID/start-time identities
+in state/run; a lock prevents overlapping start/stop commands. Stale PID files never authorize
+signaling an unrelated process. `bin/selfsentry stop` and `restart` affect managed application
+processes only; Docker, PostgreSQL, Falco and workload containers are retained. A separately
+started stack must be stopped by its operator before adopting this manager. Stop refuses to
+pretend success if a process does not exit within 15 seconds; records are retained for inspection.
+
+Requirements: Linux /proc + flock, the repo .venv, PostgreSQL DATABASE_URL, a nonempty shared
+API token, accessible Docker socket, Docker/Trivy/Falco binaries, active Falco systemd unit,
+readable Falco config and JSON log, built frontend. Candidate generation requires an existing
+operator-validated benign JSONL corpus at MONITOR_BENIGN_LOG_PATH. Disabling candidate generation
+permits operation without a corpus, with the adaptation path explicitly disabled.
+
+Falco must use json_output=true, time_format_iso_8601=true, rule_matching=all, and file_output
+pointing at FALCO_LOG_PATH. rules_files must include the repo's baseline-capture-rules.yaml
+and auto-generated-rules.yaml, alongside Falco's default rules/macros. The CLI checks falco.yaml
+and config.d/*.yaml settings on disk and the active unit; this is not proof of the runtime's
+loaded configuration or zero dropped kernel events. Keep service command-line/config overrides
+consistent with these files. After applying changed capture rules, reload Falco and verify real
+JSON baseline events. FALCO_SERVICE defaults to falco-modern-bpf; FALCO_CONFIG_PATH defaults to
+/etc/falco/falco.yaml and also controls the deployer's config lookup. Human rule approval uses
+`sudo -n systemctl reload <FALCO_SERVICE>` with a 20-second timeout; configure narrowly scoped
+noninteractive reload permission locally. A reload failure remains visible/audited and retryable.
+
+CLI lifecycle commands never print .env values. To inspect errors:
+
+```bash
+tail -n 50 state/logs/backend.log
+tail -n 50 state/logs/monitor.log
+tail -n 50 state/logs/frontend.log
+```
+
+Managed startup also backfills deterministic guidance for historical incident/deployment rows
+idempotently after backend readiness. Direct/manual starts still render guidance for legacy
+rows on read; run `.venv/bin/python ops/backfill_explanations.py` to persist it manually.
 
 ## Configure the shared API token
 
@@ -320,3 +362,88 @@ separately; preserve the actual runtime source/versions for reproducibility. The
 fingerprint covers configured baseline/rules and some settings, but does not hash runtime
 source or fully capture exported AUTO_* overrides. A matching fingerprint alone is not proof
 of identical runtime code or policy. See the reviewed source manifest and record the final commit.
+
+
+## Monitoring continuity and parallel work
+
+The production monitor multiplexes Falco events for all container IDs into per-container
+fixed windows. Model fitting uses a bounded two-worker pool. Ingestion, feature extraction,
+window correlation and SQLite journaling stay on their existing owner thread; a separate
+control worker owns backend HTTP calls, registration lookups, Docker response, rule synthesis
+and audit/deployment replay through its own SQLite connection. No database transaction is held
+across network delivery. Low-risk incidents never unsubscribe a container. Isolating one
+container never changes another container's event subscription, baseline or feature windows.
+
+Backend outages retain incidents in pipeline.sqlite and audits in audit.sqlite. Legacy
+JSONL audit spools remain replayable. Gate decisions are journaled in state/deployments.sqlite
+and retried by the control worker; event keys in the existing audit table prevent duplicate
+deployment records after lost responses. Disk/permissions failures are real degraded conditions;
+no process can promise uninterrupted monitoring through host failure, disk exhaustion or a
+stopped Falco service. Checkpoint advancement stops on durable ingest failure rather than
+claiming events were safely processed.
+
+“Monitoring Active” requires a fresh monitor heartbeat, usable Falco ingestion, container
+tracking and recent container telemetry. It does not assert a trained model or an absence of
+kernel event drops. An idle container without recent telemetry reports that it is waiting for
+telemetry. Learning/unavailable model states are explicit. A paused container remains in live
+Docker inventory and lifecycle audit, but produces no new process activity; it is never labeled
+as actively producing monitored syscalls. After resume, existing per-ID tracking continues and
+the next complete activity window is evaluated normally. Replacements do not inherit models.
+
+## Response, explanations and adaptation
+
+Both manual and automatic isolation check MONITOR_PROTECTED_CONTAINERS. Entries match exact
+names (optional leading slash) or Docker IDs with at least 12 hexadecimal characters; glob
+patterns are not used. Protection appears in inventory and monitor configuration. Isolation
+and resume serialize per full container ID using an on-disk lock. Original network names, available network IDs and
+aliases remain saved. Saved IDs prevent restoration to a different network reusing a name. Partial recovery is marked resume_failed and re-pauses the workload where
+possible; it can be retried without discarding the original attachments. The dashboard only
+claims “Paused + Network Disconnected” after checking live state. Host/shared network namespaces
+are refused. Static IPs and every Docker endpoint option are not restored; current persistence
+covers original network membership and aliases.
+
+Resume requests, results and failures are audited. The dashboard requests a policy re-check;
+API clients can opt in with `?recheck=true`. A policy re-check failure does not turn an already
+completed resume into a false failure; its result is separately audited. Behavioral re-evaluation
+uses the next complete normal window, not an invented immediate score or silent baseline reset.
+
+Primary risk guidance is deterministic and present before any AI request, including Low risks.
+AI failure/rate limits cannot remove or replace this guidance, alter severity, approve rules,
+or isolate a container. Advisory retries remain bounded and run off the ingestion path.
+
+AUTO_CONFIRM_ENABLED=true enables existing dual-layer confirmation. An additional proposal-only
+path (AUTO_CONFIRM_ANOMALY_ENABLED=true, default threshold 0.95) accepts ready-model anomalous
+windows with a same-container literal process/parent or file-write witness. This is policy
+acceptance for candidate generation, not proof of malicious intent. Anomaly-only observations
+never qualify for automatic isolation. To disable this new proposal path, set
+AUTO_CONFIRM_ANOMALY_ENABLED=false. Existing .env values remain authoritative and are never
+silently changed by startup; set the automation switches explicitly for your demo.
+
+Rule submission and human approval both rerun the actual supported literal template against
+MONITOR_BENIGN_LOG_PATH on the backend, recording the corpus SHA-256, usable events, FP and TN.
+Missing/empty/unusable data, unsupported conditions and FP rates over 5% block progression.
+`--allow-flagged` no longer bypasses a failed test. Unsupported or ambiguous observations are
+audited/skipped; they do not require an administrator to invent a rule. TP is not measured on
+benign-only data. Native re-fire evidence is recorded from later actual Falco alerts matching a
+known deployed rule, linked to its triggering incident; it is not automatically counted as a
+true positive. Historical rows without detailed evidence are labeled accordingly.
+
+The only required human decision in the configured adaptation path is new-rule approval.
+Optional deployment overrides, resume, benign disposition and maintenance remain admin actions.
+Overrides use bin/selfsentry-run --override-reason with a nonempty justification, rerunning the
+scan/policy gate and recording a new decision/audit. The dashboard shows that command; it does
+not launch an old blocked container that the gate already removed.
+
+
+## Dashboard inventory and audit history
+
+The top bar reports **tracked containers**, the monitor watcher's inventory, including
+containers that stopped but have not been removed. This is not the running-workload count.
+Use Containers for current Docker running/paused/exited state. A stopped disposable test
+container can therefore remain tracked without representing a running workload.
+
+Audit cards show their database IDs. Audit ID lookup and event-type filtering query the
+stored history on the backend, including entries outside the newest 200-record page.
+Use Older records for cursor pagination and Latest records to return to the live head.
+Clear the type filter when searching an ID of a different event type. The API supports
+positive event_id and before_id parameters; no database schema change is required.

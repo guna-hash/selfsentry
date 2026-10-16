@@ -1,7 +1,6 @@
 from dotenv import load_dotenv
 import os
 import json
-from openai import OpenAI
 
 load_dotenv()
 
@@ -35,6 +34,8 @@ Incident: {incident}
     key = os.environ.get("GROQ_API_KEY") or os.environ.get("OPENAI_API_KEY")
     if not key:
         raise RuntimeError("AI provider is not configured")
+    from openai import OpenAI
+
     client = OpenAI(
         api_key=key,
         base_url=os.environ.get("AI_BASE_URL", "https://api.groq.com/openai/v1"),

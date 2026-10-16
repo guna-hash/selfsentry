@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from typing import Literal
 
-from fastapi import APIRouter, Depends, Response
+from fastapi import APIRouter, Depends, Query, Response
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
@@ -42,16 +42,22 @@ def _serialize(event: AuditEvent) -> dict:
         "detail": event.detail or {},
         # occurred_at is stored as naive UTC; mark it explicitly so browsers do not
         # reinterpret it as local time.
-        "occurred_at": event.occurred_at.isoformat() + "Z" if event.occurred_at else None,
+        "occurred_at": (
+            event.occurred_at.isoformat() + "Z" if event.occurred_at else None
+        ),
         "created_at": event.created_at,
     }
 
 
 @router.post("/", status_code=201)
-def record_audit_event(body: AuditEventIn, response: Response, db: Session = Depends(get_db)):
+def record_audit_event(
+    body: AuditEventIn, response: Response, db: Session = Depends(get_db)
+):
     """Append an audit event. A repeated event_key is acknowledged without a second row."""
     if body.event_key:
-        existing = db.query(AuditEvent).filter(AuditEvent.event_key == body.event_key).first()
+        existing = (
+            db.query(AuditEvent).filter(AuditEvent.event_key == body.event_key).first()
+        )
         if existing:
             response.status_code = 200
             return {"id": existing.id, "duplicate": True}
@@ -78,6 +84,8 @@ def list_audit_events(
     event_type: str | None = None,
     container_id: str | None = None,
     limit: int = 100,
+    event_id: int | None = Query(default=None, gt=0),
+    before_id: int | None = Query(default=None, gt=0),
     db: Session = Depends(get_db),
 ):
     """Newest-first audit log, optionally filtered by event type or container."""
@@ -86,5 +94,9 @@ def list_audit_events(
         query = query.filter(AuditEvent.event_type == event_type)
     if container_id:
         query = query.filter(AuditEvent.container_id == container_id)
+    if event_id is not None:
+        query = query.filter(AuditEvent.id == event_id)
+    if before_id is not None:
+        query = query.filter(AuditEvent.id < before_id)
     rows = query.order_by(AuditEvent.id.desc()).limit(max(1, min(limit, 500))).all()
     return [_serialize(row) for row in rows]

@@ -1,4 +1,4 @@
-export const API = 'http://127.0.0.1:8000'
+export const API = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
 
 export const NOTICE_STYLES = {
   success: { background: 'rgba(46, 160, 100, 0.15)', borderLeft: '4px solid #2ea064' },
@@ -24,7 +24,7 @@ export function apiFetch(url, options = {}) {
 
 // An absent AI summary must not turn a high-risk incident into a low-severity card.
 export function incidentSeverity(incident) {
-  const suggested = incident.ai_summary?.severity?.toLowerCase?.()
+  const suggested = incident.risk_explanation?.severity?.toLowerCase?.()
   if (['low', 'medium', 'high', 'critical'].includes(suggested)) return suggested
   const priority = String(incident.falco_alert?.priority || '').toUpperCase()
   if (['EMERGENCY', 'ALERT', 'CRITICAL'].includes(priority)) return 'critical'

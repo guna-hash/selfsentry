@@ -2,11 +2,32 @@
 
 SelfSentry is a hybrid container runtime security system that combines Falco rule matching with per-container behavioral anomaly detection, correlates both into incidents, and converts confirmed anomalies into template-generated, backtested, human-approved Falco rules — demonstrating a supervised adaptive detection loop under controlled evaluation.
 
-The implemented rule-synthesis path requires concrete process metadata from a Falco
-alert; anomaly-only-to-rule synthesis is not supported yet. “Adaptive” means supervised
-rule-set expansion, not autonomous deployment or automatic model retraining.
-Isolation Forest remains default; One-Class SVM is experimental. Isolation is off
-for the standard academic study and demo.
+Rule synthesis supports literal process/parent and process/file-write templates. A ready-model
+anomaly can propose a rule only when its window retains a usable syscall witness; aggregated
+anomaly counts alone cannot generate a rule. Every proposal must pass an authoritative benign
+backtest and human approval before deployment. “Adaptive” means supervised rule-set expansion,
+not autonomous rule deployment or automatic model retraining. Isolation Forest remains the
+default; One-Class SVM remains experimental. Automatic isolation defaults off.
+
+For a configured host, start all three application processes with:
+
+```bash
+bin/selfsentry start
+bin/selfsentry status
+# bin/selfsentry stop
+# bin/selfsentry restart
+```
+
+Install Python dependencies and build the dashboard once before starting. The command validates
+PostgreSQL, Docker, Trivy, Falco configuration/log access, the benign corpus and `.env`, then
+starts the backend, continuous monitor and built dashboard on localhost. See
+[operations](docs/monitor_operations.md) and [Final Completion Notes](docs/final_completion_notes.md)
+for setup, continuity guarantees, validation boundaries and the changes since `0dc6374`.
+
+Every incident severity and deployment decision has stored deterministic guidance with an
+explanation, risk rationale and suggested fixes. AI is optional advisory enrichment and cannot
+change the deterministic severity. The dashboard overview links inventory, incident risks,
+deployment decisions, rule lifecycle evidence, audit history and monitor health.
 
 Start with the [academic evidence pack](docs/academic_evidence_pack.md):
 [mini-study](docs/academic_study.md), [case matrix](docs/academic_case_matrix.md),
@@ -18,6 +39,13 @@ benign windows without rule hits. All primary behaviors already had Falco detect
 no added attack coverage is claimed. C2 recording remains deferred.
 
 ## Current status
+
+The completion extension has automated regression coverage and operator-reported VM passes
+for startup, monitoring continuity, recovery, protection and authoritative backtest rejection.
+See [16 October acceptance](docs/completion_acceptance_20261016.md). Visual inspection,
+native file-rule validation and a new anomaly-only live chain remain unverified.
+The historical results below apply to their recorded source versions, not automatically to
+this extension. No production accuracy or additional attack coverage is inferred from unit tests.
 
 M1–M4 features are implemented and verified on the Ubuntu/Docker/Falco/PostgreSQL VM.
 M5 includes a 200-trial controlled full-pipeline evaluation and a retrospective layer

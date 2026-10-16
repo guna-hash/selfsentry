@@ -15,8 +15,9 @@ describe('incident severity when AI is absent', () => {
     expect(incidentSeverity({})).toBe('unknown')
     expect(incidentSeverity({ risk_score: 'invalid' })).toBe('unknown')
   })
-  it('handles advisory severity without accepting arbitrary class names', () => {
-    expect(incidentSeverity({ ai_summary: { severity: 'HIGH' } })).toBe('high')
+  it('uses deterministic severity and prevents AI from changing risk classification', () => {
+    expect(incidentSeverity({ ai_summary: { severity: 'HIGH' }, risk_score: 10 })).toBe('low')
+    expect(incidentSeverity({ risk_explanation: { severity: 'HIGH' } })).toBe('high')
     expect(incidentSeverity({ ai_summary: { severity: 'bad-value' }, risk_score: 100 })).toBe('critical')
   })
 })

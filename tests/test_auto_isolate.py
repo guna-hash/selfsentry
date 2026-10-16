@@ -170,8 +170,8 @@ class TestResume(AutoIsolateTestCase):
         self.client.fail_connect = {"appnet"}
         with self.assertRaises(auto_isolate.ResumeError):
             auto_isolate.resume_container("web", "alice")
-        self.assertTrue(auto_isolate.is_isolated(self.record()))
-        self.assertEqual(self.container.status, "running")
+        self.assertEqual(self.record()["state"], "resume_failed")
+        self.assertEqual(self.container.status, "paused")
 
         self.client.fail_connect = set()
         auto_isolate.resume_container("web", "alice")

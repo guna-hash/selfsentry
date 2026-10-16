@@ -16,8 +16,8 @@ export default function StatusBar() {
         <span className="status-dot" />
         Monitor: {state.label}
       </span>
-      <span>
-        <b>{error ? '—' : (status?.containers?.tracked ?? '—')}</b> containers
+      <span title="Watcher inventory includes stopped containers until they are removed; see Containers for current Docker state.">
+        <b>{error ? '—' : (status?.containers?.tracked ?? '—')}</b> tracked containers
       </span>
       <span>
         <b>{error ? '—' : (status?.unconfirmed_incidents ?? '—')}</b> pending

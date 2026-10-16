@@ -16,6 +16,8 @@ from __future__ import annotations
 import json
 import logging
 import os
+import fcntl
+from functools import wraps
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -77,7 +79,10 @@ def is_isolated(record: dict | None) -> bool:
 
 def _attached_networks(container) -> dict:
     networks = (container.attrs.get("NetworkSettings") or {}).get("Networks") or {}
-    return {name: {"aliases": list(cfg.get("Aliases") or [])} for name, cfg in networks.items()}
+    return {
+        name: {"aliases": list(cfg.get("Aliases") or []), "id": cfg.get("NetworkID")}
+        for name, cfg in networks.items()
+    }
 
 
 def _get_container(client, container_id: str):
@@ -87,16 +92,59 @@ def _get_container(client, container_id: str):
         raise ContainerNotFound(f"Container {container_id} not found: {exc}") from exc
 
 
-def isolate_container(container_id: str, reason: str) -> None:
+def is_protected(container, protected=None):
+    """Exact name or Docker ID (12+ hexadecimal prefix); no wildcard matching."""
+    entries = (
+        protected
+        if protected is not None
+        else os.environ.get("MONITOR_PROTECTED_CONTAINERS", "").split(",")
+    )
+    for entry in entries:
+        value = str(entry).strip().lstrip("/")
+        if not value:
+            continue
+        if value == container.name or value == container.id:
+            return True
+        if 12 <= len(value) <= 64 and all(c in "0123456789abcdef" for c in value):
+            if container.id.startswith(value):
+                return True
+    return False
+
+
+def _locked_action(function):
+    @wraps(function)
+    def wrapped(container_id, *args, **kwargs):
+        client = docker.from_env(timeout=5)
+        try:
+            container = _get_container(client, container_id)
+            full_id = container.id
+            folder = _isolation_dir()
+            folder.mkdir(parents=True, exist_ok=True)
+            with open(folder / f"{full_id}.lock", "a") as lock:
+                fcntl.flock(lock, fcntl.LOCK_EX)
+                return function(full_id, *args, _client=client, _container=container, **kwargs)
+        finally:
+            close = getattr(client, "close", None)
+            if close:
+                close()
+
+    return wrapped
+
+
+@_locked_action
+def isolate_container(container_id: str, reason: str, *, _client=None, _container=None) -> None:
     """
     Isolates a container: saves its network attachments, disconnects it from them, then
     pauses it. Does NOT stop, remove, or delete the container or its data. Isolating an
     already-isolated container keeps the original record and just makes sure it is paused.
     """
-    client = docker.from_env()
-    container = _get_container(client, container_id)
+    client, container = _client, _container
 
     container.reload()
+    if is_protected(container):
+        raise IsolationError(
+            "Protected container: isolation is disabled by MONITOR_PROTECTED_CONTAINERS"
+        )
     mode = (container.attrs.get("HostConfig") or {}).get("NetworkMode", "")
     if mode == "host" or mode.startswith("container:"):
         raise IsolationError("host/shared network namespace cannot be safely disconnected")
@@ -124,7 +172,7 @@ def isolate_container(container_id: str, reason: str) -> None:
     failures = {}
     for name in networks:
         try:
-            client.networks.get(name).disconnect(container, force=True)
+            client.networks.get(networks[name].get("id") or name).disconnect(container, force=True)
         except docker.errors.APIError as exc:
             failures[name] = str(exc)
     try:
@@ -144,7 +192,8 @@ def isolate_container(container_id: str, reason: str) -> None:
     logger.warning("Isolated container %s (reason: %s)", container_id, reason)
 
 
-def resume_container(container_id: str, resumed_by: str) -> dict:
+@_locked_action
+def resume_container(container_id: str, resumed_by: str, *, _client=None, _container=None) -> dict:
     """
     Reverses isolate_container(): unpauses the container and reconnects the networks saved
     in its isolation record. Refuses to act without a record (it will not guess networks).
@@ -154,17 +203,26 @@ def resume_container(container_id: str, resumed_by: str) -> dict:
     if not resumed_by or not resumed_by.strip():
         raise ValueError("resumed_by must be a non-empty string (who is resuming this?)")
 
-    client = docker.from_env()
-    container = _get_container(client, container_id)
+    client, container = _client, _container
 
     record = get_isolation_record(container.id)
-    if not record or record.get("state") not in ("isolated", "isolating", "isolation_failed"):
+    if not record or record.get("state") not in (
+        "isolated",
+        "isolating",
+        "isolation_failed",
+        "resuming",
+        "resume_failed",
+    ):
         raise ResumeError(
             f"No active isolation record for {container_id}; "
             "refusing to resume because its original networks are unknown"
         )
 
     container.reload()
+    if container.status not in ("running", "paused"):
+        raise ResumeError("Container is stopped; resume does not start stopped workloads")
+    record.update(state="resuming", resumed_by=resumed_by, resume_attempt_at=_now())
+    _write_record(container.id, record)
     if container.status == "paused":
         try:
             container.unpause()
@@ -178,16 +236,35 @@ def resume_container(container_id: str, resumed_by: str) -> dict:
         if name in already_attached:
             continue
         try:
-            client.networks.get(name).connect(container, aliases=config.get("aliases") or None)
+            client.networks.get(config.get("id") or name).connect(
+                container, aliases=config.get("aliases") or None
+            )
         except docker.errors.APIError as exc:
             failed[name] = str(exc)
+    container.reload()
+    live_networks = _attached_networks(container)
+    for name, config in record["networks"].items():
+        if config.get("id") and live_networks.get(name, {}).get("id") != config["id"]:
+            failed[name] = "network identity differs from saved attachment"
+    if container.status != "running" or not set(record["networks"]) <= set(
+        _attached_networks(container)
+    ):
+        failed["verification"] = "container is not running with all original networks attached"
     if failed:
+        # Keep a failed recovery contained; a retry restores only missing attachments.
+        try:
+            if container.status == "running":
+                container.pause()
+        except docker.errors.APIError as exc:
+            failed["repause"] = str(exc)
+        record.update(state="resume_failed", error=failed)
+        _write_record(container.id, record)
         raise ResumeError(
-            f"Container {container_id} was unpaused but these networks could not be "
+            f"Container {container_id} recovery incomplete; these networks could not be "
             f"reconnected (retry resume): {failed}"
         )
 
-    record.update(state="resumed", resumed_by=resumed_by, resumed_at=_now())
+    record.update(state="resumed", resumed_by=resumed_by, resumed_at=_now(), error=None)
     _write_record(container.id, record)
     logger.warning("Resumed container %s (by %s)", container_id, resumed_by)
     return {

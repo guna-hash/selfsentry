@@ -1,3 +1,4 @@
+import RiskExplanation from '../components/RiskExplanation.jsx'
 import {
   Badge,
   EmptyState,
@@ -93,6 +94,7 @@ export default function Deployments() {
               <span>{new Date(d.created_at).toLocaleString()}</span>
             )}
           </div>
+          <RiskExplanation value={d.risk_explanation} />
           {d.scan ? (
             <p>
               <strong>Image scan</strong>
@@ -105,6 +107,11 @@ export default function Deployments() {
               not available (the scan could not run)
             </p>
           )}
+          {d.decision === 'blocked' && <p>
+            To override deliberately, rerun the deployment gate with a mandatory justification:
+            <code> bin/selfsentry-run --override-reason "ticket and accepted risk" -- &lt;original docker run arguments&gt;</code>.
+            The override is recorded in deployment history and the audit log.
+          </p>}
           {d.override_reason && (
             <p>
               <strong>Override reason</strong>

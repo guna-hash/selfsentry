@@ -12,6 +12,14 @@ STAMP = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
 OUT = ROOT / "state/evaluation" / f"final-checks-{STAMP}"
 OUT.mkdir(parents=True, exist_ok=True)
 LINT = [
+    "scripts/verify_completion_backtest_guard.py",
+    "ops",
+    "correlation-engine/risk_explanation.py",
+    "backend-api/container_health.py",
+    "backend-api/routes/containers.py",
+    "deployment-gate/deployment_outbox.py",
+    "rule-synthesis-engine/rule_deployer.py",
+    "tests/test_final_completion.py",
     "monitor-service",
     "backend-api/database.py",
     "backend-api/main.py",
@@ -61,10 +69,12 @@ for package in ("docker", "scikit-learn", "fastapi", "sqlalchemy", "pytest", "fl
     except PackageNotFoundError:
         versions[package] = "unavailable"
 report = {
-    "started_at": datetime.now(timezone.utc).isoformat(), "checks": [],
+    "started_at": datetime.now(timezone.utc).isoformat(),
+    "checks": [],
     "source_commit": command_version(["git", "rev-parse", "HEAD"]),
     "source_status": command_version(["git", "status", "--short"]),
-    "python": sys.version, "packages": versions,
+    "python": sys.version,
+    "packages": versions,
     "node": command_version(["node", "--version"]),
     "npm": command_version(["npm", "--version"]),
 }

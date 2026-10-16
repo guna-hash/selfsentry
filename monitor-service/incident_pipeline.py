@@ -21,7 +21,7 @@ for folder in ("response-engine", "rule-synthesis-engine", "ai-analysis"):
     sys.path.insert(0, str(ROOT / folder))
 
 from automation_policy import eligible  # noqa: E402
-from auto_isolate import isolate_container  # noqa: E402
+from auto_isolate import isolate_container, is_protected  # noqa: E402
 from submit_candidate import submit_candidate  # noqa: E402
 from root_cause_summarizer import summarize_incident  # noqa: E402
 from audit_client import make_event_key  # noqa: E402
@@ -235,11 +235,7 @@ class IncidentPipeline:
                         if len(full_id) != 64 or not full_id.startswith(payload["container_id"]):
                             raise ValueError("Docker identity does not match incident")
                         excluded = self.config.protected_containers
-                        if (
-                            full_id in excluded
-                            or full_id[:12] in excluded
-                            or container.name in excluded
-                        ):
+                        if is_protected(container, excluded):
                             flow["response"] = {"status": "protected", "container_id": full_id}
                         elif container.status not in ("running", "paused"):
                             flow["response"] = {

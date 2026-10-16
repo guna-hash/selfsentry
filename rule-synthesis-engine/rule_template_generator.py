@@ -31,6 +31,23 @@ def generate_rule(pattern: dict, source_incident_id: int) -> str:
     proc_name = pattern.get("proc_name")
     parent_proc = pattern.get("parent_proc")
 
+    if pattern.get("action") == "file_write":
+        file_path = pattern.get("file_path")
+        if not isinstance(proc_name, str) or not re.fullmatch(
+            r"[A-Za-z0-9_./:+-]{1,128}", proc_name
+        ):
+            raise RuleGenerationError("unsafe or missing file-write process")
+        if not isinstance(file_path, str) or not re.fullmatch(
+            r"/[A-Za-z0-9_./:+-]{1,255}", file_path
+        ):
+            raise RuleGenerationError("unsafe or missing absolute file path")
+        env = Environment(loader=FileSystemLoader(_TEMPLATE_DIR), autoescape=False)
+        return env.get_template("file_rule_template.yaml.j2").render(
+            rule_slug=_slugify(f"{proc_name}_writes_{file_path}_{source_incident_id}"),
+            proc_name=proc_name,
+            file_path=file_path,
+            source_incident_id=source_incident_id,
+        )
     if not proc_name or not parent_proc:
         raise RuleGenerationError(
             "Cannot generate a rule: pattern is missing proc_name and/or parent_proc "

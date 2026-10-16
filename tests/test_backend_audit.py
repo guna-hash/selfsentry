@@ -80,17 +80,26 @@ class TestRecordAuditEvent(AuditApiTestCase):
 
     def test_unknown_severity_is_rejected(self):
         self.assertEqual(
-            self.client.post("/audit/", json=payload(severity="catastrophic")).status_code, 422
+            self.client.post(
+                "/audit/", json=payload(severity="catastrophic")
+            ).status_code,
+            422,
         )
 
 
 class TestListAuditEvents(AuditApiTestCase):
     def test_newest_first_and_filterable(self):
-        self.client.post("/audit/", json=payload(event_key="a", event_type="CONTAINER_STARTED"))
-        self.client.post("/audit/", json=payload(event_key="b", event_type="CONTAINER_STOPPED"))
+        self.client.post(
+            "/audit/", json=payload(event_key="a", event_type="CONTAINER_STARTED")
+        )
+        self.client.post(
+            "/audit/", json=payload(event_key="b", event_type="CONTAINER_STOPPED")
+        )
         types = [e["event_type"] for e in self.client.get("/audit/").json()]
         self.assertEqual(types, ["CONTAINER_STOPPED", "CONTAINER_STARTED"])
-        only = self.client.get("/audit/", params={"event_type": "CONTAINER_STARTED"}).json()
+        only = self.client.get(
+            "/audit/", params={"event_type": "CONTAINER_STARTED"}
+        ).json()
         self.assertEqual([e["event_type"] for e in only], ["CONTAINER_STARTED"])
 
     def test_filter_by_container(self):
@@ -98,6 +107,49 @@ class TestListAuditEvents(AuditApiTestCase):
         self.client.post("/audit/", json=payload(event_key="b", container_id="bbb"))
         items = self.client.get("/audit/", params={"container_id": "bbb"}).json()
         self.assertEqual([e["container_id"] for e in items], ["bbb"])
+
+    def test_exact_id_search_reaches_events_outside_latest_page(self):
+        for index in range(205):
+            self.client.post("/audit/", json=payload(event_key=f"lookup-{index}"))
+        self.assertNotIn(1, [item["id"] for item in self.client.get("/audit/").json()])
+        found = self.client.get("/audit/", params={"event_id": 1}).json()
+        self.assertEqual([item["id"] for item in found], [1])
+        self.assertEqual(
+            self.client.get("/audit/", params={"event_id": 9999}).json(), []
+        )
+
+    def test_cursor_pages_remain_stable_as_new_events_arrive(self):
+        for index in range(5):
+            self.client.post("/audit/", json=payload(event_key=f"page-{index}"))
+        first = self.client.get("/audit/", params={"limit": 2}).json()
+        self.assertEqual([item["id"] for item in first], [5, 4])
+        self.client.post("/audit/", json=payload(event_key="arrived-later"))
+        older = self.client.get("/audit/", params={"limit": 2, "before_id": 4}).json()
+        self.assertEqual([item["id"] for item in older], [3, 2])
+
+    def test_cursor_filters_combine_and_ids_are_validated(self):
+        self.client.post(
+            "/audit/", json=payload(event_key="a", event_type="CONTAINER_RESUMED")
+        )
+        self.client.post(
+            "/audit/", json=payload(event_key="b", event_type="RULE_NATIVE_REFIRE")
+        )
+        self.client.post(
+            "/audit/", json=payload(event_key="c", event_type="CONTAINER_RESUMED")
+        )
+        found = self.client.get(
+            "/audit/",
+            params={
+                "event_type": "CONTAINER_RESUMED",
+                "before_id": 3,
+            },
+        ).json()
+        self.assertEqual([item["id"] for item in found], [1])
+        for param in ("event_id", "before_id"):
+            for value in (0, -1, "invalid"):
+                self.assertEqual(
+                    self.client.get("/audit/", params={param: value}).status_code, 422
+                )
 
 
 if __name__ == "__main__":

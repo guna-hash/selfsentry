@@ -173,3 +173,85 @@ class AuditClient:
         tmp_path = self._spool_path.with_suffix(".tmp")
         tmp_path.write_text("".join(json.dumps(event) + "\n" for event in events))
         os.replace(tmp_path, self._spool_path)
+
+
+class DurableAuditClient(AuditClient):
+    """Nonblocking emit to a WAL journal; only the control worker performs HTTP delivery.
+
+    Keeps/replays the pre-existing JSONL spool first for upgrade compatibility. SQLite
+    connections are short-lived so the ingest and control threads never share a connection.
+    """
+
+    def __init__(self, backend_url, spool_path, timeout_seconds=5):
+        super().__init__(backend_url, spool_path, timeout_seconds)
+        import sqlite3
+
+        self._journal = self._spool_path.with_name("audit.sqlite")
+        self._journal.parent.mkdir(parents=True, exist_ok=True)
+        with sqlite3.connect(self._journal) as db:
+            db.execute("PRAGMA journal_mode=WAL")
+            db.execute("CREATE TABLE IF NOT EXISTS audit_outbox (key TEXT PRIMARY KEY, body TEXT)")
+
+    def emit(
+        self,
+        event_type,
+        severity="info",
+        container_id=None,
+        container_name=None,
+        image_name=None,
+        detail=None,
+        event_key=None,
+        occurred_at=None,
+    ):
+        import sqlite3
+        import uuid
+
+        key = event_key or uuid.uuid4().hex
+        payload = dict(
+            event_type=event_type,
+            severity=severity,
+            source="monitor",
+            container_id=container_id,
+            container_name=container_name,
+            image_name=image_name,
+            detail=detail or {},
+            event_key=key,
+            occurred_at=occurred_at or _utc_now(),
+        )
+        with sqlite3.connect(self._journal, timeout=1) as db:
+            db.execute("PRAGMA synchronous=FULL")
+            db.execute(
+                "INSERT OR IGNORE INTO audit_outbox VALUES (?,?)", (key, json.dumps(payload))
+            )
+        return False
+
+    def spool_size(self):
+        import sqlite3
+
+        with sqlite3.connect(self._journal, timeout=1) as db:
+            count = db.execute("SELECT count(*) FROM audit_outbox").fetchone()[0]
+        return count + len(self._read_spool())
+
+    def flush_spool(self):
+        import sqlite3
+
+        sent = super().flush_spool()
+        if self._read_spool():
+            return sent
+        with sqlite3.connect(self._journal, timeout=1) as db:
+            rows = db.execute(
+                "SELECT key,body FROM audit_outbox ORDER BY rowid LIMIT 50"
+            ).fetchall()
+        # No database transaction or lock is held across network I/O.
+        for key, body in rows:
+            payload = json.loads(body)
+            outcome = self._post(payload)
+            if outcome == "retry":
+                break
+            if outcome == "rejected":
+                self._dead_letter(payload)
+            else:
+                sent += 1
+            with sqlite3.connect(self._journal, timeout=1) as db:
+                db.execute("DELETE FROM audit_outbox WHERE key=?", (key,))
+        return sent

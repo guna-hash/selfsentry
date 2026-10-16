@@ -27,6 +27,8 @@ def eligible(payload, config, action="confirm", now=None):
         return False, f"auto-{action} disabled"
     from event_router import route_incident
 
+    if action == "confirm" and payload.get("anomaly_features") and not payload.get("falco_alert"):
+        return _eligible_anomaly_candidate(payload, config, now)
     score = route_incident(payload).effective_score
     if not math.isfinite(score) or score < threshold:
         return False, "effective score below threshold"
@@ -67,3 +69,42 @@ def eligible(payload, config, action="confirm", now=None):
     except (KeyError, ValueError, TypeError):
         return False, "invalid evidence values or timestamps"
     return True, f"both layers qualify; effective score {score} >= {threshold}"
+
+
+def _eligible_anomaly_candidate(payload, config, now):
+    """Authorize a proposal, never isolation; confirmation is policy acceptance, not truth."""
+    if not config.auto_confirm_anomaly_enabled:
+        return False, "anomaly-only proposal confirmation disabled"
+    evidence = payload.get("monitor_evidence") or {}
+    assessment = evidence.get("anomaly_assessment") or {}
+    witness = evidence.get("synthesis_evidence") or {}
+    anomaly = payload.get("anomaly_features") or {}
+    cid = payload.get("container_id")
+    if (
+        evidence.get("baseline_state") != "MODEL_READY"
+        or evidence.get("anomaly_status") != "used"
+        or not assessment.get("qualifies")
+    ):
+        return False, "validated ready-model evidence required"
+    if anomaly.get("container_id") != cid or witness.get("container_id") != cid:
+        return False, "wrong-container anomaly witness"
+    try:
+        score = float(anomaly["anomaly_score"])
+        if not math.isfinite(score) or not config.auto_confirm_anomaly_threshold <= score <= 1:
+            return False, "anomaly below proposal confirmation threshold"
+        start, end = _stamp(evidence["window_start"]), _stamp(evidence["window_end"])
+        stamp, observed = _stamp(anomaly["timestamp"]), _stamp(witness["timestamp"])
+        if not start <= stamp <= end or not start <= observed <= end:
+            return False, "anomaly witness outside feature window"
+        if (
+            now is not None
+            and not -30 <= now - stamp.timestamp() <= config.response_max_age_seconds
+        ):
+            return False, "historical or future anomaly evidence requires review"
+        from pattern_extractor import extract_pattern
+        from rule_template_generator import generate_rule
+
+        generate_rule(extract_pattern(payload), payload.get("id", 0))
+    except (KeyError, TypeError, ValueError, RuntimeError):
+        return False, "missing or unsupported literal syscall witness"
+    return True, "ready-model anomaly with literal witness; rule proposal only, no isolation"

@@ -3,19 +3,18 @@
 import os
 import sys
 from pathlib import Path
-from unittest.mock import patch
 
 os.environ["DATABASE_URL"] = "sqlite://"
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "backend-api"))
-from fastapi import FastAPI
-from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.pool import StaticPool
-import database
-from models.db_models import Incident, MonitorIncident
-from routes import incidents, monitor
-import pytest
+from fastapi import FastAPI  # noqa: E402
+from fastapi.testclient import TestClient  # noqa: E402
+from sqlalchemy import create_engine  # noqa: E402
+from sqlalchemy.orm import sessionmaker  # noqa: E402
+from sqlalchemy.pool import StaticPool  # noqa: E402
+import database  # noqa: E402
+from models.db_models import Incident, MonitorIncident  # noqa: E402
+from routes import incidents, monitor  # noqa: E402
+import pytest  # noqa: E402
 
 
 @pytest.fixture
@@ -64,10 +63,9 @@ def test_ai_failure_preserves_legacy_incident(client):
     http, _ = client
     item = body()
     item.pop("defer_ai")
-    with patch.object(incidents, "summarize_incident", side_effect=RuntimeError("offline")):
-        response = http.post("/incidents/", json=item)
+    response = http.post("/incidents/", json=item)
     assert response.status_code == 200
-    assert response.json()["ai_summary"]["status"] == "unavailable"
+    assert response.json()["risk_explanation"]["source"] == "deterministic"
 
 
 def test_auto_confirmation_rejects_missing_anomaly(client):
@@ -175,8 +173,15 @@ def test_dismissed_monitor_incident_cannot_be_auto_confirmed(client):
 def test_observed_timeline_persists_in_database_without_ai(client):
     http, session = client
     data = body()
-    timeline = [{"step": 1, "source": "falco", "timestamp": "2026-10-12T10:00:00Z",
-                 "description": "Terminal shell in container", "event_key": "observed"}]
+    timeline = [
+        {
+            "step": 1,
+            "source": "falco",
+            "timestamp": "2026-10-12T10:00:00Z",
+            "description": "Terminal shell in container",
+            "event_key": "observed",
+        }
+    ]
     data["monitor_evidence"]["observed_timeline"] = timeline
     saved = http.post("/incidents/", json=data).json()
     with session() as db:
@@ -184,4 +189,4 @@ def test_observed_timeline_persists_in_database_without_ai(client):
         assert meta.evidence["observed_timeline"] == timeline
     fetched = http.get(f"/incidents/{saved['id']}").json()
     assert fetched["monitor_evidence"]["observed_timeline"] == timeline
-    assert fetched["ai_summary"] is None
+    assert fetched["ai_summary"]["risk_explanation"]["suggested_fixes"]

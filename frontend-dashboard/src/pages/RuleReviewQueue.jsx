@@ -28,7 +28,7 @@ export default function RuleReviewQueue() {
 
   async function fetchPendingRules() {
     try {
-      const res = await apiFetch(`${API}/rules/pending`)
+      const res = await apiFetch(`${API}/rules/history`)
       if (!res.ok) throw new Error('Failed to fetch pending rules')
       setRules(await res.json())
       setError(null)
@@ -173,6 +173,7 @@ export default function RuleReviewQueue() {
         </EmptyState>
       )}
       {rules.map((rule) => {
+        const actionable = ["pending_review", "approved"].includes(rule.status)
         const awaitingRetry = rule.status === 'approved'
         return (
           <div key={rule.id} className="incident-card rule-card">
@@ -184,7 +185,7 @@ export default function RuleReviewQueue() {
               <Badge tone={awaitingRetry ? 'medium' : 'accent'}>
                 {awaitingRetry
                   ? 'Approved · deployment pending'
-                  : 'Pending review'}
+                  : rule.status === 'pending_review' ? 'Pending review' : rule.status}
               </Badge>
               {rule.created_at && (
                 <span>{new Date(rule.created_at).toLocaleString()}</span>
@@ -199,8 +200,16 @@ export default function RuleReviewQueue() {
                   : 'Reported by the backtest pipeline'}
               </small>
             </div>
+            <p>Incident #{rule.incident_id ?? 'unknown'} → Candidate #{rule.id} → {rule.status}</p>
+            {rule.backtest ? <p>
+              Benign events tested: {rule.backtest.events_tested} · False positives: {rule.backtest.false_positives ?? rule.backtest.matched_events} ·
+              True negatives: {rule.backtest.true_negatives ?? 'not recorded'} · True positives: not measured on benign data
+            </p> : <p>Historical candidate: detailed backtest evidence not recorded.</p>}
+            <p>Human decision: {rule.reviewed_by ? `${rule.status} by ${rule.reviewed_by}` : 'Pending human approval'}</p>
+            <p>Native re-fire: {rule.native_refires?.length ? `${rule.native_refires.length} observed matches` : 'Not yet recorded'}</p>
+            <details><summary>Lifecycle evidence</summary><pre>{JSON.stringify(rule.lifecycle_events, null, 2)}</pre></details>
             <pre className="rule-yaml">{rule.rule_yaml}</pre>
-            <button
+            {actionable && <><button
               className="btn btn-approve"
               disabled={busyId !== null}
               onClick={() => openReview(rule, 'approve')}
@@ -217,7 +226,7 @@ export default function RuleReviewQueue() {
               onClick={() => openReview(rule, 'reject')}
             >
               Reject
-            </button>
+            </button></>}
           </div>
         )
       })}

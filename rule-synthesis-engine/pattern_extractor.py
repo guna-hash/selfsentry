@@ -13,12 +13,11 @@ literal, not generalized. This is what rule_template_generator.py
 renders into Falco YAML, so an overly broad pattern here becomes an
 overly broad (noisy or unsafe) auto-generated rule downstream.
 
-Known scope limitation (v1): extraction requires a falco_alert to be
-present on the incident, since Falco rule conditions need concrete
-process/syscall fields to match against. Anomaly-only incidents (no
-falco_alert) are not yet supported for rule synthesis — see
-docs/known_limitations.md. This is a deliberate, documented scope
-choice, not an oversight.
+Supported templates stay literal: process + parent, or process + file-write path.
+An anomaly-only incident must retain a concrete same-container baseline syscall witness.
+Aggregated feature counts cannot supply process names or file paths. Policy acceptance,
+backtesting and human approval remain distinct from proof of malicious intent.
+
 """
 
 from __future__ import annotations
@@ -70,16 +69,15 @@ def extract_pattern(confirmed_incident: dict) -> dict:
             "action": "spawned_process",
         }
 
-    Raises PatternExtractionError if the incident has no falco_alert at
-    all — see the module docstring's scope limitation.
+    Raises PatternExtractionError when neither a security alert nor a retained literal
+    anomaly witness is available.
     """
     falco_alert = confirmed_incident.get("falco_alert")
     if not falco_alert:
-        raise PatternExtractionError(
-            f"Incident {confirmed_incident.get('id')} has no falco_alert — "
-            "anomaly-only pattern extraction is not yet supported (v1 scope limitation, "
-            "see docs/known_limitations.md)."
-        )
+        evidence = (confirmed_incident.get("monitor_evidence") or {}).get("synthesis_evidence")
+        if not evidence:
+            raise PatternExtractionError("Anomaly has no literal syscall witness for a template")
+        falco_alert = evidence
 
     output_fields = _parse_output_fields(falco_alert.get("output", ""))
     structured = falco_alert.get("output_fields") or {}
@@ -94,6 +92,15 @@ def extract_pattern(confirmed_incident: dict) -> dict:
         or _first_present(output_fields, PARENT_PROC_KEYS)
     )
 
+    file_path = structured.get("fd.name") or output_fields.get("file_path")
+    if file_path and falco_alert.get("rule") == "Baseline File Write":
+        return {
+            "container_id": confirmed_incident.get("container_id"),
+            "rule_name": falco_alert.get("rule"),
+            "proc_name": proc_name,
+            "file_path": file_path,
+            "action": "file_write",
+        }
     return {
         "container_id": confirmed_incident.get("container_id"),
         "rule_name": falco_alert.get("rule"),

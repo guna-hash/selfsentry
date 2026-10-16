@@ -7,14 +7,13 @@ SelfSentry continuous monitor (milestone M1: ingestion and container discovery).
   python3 monitor-service/monitor_service.py --status   show what the running monitor reports
   python3 monitor-service/monitor_service.py --once     run a single iteration (diagnostics)
 
-Each loop iteration: read a batch of new Falco lines (checkpointed), classify and hand
-them to the alert sink, drain Docker container events into the watcher, re-check pending
-gate registrations, and flush spooled audit events. Failures of one event are logged and
-counted; they never stop the service. Only configuration errors and a second running
-instance are fatal.
+Falco ingestion, feature extraction and window correlation run independently of the
+control worker that handles Docker discovery/response, backend delivery, audit replay
+and candidate synthesis. Model fitting uses a bounded pool. A per-event/window failure
+is contained; durable storage failures retain the checkpoint for retry. Running workloads
+have no alert-triggered unsubscribe or stop-monitoring path. Paused workloads remain in
+inventory and produce no new process activity until resumed.
 
-M1 scope: security alerts and baseline events are counted and logged. Incident creation,
-baselines, auto-confirmation and isolation are added in later milestones.
 """
 
 from __future__ import annotations
@@ -31,7 +30,7 @@ from datetime import datetime, timezone
 
 import docker
 
-from audit_client import AuditClient, make_event_key
+from audit_client import AuditClient, DurableAuditClient, make_event_key
 from container_watcher import BackendRegistrationLookup, ContainerWatcher, DockerInspector
 from docker_events import DockerEventPump
 from event_classifier import MalformedEvent, classify_line
@@ -39,7 +38,7 @@ from falco_ingest import FalcoTailer, IngestUnavailable
 from monitor_config import ConfigError, MonitorConfig, load_config
 from monitor_status import StatusBoard, read_status
 from behavior_pipeline import BehaviorPipeline
-from incident_pipeline import IncidentPipeline
+from control_worker import ControlWorker
 
 logger = logging.getLogger("selfsentry.monitor")
 
@@ -81,6 +80,7 @@ class MonitorService:
         docker_events: queue.Queue,
         pump=None,
         incident_pipeline=None,
+        control_worker=None,
     ):
         self._config = config
         self._tailer = tailer
@@ -91,6 +91,7 @@ class MonitorService:
         self._docker_events = docker_events
         self._pump = pump
         self._incident_pipeline = incident_pipeline
+        self._control_worker = control_worker
         self._ingest_ok: bool | None = None
 
     # ---- one iteration -------------------------------------------------------
@@ -109,7 +110,8 @@ class MonitorService:
             self._guarded("pipeline_errors", "behavior pipeline", self._sink.tick)
         if self._incident_pipeline is not None:
             self._guarded("incident_errors", "incident outbox", self._incident_pipeline.tick)
-        self._guarded("audit_flush_errors", "audit spool flush", self._audit.flush_spool)
+        if self._control_worker is None:
+            self._guarded("audit_flush_errors", "audit spool flush", self._audit.flush_spool)
         self._update_status()
         return processed
 
@@ -230,6 +232,10 @@ class MonitorService:
                 "pending_registration": self._watcher.pending_count,
             },
         )
+        self._status.set_value(
+            "monitored_container_ids",
+            self._watcher.container_ids if hasattr(self._watcher, "container_ids") else [],
+        )
         self._status.write()
 
     # ---- lifecycle -----------------------------------------------------------
@@ -310,7 +316,7 @@ def build_service(config: MonitorConfig):
     state_dir = config.state_dir
     state_dir.mkdir(parents=True, exist_ok=True)
     status = StatusBoard(state_dir / "status.json")
-    audit = AuditClient(config.backend_url, state_dir / "audit_spool.jsonl")
+    audit = DurableAuditClient(config.backend_url, state_dir / "audit_spool.jsonl")
     tailer = FalcoTailer(
         config.falco_log_path,
         state_dir / "falco_checkpoint.json",
@@ -324,15 +330,15 @@ def build_service(config: MonitorConfig):
         BackendRegistrationLookup(config.backend_url),
         DockerInspector(docker.from_env),
     )
-    pipeline = BehaviorPipeline(config, status, audit)
-    incident_pipeline = IncidentPipeline(pipeline)
+    pipeline = BehaviorPipeline(config, status, audit, async_training=True)
+    control = ControlWorker(config, watcher, audit, status)
     events: queue.Queue = queue.Queue()
     stop_event = threading.Event()
     pump = DockerEventPump(
         docker.from_env, events, stop_event, config.retry_base_seconds, config.retry_max_seconds
     )
     service = MonitorService(
-        config, tailer, watcher, audit, status, pipeline, events, pump, incident_pipeline
+        config, tailer, control, audit, status, pipeline, events, pump, control_worker=control
     )
     return service, pump, stop_event
 
@@ -392,6 +398,7 @@ def main(argv=None) -> int:
     signal.signal(signal.SIGINT, lambda *_: stop_event.set())
     signal.signal(signal.SIGTERM, lambda *_: stop_event.set())
     pump.start()
+    service._control_worker.start()
     try:
         if args.once:
             service.run_once()
@@ -401,9 +408,8 @@ def main(argv=None) -> int:
     finally:
         stop_event.set()
         pump.join(timeout=5)
-        if service._incident_pipeline.executor:
-            service._incident_pipeline.executor.shutdown(wait=False, cancel_futures=True)
-        service._sink.db.close()
+        service._control_worker.stop()
+        service._sink.close()
         lock.close()
 
 

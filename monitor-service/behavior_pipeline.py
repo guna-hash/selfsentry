@@ -56,12 +56,18 @@ def container_identity(value):
 
 
 class BehaviorPipeline:
-    def __init__(self, config, status, audit, clock=time.time, model_factory=None):
+    def __init__(
+        self, config, status, audit, clock=time.time, model_factory=None, async_training=False
+    ):
         self.config, self.status, self.audit, self.clock = config, status, audit, clock
         self.store = BaselineStore(config.baseline_dir)
         self.model_factory = model_factory or (
             lambda cid: AnomalyModel(cid, algorithm=config.anomaly_algorithm)
         )
+        from concurrent.futures import ThreadPoolExecutor
+
+        self.training_pool = ThreadPoolExecutor(max_workers=2) if async_training else None
+        self.training_jobs = {}
         self.models = {}
         self.lifecycle = {}
         config.state_dir.mkdir(parents=True, exist_ok=True)
@@ -157,6 +163,9 @@ class BehaviorPipeline:
 
             path.replace(path.with_suffix(f".{uuid.uuid4().hex}.archived"))
         self.models.pop(cid, None)
+        job = self.training_jobs.pop(cid, None)
+        if job:
+            job.cancel()
         self.lifecycle[cid] = {
             "started_at": self.clock(),
             "samples": 0,
@@ -191,6 +200,15 @@ class BehaviorPipeline:
             return
         self._transition(cid, "BASELINE_READY")
         self._transition(cid, "MODEL_TRAINING")
+        if self.training_pool:
+            self.training_jobs[cid] = self.training_pool.submit(self._fit_model, cid, dataset)
+            return
+        self.models[cid] = self._fit_model(cid, dataset)
+        self.lifecycle[cid]["model_algorithm"] = self.config.anomaly_algorithm
+        self._transition(cid, "MODEL_READY")
+
+    def _fit_model(self, cid, dataset):
+        # Worker never touches lifecycle, SQLite, audit or status.
         model = self.model_factory(cid)
         model.fit(dataset)
         probe = model.score_event(dataset.feature_vectors[-1])
@@ -200,9 +218,27 @@ class BehaviorPipeline:
             or not 0 <= probe.anomaly_score <= 1
         ):
             raise ValueError("model failed readiness validation")
-        self.lifecycle[cid]["model_algorithm"] = self.config.anomaly_algorithm
-        self._transition(cid, "MODEL_READY")
-        self.models[cid] = model
+        return model
+
+    def _finish_training(self):
+        for cid, job in list(self.training_jobs.items()):
+            if not job.done():
+                continue
+            self.training_jobs.pop(cid)
+            item = self.lifecycle[cid]
+            if item.get("requires_review") or item["state"] != "MODEL_TRAINING":
+                continue
+            try:
+                self.models[cid] = job.result()
+                item["model_algorithm"] = self.config.anomaly_algorithm
+                self._transition(cid, "MODEL_READY")
+            except Exception as exc:
+                self._transition(cid, "MODEL_UNAVAILABLE", str(exc))
+
+    def close(self):
+        if self.training_pool:
+            self.training_pool.shutdown(wait=False, cancel_futures=True)
+        self.db.close()
 
     def _enqueue(self, payload, key):
         self.db.execute(
@@ -243,6 +279,7 @@ class BehaviorPipeline:
             if getattr(raw, field) in (None, "", "<NA>", "<na>"):
                 raise ValueError("baseline event has no usable feature")
         self.discover(cid)
+        self.lifecycle[cid]["last_event_at"] = self.clock()
         closed = self.db.execute(
             "SELECT 1 FROM windows WHERE container=? AND bucket=?", (cid, bucket)
         ).fetchone()
@@ -327,6 +364,7 @@ class BehaviorPipeline:
         return payload
 
     def tick(self):
+        self._finish_training()
         cutoff = self.clock() - self.config.lateness_seconds - self.config.window_seconds
         rows = list(
             self.db.execute(
@@ -380,9 +418,13 @@ class BehaviorPipeline:
             # Credit the shell once while retaining the richer baseline context.
             overlap = any(
                 r.event_type == EventType.PROCESS_SPAWN
-                and r.timestamp == converted.timestamp and r.proc_name == converted.proc_name
-                and (not r.parent_proc_name or not converted.parent_proc_name
-                     or r.parent_proc_name == converted.parent_proc_name)
+                and r.timestamp == converted.timestamp
+                and r.proc_name == converted.proc_name
+                and (
+                    not r.parent_proc_name
+                    or not converted.parent_proc_name
+                    or r.parent_proc_name == converted.parent_proc_name
+                )
                 for r in raw
             )
             if not overlap:
@@ -424,8 +466,9 @@ class BehaviorPipeline:
                     "raw_decision_function": float(result.raw_decision_function),
                     "model_is_anomaly": bool(result.is_anomaly),
                     "threshold": self.config.anomaly_threshold,
-                    "qualifies": bool(result.is_anomaly and
-                                      result.anomaly_score >= self.config.anomaly_threshold),
+                    "qualifies": bool(
+                        result.is_anomaly and result.anomaly_score >= self.config.anomaly_threshold
+                    ),
                     "features": vector.to_dict(),
                 }
                 if result.is_anomaly and result.anomaly_score >= self.config.anomaly_threshold:
@@ -464,8 +507,32 @@ class BehaviorPipeline:
         payload = self._payload(cid, bucket, alerts, anomaly, availability, reason)
         if payload:
             payload["monitor_evidence"]["anomaly_assessment"] = assessment
+            if anomaly and not alerts:
+                # Preserve a real literal witness; aggregated counts cannot generate a rule.
+                candidates = [e for kind, e in events if kind == "baseline"]
+                for event in candidates:
+                    parsed = json.loads(event["raw_line"])
+                    fields = parsed.get("output_fields") or {}
+                    process = fields.get("proc.name")
+                    process_pair = (
+                        event.get("rule") == "Baseline Process Spawn"
+                        and process
+                        and fields.get("proc.pname")
+                    )
+                    file_write = (
+                        event.get("rule") == "Baseline File Write"
+                        and process
+                        and fields.get("fd.name")
+                    )
+                    if process_pair or file_write:
+                        payload["monitor_evidence"]["synthesis_evidence"] = {
+                            **event,
+                            "output_fields": fields,
+                        }
+                        break
         with self.db:
             if payload:
                 self._enqueue(payload, payload["event_key"])
             self.db.execute("INSERT OR IGNORE INTO windows VALUES (?,?)", (cid, bucket))
+        self.lifecycle[cid]["last_window_at"] = self.clock()
         self.status.incr("windows_processed")

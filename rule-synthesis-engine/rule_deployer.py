@@ -22,12 +22,13 @@ import glob
 import os
 
 import yaml
+
 _REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 AUTO_GENERATED_RULES_PATH = os.path.join(_REPO_ROOT, "falco-rules", "auto-generated-rules.yaml")
-FALCO_SERVICE_NAME = "falco-modern-bpf"
-FALCO_CONFIG_PATH = "/etc/falco/falco.yaml"
-FALCO_CONFIG_DIR = "/etc/falco/config.d"
+FALCO_SERVICE_NAME = os.environ.get("FALCO_SERVICE", "falco-modern-bpf")
+FALCO_CONFIG_PATH = os.environ.get("FALCO_CONFIG_PATH", "/etc/falco/falco.yaml")
+FALCO_CONFIG_DIR = os.path.join(os.path.dirname(FALCO_CONFIG_PATH), "config.d")
 # Falco defaults to "first", where the catch-all baseline rule shadows every
 # auto-generated rule. See docs/falco_rule_matching.md.
 REQUIRED_RULE_MATCHING = "all"
@@ -49,11 +50,15 @@ def _validate_yaml(file_path: str) -> None:
 
 
 def _reload_falco() -> None:
-    result = subprocess.run(
-        ["sudo", "systemctl", "reload", FALCO_SERVICE_NAME],
-        capture_output=True,
-        text=True,
-    )
+    try:
+        result = subprocess.run(
+            ["sudo", "-n", "systemctl", "reload", FALCO_SERVICE_NAME],
+            capture_output=True,
+            text=True,
+            timeout=20,
+        )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        raise RuleDeploymentError("Falco reload failed or timed out") from exc
     if result.returncode != 0:
         raise RuleDeploymentError(
             f"Falco reload failed (exit {result.returncode}): {result.stderr.strip()}"
@@ -80,9 +85,7 @@ def _read_rule_matching_mode() -> str:
     """Effective Falco rule_matching value. Falco's default is "first" when unset;
     config.d files are read after falco.yaml, so a later value overrides."""
     mode = "first"
-    config_files = [FALCO_CONFIG_PATH] + sorted(
-        glob.glob(os.path.join(FALCO_CONFIG_DIR, "*.yaml"))
-    )
+    config_files = [FALCO_CONFIG_PATH] + sorted(glob.glob(os.path.join(FALCO_CONFIG_DIR, "*.yaml")))
     for path in config_files:
         try:
             with open(path) as f:

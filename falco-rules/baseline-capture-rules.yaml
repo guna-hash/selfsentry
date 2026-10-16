@@ -44,7 +44,7 @@
     value.
   condition: open_write and container
   output: >
-    BASELINE_FILE_ACCESS container_id=%container.id file_path=%fd.name
+    BASELINE_FILE_ACCESS container_id=%container.id file_path=%fd.name proc_name=%proc.name
     timestamp=%evt.time.iso8601
   priority: NOTICE
   tags: [baseline, containerguard-ai]

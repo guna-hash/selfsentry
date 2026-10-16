@@ -16,6 +16,7 @@ import {
 } from 'lucide-react'
 import { motion, MotionConfig } from 'framer-motion'
 import Alerts from './pages/Alerts.jsx'
+import Overview from './pages/Overview.jsx'
 import RuleReviewQueue from './pages/RuleReviewQueue.jsx'
 import Containers from './pages/Containers.jsx'
 import Deployments from './pages/Deployments.jsx'
@@ -24,8 +25,9 @@ import Monitor from './pages/Monitor.jsx'
 import StatusBar from './components/StatusBar.jsx'
 import { MonitorProvider } from './hooks/useMonitor.jsx'
 const links = [
+  ['/overview', 'Overview', ShieldCheck],
   ['/monitor', 'Monitor', Activity],
-  ['/', 'Alerts', Bell],
+  ['/alerts', 'Alerts', Bell],
   ['/deployments', 'Deployments', Rocket],
   ['/containers', 'Containers', Boxes],
   ['/audit', 'Audit log', ScrollText],
@@ -80,7 +82,8 @@ function Shell() {
             transition={{ duration: 0.18 }}
           >
             <Routes>
-              <Route path="/" element={<Alerts />} />
+              <Route path="/" element={<Overview />} />
+              <Route path="/overview" element={<Overview />} />
               <Route path="/alerts" element={<Alerts />} />
               <Route path="/monitor" element={<Monitor />} />
               <Route path="/deployments" element={<Deployments />} />

@@ -11,8 +11,8 @@ Chains the existing Rule Synthesis steps and queues the result for human review:
 Safety constraints (non-negotiable project rules):
   - Nothing is deployed here. The rule only enters the Review Queue; deployment
     happens when a human approves it (POST /rules/{id}/approve).
-  - A candidate whose backtest verdict is not "pass" is refused unless the caller
-    explicitly opts in with allow_flagged=True / --allow-flagged.
+  - A candidate whose backtest verdict is not "pass" is always refused.
+    The legacy allow_flagged argument is accepted for compatibility, with no bypass.
   - A backtest that tested zero events is refused: backtest_rule() reports a 0%
     false-positive rate when there is no benign data, which would be a misleading pass.
 """
@@ -45,9 +45,20 @@ class SubmissionError(RuntimeError):
 def _load_benign_events(log_path: str) -> list[dict]:
     repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     sys.path.insert(0, os.path.join(repo_root, "runtime-monitor"))
-    from falco_integration import read_falco_alerts_from_file
+    from falco_integration import parse_falco_alert, FalcoParseError
 
-    return read_falco_alerts_from_file(log_path)
+    result = []
+    with open(log_path) as handle:
+        for line in handle:
+            try:
+                alert = parse_falco_alert(line)
+            except FalcoParseError:
+                continue
+            if alert.container_id:
+                result.append(
+                    {**alert.to_dict(), "output_fields": alert.raw.get("output_fields") or {}}
+                )
+    return result
 
 
 def submit_candidate(
@@ -88,11 +99,11 @@ def submit_candidate(
         raise SubmissionError(
             "Backtest tested 0 events - refusing to queue a rule with no benign evidence"
         )
-    if backtest["verdict"] != "pass" and not allow_flagged:
+    if backtest["verdict"] != "pass":
         raise SubmissionError(
             f"Backtest verdict is '{backtest['verdict']}' "
             f"(false-positive rate {backtest['false_positive_rate']}); "
-            "refusing to queue. Re-run with --allow-flagged to override."
+            "refusing to queue; failed backtests cannot be overridden."
         )
 
     post = requests.post(

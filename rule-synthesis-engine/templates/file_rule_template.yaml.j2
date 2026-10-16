@@ -1,0 +1,6 @@
+- rule: Auto_Generated_{{ rule_slug }}
+  desc: "Template rule from incident #{{ source_incident_id }}: {{ proc_name }} writes {{ file_path }}"
+  condition: open_write and container and proc.name="{{ proc_name }}" and fd.name="{{ file_path }}"
+  output: "SelfSentry file rule matched (container=%container.id process=%proc.name path=%fd.name)"
+  priority: WARNING
+  tags: [auto-generated, selfsentry, source_incident_{{ source_incident_id }}]
