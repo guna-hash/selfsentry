@@ -35,3 +35,14 @@ describe('operational status', () => {
     expect(eventAge('2026-10-12T11:59:30Z', now)).toBe('30s ago')
   })
 })
+
+import { isolationState } from './status.js'
+describe('isolation status', () => {
+  it('requires a boolean backend setting and never assumes isolation is off', () => {
+    expect(isolationState(null).label).toBe('Isolation: unknown')
+    expect(isolationState({ configuration: { auto_isolation_enabled: 'false' } }).label).toBe('Isolation: unknown')
+    expect(isolationState({ configuration: { auto_isolation_enabled: false } }).label).toBe('Isolation: off (default)')
+    expect(isolationState({ configuration: { auto_isolation_enabled: true } }).label).toBe('Isolation: on')
+    expect(isolationState({ configuration: { auto_isolation_enabled: false } }, 'Offline').label).toBe('Isolation: unknown')
+  })
+})

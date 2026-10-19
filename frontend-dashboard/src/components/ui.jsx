@@ -1,4 +1,4 @@
-import { Activity, Inbox, LoaderCircle, X } from 'lucide-react'
+import { Activity, LoaderCircle, X } from 'lucide-react'
 
 export function MetricCard({
   label,
@@ -18,28 +18,16 @@ export function MetricCard({
     </div>
   )
 }
-export function Badge({ children, tone = 'neutral' }) {
-  return <span className={`badge tone-${tone}`}>{children}</span>
-}
-export function EmptyState({
-  title = 'Nothing here yet',
-  children,
-  waiting = false,
-}) {
-  return (
-    <div className="empty-state">
-      <Inbox size={28} aria-hidden="true" />
-      <h3>{title}</h3>
-      <p>{children}</p>
-      {waiting && (
-        <span className="waiting">
-          <span className="status-dot" />
-          Waiting for first event…
-        </span>
-      )}
-    </div>
-  )
-}
+// Compatibility exports preserve existing pages while later steps migrate them.
+export { default as Badge } from './StatusBadge.jsx'
+export { default as EmptyState } from './EmptyState.jsx'
+export { default as KpiCard } from './KpiCard.jsx'
+export { default as StatusBadge } from './StatusBadge.jsx'
+export { default as DataTable } from './DataTable.jsx'
+export { default as FilterChips } from './FilterChips.jsx'
+export { default as ErrorState } from './ErrorState.jsx'
+export { default as Skeleton } from './Skeleton.jsx'
+export { default as Drawer } from './Drawer.jsx'
 export function Loading() {
   return (
     <div className="loading-state" role="status">

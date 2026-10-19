@@ -1,3 +1,4 @@
+import { useState, lazy, Suspense } from 'react'
 import {
   BrowserRouter,
   Routes,
@@ -15,29 +16,41 @@ import {
   ListChecks,
 } from 'lucide-react'
 import { motion, MotionConfig } from 'framer-motion'
-import Alerts from './pages/Alerts.jsx'
-import Overview from './pages/Overview.jsx'
-import RuleReviewQueue from './pages/RuleReviewQueue.jsx'
-import Containers from './pages/Containers.jsx'
-import Deployments from './pages/Deployments.jsx'
-import AuditLog from './pages/AuditLog.jsx'
-import Monitor from './pages/Monitor.jsx'
+const Alerts = lazy(() => import('./pages/Alerts.jsx'))
+const Overview = lazy(() => import('./pages/Overview.jsx'))
+const RuleReviewQueue = lazy(() => import('./pages/RuleReviewQueue.jsx'))
+const Containers = lazy(() => import('./pages/Containers.jsx'))
+const Deployments = lazy(() => import('./pages/Deployments.jsx'))
+const AuditLog = lazy(() => import('./pages/AuditLog.jsx'))
+const Monitor = lazy(() => import('./pages/Monitor.jsx'))
+const Models = lazy(() => import('./pages/Models.jsx'))
+const Evidence = lazy(() => import('./pages/Evidence.jsx'))
+import { isSampleMode } from './utils/demoMode.js'
+import { PresentationProvider, usePresentation } from './hooks/usePresentation.jsx'
+import DemoControls from './components/DemoControls.jsx'
+import Skeleton from './components/Skeleton.jsx'
+import HealthBanner from './components/HealthBanner.jsx'
 import StatusBar from './components/StatusBar.jsx'
 import { MonitorProvider } from './hooks/useMonitor.jsx'
 const links = [
   ['/overview', 'Overview', ShieldCheck],
   ['/monitor', 'Monitor', Activity],
+  ['/models', 'Models', Activity],
   ['/alerts', 'Alerts', Bell],
   ['/deployments', 'Deployments', Rocket],
   ['/containers', 'Containers', Boxes],
   ['/audit', 'Audit log', ScrollText],
   ['/rules', 'Rule review', ListChecks],
+  ['/evidence', 'Evidence', ScrollText],
 ]
 function Shell() {
   const { pathname } = useLocation()
+  const { presentation } = usePresentation()
+  const [navigationOpen, setNavigationOpen] = useState(() => !window.matchMedia('(max-width: 760px)').matches)
   return (
-    <div className="app-shell">
-      <aside className="sidebar">
+    <div className={`app-shell${navigationOpen ? '' : ' navigation-collapsed'}${presentation ? ' presentation-mode' : ''}`} >
+      <a className="skip-link" href="#main-content">Skip to content</a>
+      <aside id="workspace-navigation" className="sidebar" hidden={!navigationOpen || presentation}>
         <div className="brand">
           <span className="brand-mark">
             <ShieldCheck size={25} />
@@ -53,9 +66,9 @@ function Shell() {
             <NavLink
               key={to}
               to={to}
-              end={to === '/'}
+              onClick={() => { if (window.matchMedia('(max-width: 760px)').matches) setNavigationOpen(false) }}
               className={({ isActive }) =>
-                isActive || (to === '/' && pathname === '/alerts')
+                isActive || (to === '/overview' && pathname === '/')
                   ? 'active'
                   : ''
               }
@@ -73,24 +86,28 @@ function Shell() {
         </div>
       </aside>
       <div className="workspace">
-        <StatusBar />
-        <main className="main">
+        <StatusBar navigationOpen={navigationOpen} onToggleNavigation={() => setNavigationOpen((open) => !open)} />
+        <main id="main-content" className="main" tabIndex={-1}>
+          <DemoControls />
+          <HealthBanner />
           <motion.div
             key={pathname}
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.18 }}
           >
-            <Routes>
+            <Suspense fallback={<Skeleton label="Loading page…" />}><Routes>
               <Route path="/" element={<Overview />} />
               <Route path="/overview" element={<Overview />} />
               <Route path="/alerts" element={<Alerts />} />
               <Route path="/monitor" element={<Monitor />} />
+              <Route path="/models" element={<Models />} />
               <Route path="/deployments" element={<Deployments />} />
               <Route path="/containers" element={<Containers />} />
               <Route path="/audit" element={<AuditLog />} />
               <Route path="/rules" element={<RuleReviewQueue />} />
-            </Routes>
+              <Route path="/evidence" element={<Evidence />} />
+            </Routes></Suspense>
           </motion.div>
         </main>
       </div>
@@ -99,11 +116,11 @@ function Shell() {
 }
 export default function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={isSampleMode() ? '/sample' : '/'}>
       <MotionConfig reducedMotion="user">
-        <MonitorProvider>
+        <PresentationProvider><MonitorProvider>
           <Shell />
-        </MonitorProvider>
+        </MonitorProvider></PresentationProvider>
       </MotionConfig>
     </BrowserRouter>
   )
