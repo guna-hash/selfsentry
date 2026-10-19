@@ -19,3 +19,13 @@ export function eventAge(timestamp, now = Date.now()) {
   if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`
   return `${Math.floor(seconds / 86400)}d ago`
 }
+
+export function isolationState(status, error) {
+  const enabled = status?.configuration?.auto_isolation_enabled
+  if (error || typeof enabled !== 'boolean') {
+    return { label: 'Isolation: unknown', enabled: enabled === true, tone: 'neutral' }
+  }
+  return enabled
+    ? { label: 'Isolation: on', enabled: true, tone: 'medium' }
+    : { label: 'Isolation: off (default)', enabled: false, tone: 'neutral' }
+}

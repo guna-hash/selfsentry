@@ -1,160 +1,40 @@
-import RiskExplanation from '../components/RiskExplanation.jsx'
-import {
-  Badge,
-  EmptyState,
-  Loading,
-  PageHeader,
-  Notice,
-} from '../components/ui.jsx'
-import { useState, useEffect } from 'react'
-import { API, apiFetch, describeFailure } from '../api.js'
-
-function formatRisk(score) {
-  return score === null || score === undefined
-    ? 'no incidents yet'
-    : `latest risk ${score}`
-}
-
+import { Link } from 'react-router-dom'
+import { isSampleMode } from '../utils/demoMode.js'
+import { useState } from 'react'
+import { DataTable, Drawer, PageHeader, StatusBadge } from '../components/ui.jsx'
+import RefreshControls from '../components/RefreshControls.jsx'
+import ContainerActionDialog from '../components/ContainerActionDialog.jsx'
+import useCollection from '../hooks/useCollection.js'
+import { options } from '../utils/operations.js'
+import { formatDate, formatNumber } from '../utils/format.js'
 export default function Containers() {
-  const [containers, setContainers] = useState([])
-  const [error, setError] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [notice, setNotice] = useState(null)
-  const [busyId, setBusyId] = useState(null)
-
-  async function fetchContainers() {
-    try {
-      const res = await apiFetch(`${API}/containers/`)
-      if (!res.ok) throw new Error(await describeFailure(res))
-      setContainers(await res.json())
-      setError(null)
-    } catch (err) {
-      setError(err.message)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    fetchContainers()
-    const interval = setInterval(fetchContainers, 3000)
-    return () => clearInterval(interval)
-  }, [])
-
-  async function runAction(container, url, successText) {
-    setBusyId(container.id)
-    try {
-      const res = await apiFetch(url, { method: 'POST' })
-      if (res.ok) {
-        setNotice({ kind: 'success', text: successText })
-      } else {
-        setNotice({
-          kind: 'error',
-          text: `${container.name}: ${await describeFailure(res)}`,
-        })
-      }
-    } catch (err) {
-      setNotice({
-        kind: 'error',
-        text: `${container.name}: could not reach the backend (${err.message})`,
-      })
-    } finally {
-      setBusyId(null)
-      fetchContainers()
-    }
-  }
-
-  function handleResume(container) {
-    const resumedBy = prompt('Your name (for the audit record):')
-    if (!resumedBy) return
-    runAction(
-      container,
-      `${API}/containers/${container.id}/resume?recheck=true&resumed_by=${encodeURIComponent(resumedBy)}`,
-      `${container.name} resumed: unpaused and network restored.`,
-    )
-  }
-
-  function handleIsolate(container) {
-    const isolatedBy = prompt('Your name (for the audit record):')
-    if (!isolatedBy) return
-    const reason = prompt('Reason for isolating this container:')
-    if (!reason) return
-    runAction(
-      container,
-      `${API}/containers/${container.id}/isolate?isolated_by=${encodeURIComponent(isolatedBy)}` +
-        `&reason=${encodeURIComponent(reason)}`,
-      `${container.name} isolated: paused and disconnected from its networks.`,
-    )
-  }
-
-  return (
-    <div>
-      <PageHeader title="Containers">
-        Inspect runtime inventory and manage container isolation.
-      </PageHeader>
-      {loading && <Loading />}
-      {error && (
-        <p className="error-state" role="alert">
-          Couldn't load containers: {error}
-        </p>
-      )}
-      <Notice notice={notice} onDismiss={() => setNotice(null)} />
-      {containers.length === 0 && !error && !loading && (
-        <EmptyState title="No containers found">
-          Discovered containers will appear here automatically.
-        </EmptyState>
-      )}
-      {containers.map((container) => (
-        <div
-          key={container.id}
-          className={`incident-card ${container.isolated ? 'sev-high' : 'sev-low'}`}
-        >
-          <div className="incident-meta">
-            <span>{container.name}</span>
-            <span>{container.image}</span>
-            <Badge tone={container.isolated ? 'high' : 'neutral'}>
-              {container.isolated
-                ? container.containment_label
-                : container.status}
-            </Badge>
-            <span className="risk-score">
-              {formatRisk(container.latest_risk_score)}
-            </span>
-          </div>
-          <p>
-            <Badge tone={container.monitoring?.active ? 'low' : 'medium'}>
-              {error ? 'Monitoring status unavailable' : container.monitoring?.label || 'Monitoring unknown'}
-            </Badge>{' '}
-            {container.protected && <Badge tone="accent">Protected from isolation</Badge>}
-          </p>
-          {container.risk_explanation && <RiskExplanation value={container.risk_explanation} />}
-          {container.isolation_error && <p role="alert">Recovery needs attention: {JSON.stringify(container.isolation_error)}</p>}
-          {container.isolated && (
-            <p>
-              <strong>Isolated</strong>
-              {container.isolation_reason} ({container.isolated_at})
-            </p>
-          )}
-          {container.isolated && (
-            <button
-              className="btn btn-approve"
-              disabled={busyId !== null}
-              onClick={() => handleResume(container)}
-            >
-              {busyId === container.id ? 'Resuming…' : 'Resume'}
-            </button>
-          )}
-          {!container.isolated && !container.protected && container.status === 'running' && (
-            <button
-              className="btn btn-reject"
-              disabled={busyId !== null}
-              onClick={() => handleIsolate(container)}
-            >
-              {busyId === container.id ? 'Isolating…' : 'Isolate'}
-            </button>
-          )}
-        </div>
-      ))}
-    </div>
-  )
+  const data = useCollection('/containers/'), [selected, setSelected] = useState(null), [action, setAction] = useState(null)
+  const columns = [
+    { key: 'name', label: 'Container', render: (v,r) => <span>{v}<small className="muted"> {r.id}</small></span> },
+    { key: 'id', label: 'Container ID', accessor: r => r.full_id || r.id, render: v => <span title={v}>{v?.slice(0,12)}</span> },
+    { key: 'image', label: 'Image' },
+    { key: 'status', label: 'Runtime', filterOptions: options(data.rows.map(r => r.status)), render: v => <StatusBadge status={v} /> },
+    { key: 'protected', label: 'Protection', accessor: r => r.protected === true ? 'Protected' : r.protected === false ? 'Unprotected' : 'Unknown', filterOptions: options(['Protected','Unprotected','Unknown']) },
+    { key: 'containment_label', label: 'Containment' },
+    { key: 'monitoring', label: 'Monitoring', accessor: r => r.monitoring?.label },
+    { key: 'latest_risk_score', label: 'Latest risk', render: v => formatNumber(v) },
+  ]
+  const live = selected && data.rows.find(r => r.id === selected.id)
+  const current = live || selected
+  return <><PageHeader title="Containers">Live Docker inventory. Network disconnection is verified only when the backend containment label explicitly reports it.</PageHeader>
+    <RefreshControls {...data} />
+    <DataTable {...data} error={data.error?.message} errorStatus={data.error?.status} onRetry={data.refresh} columns={columns} caption="Containers" onRowOpen={setSelected} />
+    <Drawer open={!!current && !action} title="Container details" onClose={() => setSelected(null)}>
+      {current && <><h3>{current.name}</h3><p>{current.full_id || current.id}</p><p>{current.containment_label || 'Containment verification not available'}</p>
+        <p>Isolation recorded: {formatDate(current.isolated_at)} · Reason: {current.isolation_reason || 'Not recorded'}</p>
+        <h3>Response error</h3><pre className="rule-yaml">{JSON.stringify(current.isolation_error ?? 'Not recorded', null, 2)}</pre><h3>Risk explanation</h3><pre className="rule-yaml">{JSON.stringify(current.risk_explanation ?? 'Not recorded', null, 2)}</pre>
+        {/svm/i.test(current.isolation_reason || '') && <p>Experimental SVM response: review the recorded reason.</p>}
+        <p>Response history records action, time, actor, and outcome in the read-only audit log.</p><Link to={`/audit?container_id=${encodeURIComponent(current.full_id || current.id)}&legacy_container_id=${encodeURIComponent(current.id)}`}>View response history</Link>
+        <div className="table-toolbar"><button className="shell-button" disabled={isSampleMode() || !live || !!data.error || data.loading || current.isolated || current.protected !== false} onClick={() => setAction('isolate')}>Isolate</button>
+        <button className="shell-button" disabled={isSampleMode() || !live || !!data.error || data.loading || !current.isolated} onClick={() => setAction('resume')}>Resume / restore networks</button></div>
+        {!live && <p>Container is absent from the current inventory. Refresh before taking action.</p>}
+        {current.protected && <p>Protected workload: manual isolation is disabled.</p>}</>}
+    </Drawer>
+    {action && current && <ContainerActionDialog container={current} action={action} onClose={() => setAction(null)} onComplete={data.refresh} />}
+  </>
 }

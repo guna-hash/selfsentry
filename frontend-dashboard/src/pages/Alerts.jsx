@@ -1,274 +1,55 @@
-import RiskExplanation from '../components/RiskExplanation.jsx'
-import { API, apiFetch, incidentSeverity, describeFailure } from '../api.js'
-import { useState, useEffect, useRef } from 'react'
-import { ShieldAlert, Bell, ShieldCheck, Activity } from 'lucide-react'
-import {
-  MetricCard,
-  Badge,
-  EmptyState,
-  Loading,
-  PageHeader,
-} from '../components/ui.jsx'
-import TelemetryChart from '../components/TelemetryChart.jsx'
+import { useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
+import { Pause, Play, RefreshCw } from 'lucide-react'
+import { DataTable, FilterChips, Notice, PageHeader, StatusBadge } from '../components/ui.jsx'
+import IncidentDrawer from '../components/IncidentDrawer.jsx'
+import { useIncidents } from '../hooks/useIncidents.js'
+import { incidentSeverity } from '../api.js'
+import { normalizeIncidents, RANGE_MS } from '../utils/overviewModel.js'
+import { formatDate, formatNumber, relativeTime } from '../utils/format.js'
+import './alerts.css'
 
+const columns = [
+  { key: 'id', label: 'Incident ID', render: (value) => `#${value}` },
+  { key: 'score', label: 'Risk', render: (value) => `${formatNumber(value)} / 100` },
+  { key: 'severity', label: 'Severity', accessor: (row) => incidentSeverity(row), render: (value) => <StatusBadge tone={value}>{value}</StatusBadge> },
+  { key: 'containerName', label: 'Container', render: (value,row) => <span title={row.container_id}>{value}</span> },
+  { key: 'layer', label: 'Layers fired', filterOptions: ['Both','Falco only','ML only','Not recorded'].map((value)=>({value,label:value})), render:(value)=><StatusBadge tone={value==='Both'?'accent':'neutral'}>{value==='Both'?'Both · dual layer':value}</StatusBadge> },
+  { key: 'state', label: 'Confirmation', filterOptions: ['Unconfirmed','Auto-confirmed','Human-confirmed','Benign'].map((value)=>({value,label:value})), render:(value)=><StatusBadge tone={value==='Unconfirmed'?'medium':'neutral'}>{value}</StatusBadge> },
+  { key: 'time', label: 'Created', render:(value)=><time title={formatDate(value)} dateTime={value===null?undefined:new Date(value).toISOString()}>{relativeTime(value)}</time> },
+]
 export default function Alerts() {
-  const [incidents, setIncidents] = useState([])
-  const [error, setError] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [newIds, setNewIds] = useState(new Set())
-  const seen = useRef(null)
-  useEffect(() => {
-    let active = true
-    let pending = false
-    const controller = new AbortController()
-    async function fetchIncidents() {
-      if (pending) return
-      pending = true
-      try {
-        const res = await apiFetch(`${API}/incidents/`, {
-          signal: controller.signal,
-        })
-        if (!res.ok) throw new Error(await describeFailure(res))
-        const data = await res.json()
-        if (!active) return
-        setNewIds(
-          new Set(
-            seen.current
-              ? data.filter((i) => !seen.current.has(i.id)).map((i) => i.id)
-              : [],
-          ),
-        )
-        seen.current = new Set(data.map((i) => i.id))
-        setIncidents(data)
-        setError(null)
-      } catch (err) {
-        if (active) setError(err.message)
-      } finally {
-        pending = false
-        if (active) setLoading(false)
-      }
-    }
-    fetchIncidents()
-    const interval = setInterval(fetchIncidents, 3000)
-    return () => {
-      active = false
-      controller.abort()
-      clearInterval(interval)
-    }
-  }, [])
-  const chart = incidents
-    .map((i) => ({
-      time: Date.parse(i.created_at || i.falco_alert?.timestamp),
-      value: i.risk_score,
-    }))
-    .filter((i) => Number.isFinite(i.time) && Number.isFinite(i.value))
-    .sort((a, b) => a.time - b.time)
-    .slice(-30)
-    .map((i) => ({
-      label: new Date(i.time).toLocaleTimeString([], {
-        hour: '2-digit',
-        minute: '2-digit',
-      }),
-      fullLabel: new Date(i.time).toLocaleString(),
-      value: i.value,
-    }))
-  const count = (predicate) =>
-    loading || (error && !seen.current)
-      ? null
-      : incidents.filter(predicate).length
-  return (
-    <div>
-      <PageHeader title="Alerts & incidents">
-        Investigate runtime detections, review evidence, and track response
-        decisions.
-      </PageHeader>
-      {error && (
-        <p className="error-state" role="alert">
-          Could not load incidents: {error}. Retrying every 3 seconds.
-          {seen.current && ' Displayed incidents may be stale.'}
-        </p>
-      )}
-      <div className="metrics-grid">
-        <MetricCard
-          label="Total incidents"
-          value={count(() => true)}
-          detail="Recorded detections"
-          icon={Activity}
-        />
-        <MetricCard
-          label="High / critical"
-          value={count((i) =>
-            ['high', 'critical'].includes(incidentSeverity(i)),
-          )}
-          detail="Recorded severity · not active threat count"
-          tone="critical"
-          icon={ShieldAlert}
-        />
-        <MetricCard
-          label="Pending confirmation"
-          value={count((i) => !i.confirmation)}
-          detail="Not yet confirmed"
-          tone="medium"
-          icon={Bell}
-        />
-        <MetricCard
-          label="Confirmed incidents"
-          value={count((i) => !!i.confirmation)}
-          detail="Confirmation recorded"
-          tone="low"
-          icon={ShieldCheck}
-        />
+  const { incidents, containers, error, inventoryError, loading, refreshing, updatedAt, paused, refresh, togglePaused } = useIncidents()
+  const [search,setSearch] = useSearchParams()
+  const selected = search.get('incident')
+  const validId = selected && /^\d+$/.test(selected) && Number(selected)>0
+  const [period,setPeriod] = useState('all')
+  const [notice,setNotice] = useState(null)
+  const normalized = useMemo(()=>normalizeIncidents(incidents,containers),[incidents,containers])
+  const rows = useMemo(()=>{
+    if (!normalized) return []
+    if (period==='all') return normalized
+    const end=updatedAt ?? Date.now(), start=end-RANGE_MS[period]
+    return normalized.filter((row)=>row.time!==null && row.time>=start && row.time<=end)
+  },[normalized,period,updatedAt])
+  function open(incident) { const next=new URLSearchParams(search);next.set('incident',incident.id);setSearch(next) }
+  function close() { const next=new URLSearchParams(search);next.delete('incident');setSearch(next) }
+  return <div className="alerts-page">
+    <div className="alerts-heading"><PageHeader title="Alerts & incidents">Find the incidents that need review, then inspect their recorded evidence.</PageHeader>
+      <div className="alerts-refresh"><span title={formatDate(updatedAt)}>Last incident update: {updatedAt?relativeTime(updatedAt):'Not recorded'}</span>
+        <div><button type="button" className="shell-button" onClick={togglePaused} aria-pressed={paused}>{paused?<Play size={16} aria-hidden="true"/>:<Pause size={16} aria-hidden="true"/>}{paused?'Resume incident refresh':'Pause incident refresh'}</button>
+          <button type="button" className="shell-button" disabled={refreshing} onClick={refresh} aria-label="Refresh incidents now"><RefreshCw size={16} className={refreshing?'spin':''} aria-hidden="true"/>Refresh</button></div>
       </div>
-      {chart.length > 0 && <TelemetryChart data={chart} />}
-      <div className="section-heading">
-        <h3>Incident feed</h3>
-        <span>Refreshes every 3 seconds</span>
-      </div>
-      {loading && <Loading />}
-      {!loading && incidents.length === 0 && !error && (
-        <EmptyState title="No incidents yet" waiting>
-          New detections will appear here automatically.
-        </EmptyState>
-      )}
-      {[...incidents].reverse().map((incident) => {
-        const severity = incidentSeverity(incident)
-        const evidence = incident.monitor_evidence
-        const workflow = incident.monitor_workflow
-        const explanation = workflow?.explanation
-        const assessment = evidence?.anomaly_assessment
-        return (
-          <article
-            key={incident.id}
-            className={`incident-card sev-${severity} ${newIds.has(incident.id) && severity === 'critical' ? 'new-critical' : ''}`}
-          >
-            <div className="alert-header">
-              <div>
-                <div className="incident-meta">
-                  <Badge tone={severity}>{severity}</Badge>
-                  <span>INCIDENT #{incident.id}</span>
-                  <span>{incident.confidence || 'Confidence unavailable'}</span>
-                </div>
-                <h3>{incident.falco_alert?.rule || 'Runtime detection'}</h3>
-                <code className="container-id">{incident.container_id}</code>
-              </div>
-              <div className="risk-block">
-                <strong>{incident.risk_score ?? '—'}</strong>
-                <span>RISK / 100</span>
-              </div>
-            </div>
-            <RiskExplanation value={incident.risk_explanation} />
-            <div className="incident-sections">
-              <section>
-                <h4>
-                  AI summary <span>ADVISORY</span>
-                </h4>
-                <Badge
-                  tone={
-                    explanation?.status === 'ready' ||
-                    incident.ai_summary?.plain_summary
-                      ? 'accent'
-                      : 'neutral'
-                  }
-                >
-                  {explanation?.status ||
-                    incident.ai_summary?.status ||
-                    (incident.ai_summary ? 'ready' : 'not recorded')}
-                </Badge>
-                <p>
-                  {incident.ai_summary?.plain_summary ||
-                    'No AI explanation available for this incident.'}
-                </p>
-                {incident.ai_summary?.recommended_action && (
-                  <p>
-                    <strong>Recommended action</strong>
-                    <br />
-                    {incident.ai_summary.recommended_action}
-                  </p>
-                )}
-                {explanation?.reason && <p>{explanation.reason}</p>}
-                {explanation?.status === 'pending_retry' &&
-                  Number.isFinite(explanation.next_retry_epoch) && (
-                    <p>
-                      Next AI retry:{' '}
-                      {new Date(
-                        explanation.next_retry_epoch * 1000,
-                      ).toLocaleString()}
-                    </p>
-                  )}
-              </section>
-              <section>
-                <h4>Anomaly assessment</h4>
-                <dl>
-                  <div>
-                    <dt>Status</dt>
-                    <dd>{evidence?.anomaly_status || 'Not recorded'}</dd>
-                  </div>
-                  <div>
-                    <dt>Baseline</dt>
-                    <dd>{evidence?.baseline_state || 'Unknown'}</dd>
-                  </div>
-                  <div>
-                    <dt>Effective score</dt>
-                    <dd>{evidence?.effective_score ?? '—'}</dd>
-                  </div>
-                  {assessment && (
-                    <>
-                      <div>
-                        <dt>Model score</dt>
-                        <dd>
-                          {Number.isFinite(assessment.anomaly_score)
-                            ? assessment.anomaly_score.toFixed(4)
-                            : '—'}
-                        </dd>
-                      </div>
-                      <div>
-                        <dt>Qualifies</dt>
-                        <dd>{assessment.qualifies ? 'Yes' : 'No'}</dd>
-                      </div>
-                    </>
-                  )}
-                </dl>
-              </section>
-            </div>
-            {evidence?.observed_timeline?.length > 0 && (
-              <details className="incident-timeline">
-                <summary>Observed timeline ({evidence.observed_timeline.length} events)</summary>
-                <ol>
-                  {evidence.observed_timeline.map((entry) => (
-                    <li key={entry.step}>
-                      <time dateTime={entry.timestamp}>
-                        {new Date(entry.timestamp).toLocaleString()}
-                      </time>{' '}
-                      · {entry.source} · {entry.description}
-                      {entry.output && <p>{entry.output}</p>}
-                    </li>
-                  ))}
-                </ol>
-              </details>
-            )}
-            <footer className="incident-footer">
-              <div>
-                <Badge tone={incident.confirmation ? (incident.confirmation.confirmed_by === "selfsentry-auto" ? "accent" : "low") : "medium"}>
-                  {incident.confirmation ? (incident.confirmation.confirmed_by === "selfsentry-auto" ? "Auto-confirmed" : "Human-confirmed") : "Pending"}
-                </Badge>
-                <strong>
-                  {incident.confirmation
-                    ? `Confirmed by ${incident.confirmation.confirmed_by}`
-                    : 'Awaiting confirmation'}
-                </strong>
-              </div>
-              <div>
-                <span>Response</span>
-                <strong>{workflow?.response?.status || 'Not recorded'}</strong>
-              </div>
-              <div>
-                <span>Rule candidate</span>
-                <strong>{workflow?.candidate?.status || 'Not recorded'}</strong>
-              </div>
-            </footer>
-          </article>
-        )
-      })}
     </div>
-  )
+    <Notice notice={notice} onDismiss={()=>setNotice(null)} />
+    <div className="alerts-controls"><label htmlFor="incident-period">Creation period<select id="incident-period" value={period} onChange={(event)=>setPeriod(event.target.value)}><option value="all">All recorded time</option><option value="24h">Last 24 hours</option><option value="7d">Last 7 days</option></select></label>
+      <p>Risk uses effective score when recorded, otherwise base risk. Model availability and advisory AI text do not establish which layers fired.</p></div>
+    <FilterChips filters={period==='all'?[]:[{id:'period',label:`Creation period: ${period}`}]} onRemove={()=>setPeriod('all')} onClear={()=>setPeriod('all')}/>
+    {paused && <p role="status" className="incident-caption">Incident refresh paused. Header health updates and security monitoring continue.</p>}
+    {inventoryError && <p role="status" className="incident-caption">Container names unavailable; recorded IDs are shown. <button type="button" className="shell-button" disabled={refreshing} onClick={refresh}>Retry inventory</button></p>}
+    {selected && !validId && <p role="alert" className="error-state">The incident link has an invalid ID. <button type="button" className="shell-button" onClick={close}>Clear incident selection</button></p>}
+    <DataTable rows={rows} columns={columns} caption="Incidents" initialSort={{key:'score',direction:'desc'}} pageSize={10}
+      loading={loading} error={error?.message} errorStatus={error?.status} onRetry={refresh} onRowOpen={open}/>
+    {validId && <IncidentDrawer key={selected} id={selected} paused={paused} onClose={close} onChanged={refresh} onNotice={setNotice}/>}
+  </div>
 }

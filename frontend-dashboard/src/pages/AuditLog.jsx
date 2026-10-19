@@ -1,168 +1,49 @@
-import {
-  Badge,
-  EmptyState,
-  Loading,
-  PageHeader,
-} from '../components/ui.jsx'
-import { useState, useEffect } from 'react'
-import { API, apiFetch, describeFailure } from '../api.js'
-
-const SEVERITY_CLASS = {
-  critical: 'sev-critical',
-  warning: 'sev-medium',
-  info: 'sev-low',
-}
-
+import { useState } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
+import { DataTable, Drawer, PageHeader, StatusBadge, FilterChips } from '../components/ui.jsx'
+import RefreshControls from '../components/RefreshControls.jsx'
+import useCollection from '../hooks/useCollection.js'
+import { operationDate, auditVerification, auditActor, auditInRange, downloadCsv, options } from '../utils/operations.js'
+import { formatDate } from '../utils/format.js'
 export default function AuditLog() {
-  const [events, setEvents] = useState([])
-  const [error, setError] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [filter, setFilter] = useState('')
-
-  const [eventId, setEventId] = useState('')
-  const [beforeId, setBeforeId] = useState(null)
-  const [knownTypes, setKnownTypes] = useState([
-    'CONTAINER_RESUMED', 'CONTAINER_RESUME_REQUESTED',
-    'CONTAINER_RESUME_RECHECK', 'RULE_NATIVE_REFIRE',
-  ])
-
-  useEffect(() => {
-    let active = true
-    let pending = false
-    const controller = new AbortController()
-    setLoading(true)
-    setEvents([])
-    async function fetchEvents() {
-      if (pending) return
-      if (eventId && !/^[1-9][0-9]*$/.test(eventId)) {
-        setError('Enter a positive whole-number audit ID.')
-        setLoading(false)
-        return
-      }
-      pending = true
-      try {
-        const params = new URLSearchParams({ limit: '200' })
-        if (filter) params.set('event_type', filter)
-        if (eventId) params.set('event_id', eventId)
-        if (beforeId) params.set('before_id', String(beforeId))
-        const res = await apiFetch(`${API}/audit/?${params}`, {
-          signal: controller.signal,
-        })
-        if (!res.ok) throw new Error(await describeFailure(res))
-        const items = await res.json()
-        if (active) {
-          setEvents(items)
-          setKnownTypes((old) => [...new Set([...old, ...items.map((e) => e.event_type)])])
-          setError(null)
-        }
-      } catch (err) {
-        if (active) setError(err.message)
-      } finally {
-        pending = false
-        if (active) setLoading(false)
-      }
-    }
-    fetchEvents()
-    const interval = setInterval(fetchEvents, 3000)
-    return () => {
-      active = false
-      controller.abort()
-      clearInterval(interval)
-    }
-  }, [filter, eventId, beforeId])
-
-  const eventTypes = [...knownTypes].sort()
-  const visible = events
-
-  return (
-    <div>
-      <PageHeader title="Audit log">
-        A traceable record of container activity and security decisions.
-      </PageHeader>
-      {loading && <Loading />}
-      {error && (
-        <p className="error-state" role="alert">
-          Couldn't load the audit log: {error}
-        </p>
-      )}
-      <p>
-        <select
-          aria-label="Filter audit events by type"
-          value={filter}
-          onChange={(e) => { setFilter(e.target.value); setBeforeId(null) }}
-        >
-          <option value="">All event types</option>
-          {eventTypes.map((type) => (
-            <option key={type} value={type}>
-              {type}
-            </option>
-          ))}
-        </select>{' '}
-        <input
-          type="number"
-          min="1"
-          step="1"
-          aria-label="Find audit ID"
-          placeholder="Audit ID (e.g. 829)"
-          value={eventId}
-          onChange={(e) => { setEventId(e.target.value); setBeforeId(null) }}
-        />
-      </p>
-      <p>
-        {eventId ? `Audit ID ${eventId}` : 'Up to 200 records per page, newest first.'}{' '}
-        Filters search the stored audit history.
-      </p>
-      <p>
-        <button type="button" disabled={!beforeId} onClick={() => setBeforeId(null)}>
-          Latest records
-        </button>{' '}
-        <button
-          type="button"
-          disabled={loading || !!error || !!eventId || events.length < 200}
-          onClick={() => setBeforeId(events[events.length - 1].id)}
-        >
-          Older records
-        </button>
-      </p>
-      {visible.length === 0 && !error && !loading && (
-        <EmptyState
-          title={filter || eventId || beforeId ? 'No matching events' : 'No audit events yet'}
-        >
-          {filter || eventId || beforeId
-            ? 'Clear the audit ID or choose another event type to explore the audit trail.'
-            : 'Container activity will appear when the monitor reports events.'}
-        </EmptyState>
-      )}
-      {visible.map((e) => (
-        <div
-          key={e.id}
-          className={`incident-card ${SEVERITY_CLASS[e.severity] || 'sev-low'}`}
-        >
-          <div className="incident-meta">
-            <Badge
-              tone={
-                e.severity === 'critical'
-                  ? 'critical'
-                  : e.severity === 'warning'
-                    ? 'medium'
-                    : 'accent'
-              }
-            >
-              {e.severity}
-            </Badge>
-            <span>Audit #{e.id}</span>
-            <span>{e.event_type}</span>
-            <span>{e.container_name || e.container_id || 'host'}</span>
-            {e.image_name && <span>{e.image_name}</span>}
-            <span>
-              {new Date(e.occurred_at || e.created_at).toLocaleString()}
-            </span>
-          </div>
-          {Object.keys(e.detail).length > 0 && (
-            <pre className="rule-yaml">{JSON.stringify(e.detail, null, 2)}</pre>
-          )}
-        </div>
-      ))}
+  const [search,setSearch] = useSearchParams()
+  const [type,setType] = useState(''), [eventId,setEventId] = useState(''), [before,setBefore] = useState(null)
+  const [from,setFrom] = useState(''), [to,setTo] = useState(''), [selected,setSelected] = useState(null)
+  const params = new URLSearchParams({limit:'200'})
+  if (type) params.set('event_type',type)
+  if (eventId) params.set('event_id',eventId)
+  if (before) params.set('before_id',String(before))
+  if (search.get('container_id')) params.set('container_id',search.get('container_id'))
+  const data = useCollection('/audit/?' + params)
+  const rows = data.rows.filter(r => auditInRange(r,from,to))
+  const columns = [
+    {key:'id',label:'Audit ID'}, {key:'occurred_at',label:'Time (local display)',accessor:r => r.occurred_at || r.created_at,render:v => operationDate(v)},
+    {key:'event_type',label:'Event type'}, {key:'actor',label:'Actor',accessor:auditActor,filterOptions:options(data.rows.map(auditActor))},
+    {key:'verification',label:'Verification evidence',accessor:auditVerification},
+    {key:'severity',label:'Severity',filterOptions:options(data.rows.map(r => r.severity)),render:v => <StatusBadge status={v} tone={v === 'critical' ? 'critical' : v === 'warning' ? 'medium' : 'neutral'} />},
+    {key:'container_name',label:'Container',accessor:r => r.container_name || r.container_id || 'Host'},
+    {key:'detail',label:'Recorded outcome / detail',accessor:r => JSON.stringify(r.detail || {}),render:v => <span className="audit-preview">{v}</span>},
+  ]
+  const clearScope = () => {setFrom('');setTo('');setType('');setEventId('');setBefore(null)}
+  const scopes = [{id:'type',value:type,label:'Stored event type'},{id:'eventId',value:eventId,label:'Exact ID'},{id:'from',value:from,label:'From UTC'},{id:'to',value:to,label:'Through UTC'}].filter(x => x.value).map(x => ({id:x.id,label:`${x.label}: ${x.value}`}))
+  function removeScope(id) { if (id === 'type') {setType('');setBefore(null)}; if (id === 'eventId') {setEventId('');setBefore(null)}; if (id === 'from') setFrom(''); if (id === 'to') setTo('') }
+  return <><PageHeader title="Audit log">Read-only recorded evidence. Type and exact ID query stored history; actor, UTC dates, search, and export apply to the loaded 200-record window.</PageHeader>
+    <div className="table-toolbar">
+      <label>Stored event type<input value={type} placeholder="e.g. CONTAINER_RESUMED" onChange={e => {setType(e.target.value);setBefore(null)}} /></label>
+      <label>Exact audit ID<input type="number" min="1" step="1" value={eventId} onChange={e => {setEventId(e.target.value);setBefore(null)}} /></label>
+      <label>From date (UTC)<input type="date" value={from} onChange={e => setFrom(e.target.value)} /></label>
+      <label>Through date (UTC)<input type="date" value={to} onChange={e => setTo(e.target.value)} /></label>
+      <button className="shell-button" onClick={clearScope}>Clear scope filters</button>
     </div>
-  )
+    <FilterChips filters={scopes} onRemove={removeScope} onClear={clearScope} />
+    {search.get('container_id') && <p>History for container {search.get('container_id')}. <Link to="/audit">All containers</Link>{search.get('legacy_container_id') && search.get('legacy_container_id') !== search.get('container_id') && <button className="shell-button" onClick={() => {const next = new URLSearchParams(search);next.set('container_id',search.get('legacy_container_id'));next.set('legacy_container_id',search.get('container_id'));setBefore(null);setSearch(next)}}>Switch recorded short / full ID</button>} Older records may use either Docker ID; inspect both histories.</p>}
+    {from && to && from > to && <p role="alert">From date must be on or before through date.</p>}
+    <RefreshControls {...data} />
+    <div className="table-toolbar"><button className="shell-button" disabled={!before} onClick={() => setBefore(null)}>Latest records</button>
+      <button className="shell-button" disabled={data.loading || !!data.error || !!eventId || data.rows.length < 200} onClick={() => setBefore(data.rows.at(-1).id)}>Older records</button>
+      <span>{before ? `Records before audit #${before}` : 'Latest matching records'}</span></div>
+    <DataTable {...data} rows={rows} error={data.error?.message} errorStatus={data.error?.status} onRetry={data.refresh} columns={columns} initialSort={{key:'id',direction:'desc'}} caption="Audit events" onRowOpen={setSelected}
+      onExport={filtered => downloadCsv(filtered, columns.map(c => ({label:c.label,value:r => c.accessor ? c.accessor(r) : r[c.key]})))} />
+    <Drawer open={!!selected} title="Audit evidence" onClose={() => setSelected(null)}>{selected && <><p>Audit #{selected.id} · {selected.event_type} · {auditActor(selected)}</p><pre className="rule-yaml">{JSON.stringify(selected,null,2)}</pre></>}</Drawer>
+  </>
 }

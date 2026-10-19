@@ -1,44 +1,35 @@
-import { createContext, useContext, useEffect, useState } from 'react'
-import { API, apiFetch, describeFailure } from '../api.js'
-
+import { dashboardNow } from '../utils/demoMode.js'
+import { createContext, useCallback, useContext, useEffect, useState } from 'react'
+import { requestJson } from '../utils/requests.js'
 const MonitorContext = createContext(null)
 export function MonitorProvider({ children }) {
-  const [value, setValue] = useState({
-    status: null,
-    error: null,
-    loading: true,
-  })
+  const [value,setValue] = useState({ status:null,error:null,loading:true,updatedAt:null })
+  const [version,setVersion] = useState(0)
+  const refresh = useCallback(() => setVersion(v => v + 1), [])
   useEffect(() => {
-    let active = true
-    let pending = false
+    let active = true, pending = false
     const controller = new AbortController()
-    async function refresh() {
+    async function load() {
       if (pending) return
       pending = true
       try {
-        const res = await apiFetch(`${API}/monitor/status`, {
-          signal: controller.signal,
-        })
-        if (!res.ok) throw new Error(await describeFailure(res))
-        const status = await res.json()
-        if (active) setValue({ status, error: null, loading: false })
+        const status = await requestJson('/monitor/status',{signal:controller.signal})
+        if (active) setValue({status,error:null,loading:false,updatedAt:new Date(dashboardNow())})
       } catch (err) {
-        if (active)
-          setValue((old) => ({ ...old, error: err.message, loading: false }))
-      } finally {
-        pending = false
-      }
+        if (active) setValue(old => ({...old,error:err.message,loading:false}))
+      } finally { pending = false }
     }
-    refresh()
-    const timer = setInterval(refresh, 3000)
-    return () => {
-      active = false
-      controller.abort()
-      clearInterval(timer)
-    }
-  }, [])
-  return (
-    <MonitorContext.Provider value={value}>{children}</MonitorContext.Provider>
-  )
+    load(); const timer = setInterval(load,3000)
+    return () => {active=false;controller.abort();clearInterval(timer)}
+  },[version])
+  return <MonitorContext.Provider value={{...value,refresh}}>{children}</MonitorContext.Provider>
 }
 export const useMonitor = () => useContext(MonitorContext)
+// Pause only the page snapshot; global safety status keeps polling.
+export function useMonitorSnapshot() {
+  const live = useMonitor()
+  const [snapshot,setSnapshot] = useState(null)
+  const paused = snapshot !== null
+  return { ...(snapshot || live), paused, setPaused: value => setSnapshot(value ? live : null),
+    refresh: () => {setSnapshot(null);live.refresh()} }
+}

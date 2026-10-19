@@ -1,25 +1,3 @@
-:root {
-  --bg: #0d1117;
-  --panel: #161b22;
-  --panel-hover: #1c2330;
-  --border: #30363d;
-  --border-subtle: #21262d;
-  --text: #e6edf3;
-  --text-muted: #8b949e;
-  --text-dim: #6e7681;
-  --accent: #43c6b7;
-  --accent-dim: rgba(67, 198, 183, 0.15);
-  --sev-low: #3fb950;
-  --sev-medium: #d29922;
-  --sev-high: #db6d28;
-  --sev-critical: #f85149;
-  --radius: 8px;
-  --radius-lg: 12px;
-  --shadow: 0 1px 3px #0005;
-  --font-ui: 'Space Grotesk', system-ui, sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
-  color-scheme: dark;
-}
 * {
   box-sizing: border-box;
 }
@@ -59,7 +37,7 @@ h3 {
 .sidebar {
   width: 232px;
   flex-shrink: 0;
-  background: linear-gradient(180deg, #141b23, var(--bg));
+  background: var(--panel);
   border-right: 1px solid var(--border-subtle);
   padding: 30px 16px 22px;
   position: sticky;
@@ -169,7 +147,7 @@ h3 {
   gap: 12px 24px;
   min-height: 60px;
   padding: 14px 32px;
-  background: #0d1117f5;
+  background: var(--bg);
   border-bottom: 1px solid var(--border-subtle);
   position: sticky;
   top: 0;
@@ -254,7 +232,7 @@ h3 {
 }
 .metric-card {
   padding: 20px;
-  background: linear-gradient(125deg, #1a222c, var(--panel) 65%);
+  background: var(--panel);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
   position: relative;
@@ -423,7 +401,7 @@ h4 span {
 }
 .incident-sections p {
   font-size: 12px;
-  color: #bdc6d1;
+  color: var(--text-muted);
   margin-bottom: 0;
 }
 dl {
@@ -588,7 +566,7 @@ dd {
   margin: 16px 0;
   border: 1px dashed var(--border);
   border-radius: var(--radius-lg);
-  background: linear-gradient(180deg, #161b2255, transparent);
+  background: var(--panel);
   color: var(--text-muted);
 }
 .empty-state > svg {
@@ -627,7 +605,7 @@ dd {
 }
 .error-state {
   padding: 14px 18px;
-  color: #ffaaa4;
+  color: var(--sev-critical);
   background: #f851490e;
   border: 1px solid #f8514944;
   border-radius: var(--radius);
@@ -689,7 +667,7 @@ dd {
   border-color: var(--accent);
 }
 .btn-reject {
-  color: #ff8f88;
+  color: var(--sev-critical);
   border-color: #f8514960;
 }
 .btn-reject:hover:not(:disabled) {

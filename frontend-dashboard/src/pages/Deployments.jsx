@@ -1,150 +1,25 @@
-import RiskExplanation from '../components/RiskExplanation.jsx'
-import {
-  Badge,
-  EmptyState,
-  Loading,
-  PageHeader,
-  Notice,
-} from '../components/ui.jsx'
-import { useState, useEffect } from 'react'
-import { API, apiFetch, describeFailure } from '../api.js'
-
-const DECISION_CLASS = {
-  blocked: 'sev-high',
-  overridden: 'sev-medium',
-  allowed: 'sev-low',
-}
-const DECISION_LABEL = {
-  blocked: 'BLOCKED',
-  overridden: 'OVERRIDDEN',
-  allowed: 'ALLOWED',
-}
-
+import { useState } from 'react'
+import { DataTable, Drawer, PageHeader, StatusBadge } from '../components/ui.jsx'
+import RefreshControls from '../components/RefreshControls.jsx'
+import useCollection from '../hooks/useCollection.js'
+import { formatDate } from '../utils/format.js'
+import { operationDate, options } from '../utils/operations.js'
 export default function Deployments() {
-  const [deployments, setDeployments] = useState([])
-  const [error, setError] = useState(null)
-  const [loading, setLoading] = useState(true)
-
-  async function fetchDeployments() {
-    try {
-      const res = await apiFetch(`${API}/deployments/`)
-      if (!res.ok) throw new Error(await describeFailure(res))
-      setDeployments(await res.json())
-      setError(null)
-    } catch (err) {
-      setError(err.message)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    fetchDeployments()
-    const interval = setInterval(fetchDeployments, 3000)
-    return () => clearInterval(interval)
-  }, [])
-
-  const blockedCount = deployments.filter(
-    (d) => d.decision === 'blocked',
-  ).length
-
-  return (
-    <div>
-      <PageHeader title="Deployments">
-        Trace image scans, policy decisions, and deployment overrides.
-      </PageHeader>
-      {loading && <Loading />}
-      {error && (
-        <p className="error-state" role="alert">
-          Couldn't load deployments: {error}
-        </p>
-      )}
-      {deployments.length > 0 && (
-        <p>
-          {deployments.length} recorded, <strong>{blockedCount} blocked</strong>
-        </p>
-      )}
-      {deployments.length === 0 && !error && !loading && (
-        <EmptyState title="No deployments recorded">
-          Deploy through bin/selfsentry-run to record image scan and policy
-          decisions.
-        </EmptyState>
-      )}
-      {deployments.map((d) => (
-        <div
-          key={d.id}
-          className={`incident-card ${DECISION_CLASS[d.decision] || 'sev-low'}`}
-        >
-          <div className="incident-meta">
-            <Badge
-              tone={
-                d.decision === 'blocked'
-                  ? 'high'
-                  : d.decision === 'overridden'
-                    ? 'medium'
-                    : 'low'
-              }
-            >
-              {DECISION_LABEL[d.decision] || d.decision}
-            </Badge>
-            <span>{d.container_name}</span>
-            <span>{d.image_name}</span>
-            <span>{d.requested_by}</span>
-            {d.created_at && (
-              <span>{new Date(d.created_at).toLocaleString()}</span>
-            )}
-          </div>
-          <RiskExplanation value={d.risk_explanation} />
-          {d.scan ? (
-            <p>
-              <strong>Image scan</strong>
-              critical {d.scan.critical}, high {d.scan.high}, secrets{' '}
-              {d.scan.secrets_found}
-            </p>
-          ) : (
-            <p>
-              <strong>Image scan</strong>
-              not available (the scan could not run)
-            </p>
-          )}
-          {d.decision === 'blocked' && <p>
-            To override deliberately, rerun the deployment gate with a mandatory justification:
-            <code> bin/selfsentry-run --override-reason "ticket and accepted risk" -- &lt;original docker run arguments&gt;</code>.
-            The override is recorded in deployment history and the audit log.
-          </p>}
-          {d.override_reason && (
-            <p>
-              <strong>Override reason</strong>
-              {d.override_reason}
-            </p>
-          )}
-          {d.policy_violations.length > 0 && (
-            <div>
-              <strong>Policy violations</strong>
-              <ul>
-                {d.policy_violations.map((v) => (
-                  <li key={v.rule_id}>
-                    [{v.severity}] {v.title}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-          {d.scan && d.scan.top_findings.length > 0 && (
-            <div>
-              <strong>Top critical findings</strong>
-              <ul>
-                {d.scan.top_findings.slice(0, 5).map((f) => (
-                  <li key={`${f.id}-${f.package}`}>
-                    {f.id} in {f.package}
-                    {f.fixed ? ` (fixed in ${f.fixed})` : ''}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </div>
-      ))}
-    </div>
-  )
+  const data = useCollection('/deployments/?limit=500'), [selected,setSelected] = useState(null)
+  const columns = [
+    { key: 'id', label: 'ID' }, { key: 'created_at', label: 'Recorded', render: v => operationDate(v) },
+    { key: 'container_name', label: 'Container' }, { key: 'image_name', label: 'Image' },
+    { key: 'decision', label: 'Gate decision', filterOptions: options(['allowed','blocked','overridden']), render: v => <StatusBadge status={v} /> },
+    ...[['critical','Critical'],['high','High'],['secrets_found','Secrets'],['misconfigurations_found','Misconfigurations']].map(([key,label]) => ({ key, label, accessor: r => r.scan?.[key] })),
+    { key: 'requested_by', label: 'Recorded actor' }, { key: 'override_reason', label: 'Override reason' },
+  ]
+  return <><PageHeader title="Deployments">Recorded deployment gate decisions and Trivy evidence. Up to 500 latest records; filters apply to this loaded window.</PageHeader>
+    <RefreshControls {...data} />{data.rows.length >= 500 && <p role="status">History limit reached. Earlier deployments are outside this view.</p>}
+    <DataTable {...data} error={data.error?.message} errorStatus={data.error?.status} onRetry={data.refresh} columns={columns} initialSort={{key:'id',direction:'desc'}} caption="Deployments" onRowOpen={setSelected} />
+    <Drawer open={!!selected} title="Deployment evidence" onClose={() => setSelected(null)}>{selected && <><p>Deployment #{selected.id} · {selected.decision}</p>
+      <p>Recorded actor: {selected.requested_by || 'Not recorded'} · Override reason: {selected.override_reason || 'Not recorded'}</p>
+      <h3>Policy violations</h3><pre className="rule-yaml">{JSON.stringify(selected.policy_violations || [], null, 2)}</pre>
+      <h3>Policy summary</h3><pre className="rule-yaml">{JSON.stringify(selected.policy_summary ?? 'Not recorded', null, 2)}</pre>
+      <h3>Trivy scan and findings</h3><pre className="rule-yaml">{JSON.stringify(selected.scan ?? 'Not recorded', null, 2)}</pre></>}</Drawer>
+  </>
 }

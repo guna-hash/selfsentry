@@ -1,0 +1,8 @@
+.evidence-page > section { margin-block: var(--space-5); }
+.evidence-page .data-table { margin-block: var(--space-4); }
+.evidence-limitation { border: 2px solid var(--border); padding: var(--space-4); border-radius: var(--radius); font-weight: 600; background: var(--panel); }
+.evidence-warning { color: var(--text); border-left: 3px solid var(--border); padding-left: var(--space-4); }
+.evidence-source { margin-block: var(--space-3); padding: var(--space-4); border: 1px solid var(--border-subtle); border-radius: var(--radius); }
+.evidence-source summary { cursor: pointer; overflow-wrap: anywhere; }
+.evidence-source pre { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 480px; overflow: auto; font-size: 13px; }
+.evidence-source code { overflow-wrap: anywhere; }

@@ -1,5 +1,44 @@
 # SelfSentry release checklist
 
+## Dashboard redesign (stepwise review)
+
+- [x] Step 1 implementation: theme tokens/toggle, responsive shell, health/isolation banners.
+- [x] Step 1 automated verification: install, build and 16 frontend tests; token contrast.
+- [x] Operator reports repaired dashboard, theme toggle, sidebar and isolation indicator working.
+- [ ] Verify narrow/mobile shell layout explicitly.
+- [x] User accepted Step 1 and authorized Step 2.
+- [x] Step 2 shared components, table sort/filter interaction tests and formatter tests.
+- [x] Step 2 clean install/build and 30 frontend tests passed.
+- [ ] Step 2 native browser drawer focus-trap and visual checks.
+- [x] Operator accepted Step 2 and authorized progression to Overview.
+- [x] Step 3 Overview implementation and 47 frontend tests; clean install/build passed.
+- [ ] Step 3 VM visual verification in both themes, filters, linked incident and refresh controls.
+- [x] User accepted Step 3 and requested the next step.
+- [x] Step 4 shared Alerts table, detail drawer, guarded actions and 69 frontend tests.
+- [ ] Step 4 VM visual and controlled-action checks, including modal keyboard behavior.
+- [x] User accepted Step 4 and requested Step 5.
+- [x] Step 5 Rule Review Queue, YAML/backtest history and human confirmation dialogs.
+- [x] Step 5 clean install/build and 96 frontend tests passed.
+- [ ] Step 5 VM visual, modal keyboard and controlled review/reload acceptance.
+- [x] User reviewed Step 5 and authorized Step 6.
+- [x] Step 6 Containers, Deployments, Audit, Monitor and Models migration.
+- [x] Step 6 clean install/build and 119 frontend tests passed.
+- [ ] Step 6 VM review: both themes, sorting/filtering, historical audit IDs/CSV,
+  protected workload guard, controlled restore verification and native modal keyboard use.
+- [x] User authorized Step 7 after the Step 6 delivery.
+- [x] Step 7 Evidence, presentation and explicitly bannered fixture modes.
+- [x] Step 7 clean install/build and 146 frontend tests passed.
+- [ ] Step 7 VM review: Evidence/provenance, missing-file states, presentation navigation,
+  clear sample banner, disabled actions and no backend network requests in sample mode.
+- [x] User authorized Step 8 after Step 7 delivery.
+- [x] Step 8 eight browser screenshots in both themes, labelled README gallery and capture guide.
+- [x] Step 8 bounded browser checks: native modal Tab/Shift+Tab/Escape, 390px navigation,
+  no page overflow/backend requests/page errors in sample mode; all images visually inspected.
+- [x] Step 8 clean install/build and 149 frontend tests passed.
+- [ ] Operator final review of the screenshot gallery and controlled live workflows.
+- [ ] Additional manual accessibility/browser combinations beyond the recorded smoke checks.
+
+
 
 ## Completion extension — 16 October 2026
 

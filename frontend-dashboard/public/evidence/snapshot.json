@@ -1,0 +1,706 @@
+{
+  "schema": 1,
+  "limitation": "controlled results, not production guarantees, not evidence of coverage beyond Falco.",
+  "sources": [
+    {
+      "path": "docs/monitor_measured_results_20261011.md",
+      "text": "# SelfSentry measured full-pipeline evaluation — 11 October 2026\n\n## Evidence and configuration\n\nSource: `selfsentry-full-evidence.tar.gz`, containing the 200 records in\n`state/evaluation/full-20261011-only.jsonl`, their schedule, incident snapshot,\naggregated results, and the 20-sample target baseline.\nAll 200 trial IDs and schedule entries are unique; all records share configuration\nfingerprint `961602fe18bdd46c05d5260cc19df8234fe789f9b1ff464f0656f41b9a0b65a9`.\nThe uploaded baseline SHA-256 matches the recorded fingerprint:\n`f354809d2ad5fa7406e34024bb65c9f3aea37815493050b92741debac412fbba`.\nTarget: container `12160024642b`; 60-second windows, 10-second lateness;\nautomatic isolation off. No invalid trials or duplicate-incident trials were recorded.\nThe software working tree was dirty: the fingerprint does not establish identical\nruntime code across future runs. Preserve the actual source used for this experiment.\n\n## Measured outcomes\n\n| Scenario | Labeled trials | Persisted incident | Qualifying ML evidence in persisted incidents | Auto-confirmed |\n|---|---:|---:|---:|---:|\n| Terminal shell | 20 attack | 20 | 1 | 0 |\n| New binary execution | 20 attack | 20 | 0 | 0 |\n| Sensitive file read | 20 attack | 20 | 2 | 2 |\n| Symlink over sensitive file | 20 attack | 20 | 3 | 3 |\n| Standard stream/socket redirection | 20 attack | 20 | 1 | 0 |\n| Benign administration | 20 benign | 0 | 0 (retrospective replay) | 0 |\n| Benign configuration read | 10 benign | 2 | 2 | 0 |\n| Benign local HTTP fixture | 10 benign | 10 | 0 | 0 |\n| Benign shell directory listing | 20 benign | 1 | 1 | 0 |\n| Quiet | 40 benign | 0 | Not scored: no events | 0 |\n\nIncident detection: 100/100 attacks (Wilson 95% interval 96.30–100%).\nFalse-positive rate: 13/100 benign trials (7.76–20.98%). Forty benign trials\nwere quiet; among the 60 active benign trials, incidents occurred in 13/60 (21.67%).\nAttack automatic-confirmation coverage: 5/100 (2.15–11.18%).\nConfirmation precision under the controlled scenario labels: 5/5 (56.55–100%).\nControlled simulations are labels for this experiment, not evidence of genuine compromise.\n\nAll 100 attack incidents contain Falco security alerts. Only seven have qualifying\nML evidence; five meet automatic-confirmation policy. The evidence does not establish\nan attack-detection advantage over Falco, nor an independently operated Falco-only trial.\nThe subsequent retrospective comparison covers all 200 windows and is recorded below.\nDo not populate unrun live comparison variants by copying full-pipeline results into them.\n\n## Timing boundary\n\nAttack start to database row timestamp: median 68.154 seconds; nearest-rank p95\n68.588 seconds; maximum 69.279 seconds, n=100. Naive database timestamps were explicitly\ninterpreted as Asia/Kolkata and converted to UTC. These server-generated row timestamps\nare not verified transaction-commit completion timestamps. This scheduled run did not\npoll incident visibility, or measure Falco receipt, ML qualification, correlation,\nisolation, learning, or model readiness latencies. Those measurements remain unavailable.\n\n## False-positive attribution\n\nThe ten benign HTTP incidents contain `Redirect STDOUT/STDIN to Network Connection in\nContainer`, two alert entries per incident. Their ML score is approximately 0.4582 and\ndoes not qualify. The benign fixture uses Bash `/dev/tcp` plus redirected streams to\nmake a loopback HTTP request: it performs the operation this rule monitors. Preserve\nthese ten known-benign detections. A conventional HTTP-client fixture would constitute\na separate workload/configuration comparison; do not retrospectively relabel the trials,\nexclude them, or disable the general socket-redirection security rule to remove this result.\n\nThe two configuration-read false positives are anomaly-only (score approximately 0.8430),\nas is the directory-listing false positive (approximately 0.8455). None was confirmed.\nNo global threshold change can be justified solely from these individual examples.\n\n## Workflow and AI evidence\n\nOf 113 persisted incidents: 108 unconfirmed, five confirmed; all 113 responses are\nnot attempted because isolation is off. Five candidates are pending human review:\nrule IDs 12–16 from incidents 70, 80, 94, 98 and 151. These are not deployment evidence;\ntheir backtests and native validation need review before approval.\nAI explanations: 50 ready, 63 unavailable. The operator's run-scoped JSON log\ncount reported 50 HTTP 200 responses, 63 HTTP 429 responses and 63 unavailable\nwarnings, with no unparseable log lines. This attributes the failures to provider\nrate limiting; the specific request/token/quota limit was not established. AI\navailability is not a detection/confirmation criterion. A bounded retry patch was installed afterward and the full test suite passed on the VM.\nA post-patch request for incident 177 succeeded with HTTP 200. Live 429-to-success\nrecovery was not observed; cooldown, retry limits and restart persistence have\nautomated-test coverage.\n\n## Acceptance and review closeout\n\nNo-baseline live fallback (incident 178), PostgreSQL outage recovery (179), and\nreal-Docker protected-container workflow checks (name/short/full ID) passed.\nFive invalid/degenerate-model regression cases passed. All three acceptance\nsummaries were reviewed from the source archive. Protection used synthetic policy\nevidence and a fake backend; the other two checks used the actual running pipeline.\nA local review reproduced 406 Python test passes. Final polish requires a final VM\nverification and release commit; it does not reclassify or replace the frozen trials.\n\nIndependent live comparison variants and separate layer/response/learning timings\nremain unmeasured. Exhaustive fault injection and production soak remain limitations.\nHuman review of outstanding candidates remains an operator workflow, not a requirement\nto deploy every generated rule. Old whoami-from-sh rule 32 is still enabled and broad;\nreview it before using automation on real workloads. The prior ls-from-sh rule 8 is disabled.\n\n## Verified retrospective layer comparison\n\nLocal replay on the test VM verified all 113 saved incident assessments against\nretained telemetry and the matching baseline. All 200 reconstructed union outcomes\nmatched persisted incident outcomes (zero mismatches).\n\n| Layer observation | Attack flags / 100 | Benign flags / 100 |\n|---|---:|---:|\n| Stored Falco security alerts | 100 | 10 |\n| Replayed ML qualification (threshold 0.8) | 7 | 3 |\n| Union / persisted full-pipeline incidents | 100 | 13 |\n| Automatic confirmation | 5 | 0 |\n\nML scored all 100 attack and 60 active benign windows. Forty quiet windows contained\nno baseline telemetry and were not scored: absence of ML qualification there is not\nan affirmative normal classification. Among scored benign windows, ML qualified 3/60.\nThe union of Falco and ML flags added three false positives and no additional attack\ndetections for these scenarios. This is an observation/replay comparison from one\nfull-pipeline execution, not four independently executed experimental variants.\nLive Falco receipt and ML processing latencies remain unmeasured.\n\n## Post-patch verification — 11 October UTC / 12 October IST\n\nThe operator reported the full Python suite passing after installing the AI retry\npatch and updating obsolete evaluation-contract tests. The exact final pass count\nwas not pasted. Monitor PID 41437 restarted healthy; the existing target remained\nMODEL_READY with 20 samples. Incident 177 was detected and auto-confirmed with no\nduplicate incident, clock skew zero, and trial-start-to-API-visibility duration\n70.0758 seconds. Its AI explanation became ready (HTTP 200); automatic isolation\nwas not attempted because it was disabled. This is a separate smoke test, not an\nadditional observation in the frozen 200-trial comparison.\n\nAI wording that calls this controlled simulation a compromised container is an\nadvisory overstatement. The ground-truth scenario label remains a controlled test.\n",
+      "sha256": "97946fc25f5da4b377e428ca31abe6a1397951fee187f71ddb0e5224199cbde3"
+    },
+    {
+      "path": "docs/academic_case_matrix.md",
+      "text": "# Designed-case coverage matrix\n\nSelfSentry is a hybrid container runtime security system that combines Falco rule matching with per-container behavioral anomaly detection, correlates both into incidents, and converts confirmed anomalies into template-generated, backtested, human-approved Falco rules — demonstrating a supervised adaptive detection loop under controlled evaluation.\n\n15 October 2026. **PASS-E**: supplied study artifacts checked offline; **PASS-H**:\nearlier reported live pass; **TEST**: source test; **RE-RUN**: evidence still needed.\nPASS-E does not mean the reviewer independently operated the VM.\nSynthesis requires Falco process metadata; anomaly-only synthesis is unsupported.\n\n| Case | Expected behavior | Evidence / next artifact | Pass–Fail |\n|---|---|---|---|\n| Falco-only high priority | Persist alert without invented agreement | Binary incidents 200/204: Critical stock alert, IF ~0.143 nonqualifying, responses off | PASS-E |\n| No baseline / learning | Falco incident, explicit unavailable ML | Incident 178; shell probe `reliability-shell-20261012T174808Z.json` | PASS-H |\n| Both layers agree | Falco + qualifying default IF assessment | Seven frozen attack windows; IF incident 177 | PASS-H; refresh current case |\n| Confirm → candidate | Persist confirmation; template; nonempty backtest; pending queue | Incident 200 → rule 18; candidate JSON pending, reviewed export links confirmation | PASS-E for B1 |\n| Anomaly-only synthesis | Explicit unsupported extraction; incident retained | `pattern_extractor.py`; SVM incidents 193–196 | Unsupported; TEST refusal |\n| Reject → undeployed | Reviewer saved; exact candidate absent; reason audited | Rule 19 rejected; intermediate hash unchanged, rule 18 pending; final YAML/alerts omit `_203`; full reason/audit export missing | PASS-E core outcome; reason unexported |\n| Approve → reload → re-fire | Human decision + active native rule | Rule 18 deployed; `_200` native event and incident 204 timeline; reload log not supplied | PASS-E re-fire; reload log absent |\n| Monitor restart | Resume durable work without duplicate/timeline loss | `test_observed_timeline_survives_outbox_restart_in_chronological_order`; worker replay tests | TEST; live mid-flight RE-RUN |\n| Backend/DB restart recovery | Queue drains to one incident after recovery | Incident 179 PostgreSQL outage in `monitor_final_review.md` | PASS-H for recorded outage |\n| Isolation default OFF | Standard study makes no response attempt | All 17 capture flags false; six incident responses not attempted | PASS-E for study |\n| Clock skew | Reject skew; retain invalid evidence | Prior SVM batch: 19 invalid. Current 17 captures valid/zero skew | PASS-E current checks; cause unresolved |\n| Broad template preview | Flag unsafe corpus match rate | 201: 3/36; 202: 8/36; not submitted; no actual refusal calls | PASS-E preview; submission unrun |\n| Later benign windows | No learned-rule hits in new windows | Admin/config/curl: 0/3 hit windows, 0/3 incident windows; repeated workload families | PASS-E, limited sample |\n| Experimental response | Eligible SVM/Falco isolation + recoverable resume | Incident 190, saved JSON + paused-state console; acceptance doc | PASS-H, SVM-only functional case |\n\nEvidence index: [measured results](monitor_measured_results_20261011.md),\n[acceptance](reliability_acceptance_20261013.md), [protocol](academic_study.md),\n[reviewed study](academic_results_20261015.md).\nMark actual FAIL, INVALID or NOT RUN where appropriate after execution; preserve IDs,\nartifact paths, exclusions and configuration hashes. Never infer a pass from a proposed command.\n\n**Out of scope:** universal/zero-day coverage; production CWPP/fleets/Kubernetes/\nmulti-tenancy; autonomous rule deployment; model self-retraining; ML-only pattern\ninvention; representative production FPR; unrun independent live ablations;\ncomplete stage/containment latency; exhaustive failure/soak validation. Backtesting\nestimates corpus matches, not safety; templates can lose original context.\n",
+      "sha256": "018639239cf09ce41b36f65ce8a3792a92dff92be4da74f557db7e683afa55f8"
+    },
+    {
+      "path": "docs/academic_results_20261015.md",
+      "text": "# Supervised adaptive-loop results — 15 October 2026\n\nSelfSentry is a hybrid container runtime security system that combines Falco rule matching with per-container behavioral anomaly detection, correlates both into incidents, and converts confirmed anomalies into template-generated, backtested, human-approved Falco rules — demonstrating a supervised adaptive detection loop under controlled evaluation.\n\n**Observed boundary:** this study validates the supported Falco-backed process-pattern\nworkflow. It does not establish ML-only rule synthesis, added attack coverage or\nrepresentative model accuracy. “Confirmed” denotes operator-labeled controlled\nsimulation, not a genuine compromise. No detector default or threshold was changed.\n\n## Evidence and review method\n\nThe operator executed the study on the Ubuntu/Docker/Falco/PostgreSQL VM and supplied\n`selfsentry-academic-study-evidence.tar.gz`. The review extracted and checked those\nartifacts offline; the reviewer did not operate the VM independently. Archive SHA-256:\n\n```text\n0fa955f30775b8c1edbc2638d87d334091e95c56f1311523024dc0e912383981\n```\n\nStudy directory: `state/evaluation/academic-loop-20261015T085928Z/`.\nSee the [machine-readable audit](academic_results_20261015.json) for each capture,\nbacktest, reviewed row, artifact hash and unmeasured item. Raw runtime data remains\nseparate from tracked source documentation.\n\nSeventeen captures are present: nine benign calibration windows, three primary before\ncases, one additional binary rejection-control before case, one approved binary after\ncase, and three later benign windows. All 17 reports are valid with closed windows,\naccepted baseline telemetry and zero observed per-capture clock skew. Raw record\ncounts, target/window membership, alert names, incident IDs, delivered outbox IDs and\npersisted timeline descriptions were cross-checked. No invalid capture is present in\nthis supplied archive; this says nothing about attempts not supplied.\n\nAll captures used monitor PID 10064, default `isolation_forest` and explicit false\nvalues for isolation, automatic confirmation and automatic candidate generation. The\nsame target, image and baseline hashes were recorded throughout. Six incident snapshots\n(199–204) all report response not attempted because isolation was disabled. Manual\nconfirmation/submission and human rule approval were separate operator actions.\n\n| Reproducibility item | Recorded value |\n|---|---|\n| Source HEAD | `f465de1930df502c3ea4b426f0804a47298a2e72` with dirty working tree and applied academic patch |\n| Container ID | `12160024642b6244d4ec9b81e5ac7d0010a8d30688e37d9ac4369f0bf2b693df` |\n| Image ID | `sha256:a484819eb60211f5299034ac80f6a681b06f89e65866ce91f356ed7c72af059c` |\n| Baseline SHA-256 | `f354809d2ad5fa7406e34024bb65c9f3aea37815493050b92741debac412fbba` |\n| Benign corpus SHA-256 | `7ce5a6fcc58c9403264e59aad7a2339422489895108727aaa42a24d36955dc38` |\n| Generated rules before | `59874ffbd84bad5c80c8a75271d1425d58a4ce3c260e6800fb06867097e601d6` |\n| Generated rules after | `99ad05160795da3d62787cbd39af3d648821cd2385a21f43f5f5eabcce3425a4` |\n\nThe archive has captures and final rule/decision snapshots; it does not contain a\ncomplete runtime source/configuration/dependency archive, original baseline bytes,\nnative reload journal or full DB audit export. Source HEAD plus dirty status is not\nproof of exact runtime-code identity. Stored model assessments were inspected, not\nretrained/recomputed from a baseline absent from this archive.\n\n## Novelty evidence table: all planned primary behaviors and rejection control\n\n| Behavior | Falco before | Incident confirmed | Rule approved | Falco after (re-fire?) | Notes |\n|---|---|---|---|---|---|\n| B1 copied harmless `ss-study-true` binary | Existing `Drop and execute new binary in container`; incident 200 | Yes: reviewed record links incident 200, confirmed by `guna-academic-review` | Yes: rule 18, reviewed by `guna-review`, final status deployed | **Yes:** exact `Auto_Generated_ss_study_true_from_sh_200` at `2026-10-15T10:12:02.312672440Z`, incident 204 timeline | Candidate matched 0/36 benign process events; stock alert also fires after; no coverage gain |\n| B2 sensitive-file read | Existing `Read sensitive file untrusted`; incident 201 | No confirmation evidence supplied for this case | Not submitted/approved; preview backtest fails | NOT RUN; no B2 generated rule in final YAML | `cat` from `sh` matches 3/36 (8.33%); template loses sensitive-path context |\n| B3 terminal shell | Existing `Terminal shell in container`; incident 202 | No confirmation evidence supplied for this case | Not submitted/approved; preview backtest fails | NOT RUN; no B3 generated rule in final YAML | `sh` from `containerd-shim` matches 8/36 (22.22%); template loses TTY context |\n| Rejection control: additional B1 repeat | Existing copied-binary rule; incident 203 | Yes: reviewed record links incident 203, confirmed by `guna-academic-review` | **Explicitly rejected:** rule 19 by `guna-review` | Exact `_203` rule absent from final YAML and every supplied capture; positive after run fires `_200` only | Separate decision-path control, not a fourth attack class; same matching condition as rule 18 |\n\nExactly one of the three primary behaviors completed approval and native re-fire.\nTwo primary patterns stopped at failed backtest previews. An additional passing\ncandidate was explicitly rejected. These are different outcomes: **a backtest preview\nfailure is not a recorded human rejection**, and neither missing B2/B3 after-run is\ncounted as a successful re-fire. Actual failed production submissions for 201/202\nwere not attempted; source refusal behavior has test coverage, not live refusal\ntrace in this study.\n\n## Backtest corpus and recomputation\n\nThe corpus contains 36 `Baseline Process Spawn` records from nine known-normal\nadministration/config-read/conventional-curl windows (three rounds). Offline review\nreconstructed that exact ordered corpus from the raw capture files and matched its\nsaved hash. It retained the normal window that produced anomaly-only incident 199.\nThe corpus is separate from the model's unchanged training baseline.\n\n| Pattern preview from actual incident | Matched / eligible events | Reported match rate | Verdict at existing ≤5% threshold |\n|---|---:|---:|---|\n| `ss-study-true` from `sh` (200) | 0/36 | 0.0% | Pass; queued rule 18 |\n| `cat` from `sh` (201) | 3/36 | 8.33% | Flag for revision; not queued |\n| `sh` from `containerd-shim` (202) | 8/36 | 22.22% | Flag for revision; not queued |\n\nExisting `extract_pattern`, `generate_rule` and `backtest_rule` reproduced all three\nreported previews against the saved corpus. Submission artifacts and reviewed rows\nagree for rules 18/19. Backtest rates are event-level matches over the supported\nprocess/parent template shape, not native full-engine replay or production FPR.\nZero matches in 36 events is not a safety guarantee. Across-container rule breadth\nand loss of incident-specific context still require human review.\n\n## Human decisions, native deployment evidence and rejection integrity\n\n`reviewed-rules.json` records rule 18 from incident 200 as deployed, and rule 19 from\nincident 203 as rejected. Both were confirmed by `guna-academic-review` and reviewed\nby `guna-review`. The final rule-18 YAML equals the corresponding parsed node in\n`rules-after.yaml`; rule 19 is absent. Reviewer timestamps are timezone-naive in the\nexport; no learning or approval latency is calculated from them.\n\nThe intermediate `rejection-verification.json` records rule 19 rejected/absent,\nthe file hash unchanged and rule 18 still pending. The control's before capture\nshares the original rule hash. Together these support the rejection outcome; they\nare operator-generated snapshots, not an independently signed audit trail. The full\nrejection-reason/audit event payload is not included in this archive.\n\nThe after raw record contains the exact rule name, target `12160024642b`, process\n`ss-study-true`, parent `sh` and native timestamp above. The stock copied-binary rule\nhas the **same event timestamp**. Incident 204's observed timeline contains both\nalerts. Thus the rule was active in Falco after the operator's reported reload;\nthis goes beyond a database status alone. A separate native reload log and reload\nlatency were not captured. Rule 19's absence is about that exact rejected artifact;\nits identical behavior condition can still match through approved rule 18.\n\n## Behavioral model and benign outcomes\n\n| Window(s) | Qualifying model evidence | Outcome |\n|---|---|---|\n| Binary before 200, control 203 and after 204 | IF score ~0.1430, not qualifying | Falco-backed incidents; do not call these two-layer agreement |\n| Sensitive before 201 | IF score ~0.4736, not qualifying | Falco-backed incident |\n| Terminal before 202 | IF score ~0.4907, not qualifying | Falco-backed incident |\n| Calibration `benign-2-admin`, incident 199 | IF score ~0.8400, qualifying; effective score 24 | Known-benign anomaly-only false positive; not confirmed, no response |\n| Three held-out normal windows | No incident in snapshots; accepted events and closed windows verified | No generated-rule hit; no full-pipeline incident in 3/3 windows |\n\nThe approved generated rule had zero native hits in three **later** administration,\nconfig-read and curl windows. Those commands repeat calibration workload families;\nthey are temporally held-out windows, not independent unseen workloads. This does\nnot justify a production FPR or improvement claim. Calibration had one incident in\nnine windows; later checks had zero in three. Do not pool those small convenience\nsamples with the historical 200-trial benchmark or tune thresholds to erase incident 199.\n\n## Answers to the research questions\n\n- **RQ1, supported loop closure:** observed once (B1), with incident→confirmation→\n  template/backtest→human approval→native re-fire and persisted after timeline.\n  No ML-only-to-rule path was exercised or implemented.\n- **RQ2, human rejection:** observed once (rule 19), despite a passing 0/36 backtest.\n  Reviewer choice prevented that exact candidate being added; positive rule 18 is\n  separately approved. Broader pattern suppression is not claimed.\n- **RQ3, hybrid contribution/coverage:** none of the three primary before incidents\n  had qualifying IF evidence; all had existing Falco detections. There is **no new\n  attack coverage demonstrated**. The model contributed a benign false positive\n  during calibration. That result is retained rather than reframed as a threat.\n\n## Defensible report paragraph\n\n“In a three-behavior controlled mini-study, one process-pattern candidate completed\nconfirmation, template generation, a 36-event benign backtest, explicit human approval\nand native Falco re-fire, with the after incident preserving both original and learned\nrule evidence. Two other generated pattern previews exceeded the existing 5% benign\nmatch-rate threshold and were not submitted. A separate passing candidate was manually\nrejected and remained absent from the rules file. Three later normal windows produced\nno learned-rule matches or incidents. Existing Falco rules detected all three original\nbehaviors, so the study supports supervised workflow adaptation, not additional attack\ncoverage. The calibration phase retained one anomaly-only false positive.”\n\n## Reproduce the backtest review on the VM\n\nThis reads saved evidence only; it does not confirm, submit, approve, deploy or retrain:\n\n```bash\ncd ~/selfsentry\nsource .venv/bin/activate\npython3 - <<'PY'\nimport hashlib, json, sys\nfrom pathlib import Path\nsys.path.insert(0, 'rule-synthesis-engine')\nfrom pattern_extractor import extract_pattern\nfrom rule_template_generator import generate_rule\nfrom rule_backtester import backtest_rule\np = Path('state/evaluation/academic-loop-20261015T085928Z')\ncorpus = [json.loads(l) for l in (p/'benign-calibration.jsonl').read_text().splitlines()]\nassert hashlib.sha256((p/'benign-calibration.jsonl').read_bytes()).hexdigest() == (\n    p/'benign-calibration.sha256').read_text().strip()\nfor case in ('binary', 'sensitive', 'terminal'):\n    incident = json.loads((p/f'{case}-before/incidents.json').read_text())[0]\n    candidate = generate_rule(extract_pattern(incident), incident['id'])\n    print(case, backtest_rule(candidate, corpus))\nPY\n```\n\n## Remaining scope\n\nC2 recording is still deferred. Recurring VM/Falco timestamp skew is not permanently\nfixed by 17 valid captures. Representative baseline/model validation, independent\nlive layer comparisons, richer supported extraction, broader fault tests and precise\nstage/learning timings remain research limitations. The historical 200-trial results\nare unchanged. No SVM default change or production platform expansion is proposed.\n",
+      "sha256": "c1f5fdd7ae48344bdb176067347bd4dd15756273f20002f66fcda6a036dd7ead"
+    },
+    {
+      "path": "docs/academic_results_20261015.json",
+      "text": "{\n  \"study\": \"academic-loop-20261015T085928Z\",\n  \"archive_sha256\": \"0fa955f30775b8c1edbc2638d87d334091e95c56f1311523024dc0e912383981\",\n  \"scope\": \"Offline audit of operator-supplied artifacts; not independent VM execution\",\n  \"captures\": [\n    {\n      \"capture\": \"benign-1-admin\",\n      \"valid\": true,\n      \"window_start\": \"2026-10-15T09:01:00+00:00\",\n      \"raw_alert_count\": 24,\n      \"accepted_events\": {\n        \"baseline\": 24\n      },\n      \"falco_rules\": [\n        \"Baseline File Write\",\n        \"Baseline Process Spawn\",\n        \"Baseline Sensitive Syscall\"\n      ],\n      \"incident_ids\": []\n    },\n    {\n      \"capture\": \"benign-1-config\",\n      \"valid\": true,\n      \"window_start\": \"2026-10-15T09:07:00+00:00\",\n      \"raw_alert_count\": 22,\n      \"accepted_events\": {\n        \"baseline\": 22\n      },\n      \"falco_rules\": [\n        \"Baseline File Write\",\n        \"Baseline Process Spawn\",\n        \"Baseline Sensitive Syscall\"\n      ],\n      \"incident_ids\": []\n    },\n    {\n      \"capture\": \"benign-1-http\",\n      \"valid\": true,\n      \"window_start\": \"2026-10-15T09:10:00+00:00\",\n      \"raw_alert_count\": 20,\n      \"accepted_events\": {\n        \"baseline\": 20\n      },\n      \"falco_rules\": [\n        \"Baseline File Write\",\n        \"Baseline Process Spawn\",\n        \"Baseline Sensitive Syscall\"\n      ],\n      \"incident_ids\": []\n    },\n    {\n      \"capture\": \"benign-2-admin\",\n      \"valid\": true,\n      \"window_start\": \"2026-10-15T09:13:00+00:00\",\n      \"raw_alert_count\": 24,\n      \"accepted_events\": {\n        \"baseline\": 23\n      },\n      \"falco_rules\": [\n        \"Baseline File Write\",\n        \"Baseline Process Spawn\",\n        \"Baseline Sensitive Syscall\"\n      ],\n      \"incident_ids\": [\n        199\n      ]\n    },\n    {\n      \"capture\": \"benign-2-config\",\n      \"valid\": true,\n      \"window_start\": \"2026-10-15T09:16:00+00:00\",\n      \"raw_alert_count\": 22,\n      \"accepted_events\": {\n        \"baseline\": 22\n      },\n      \"falco_rules\": [\n        \"Baseline File Write\",\n        \"Baseline Process Spawn\",\n        \"Baseline Sensitive Syscall\"\n      ],\n      \"incident_ids\": []\n    },\n    {\n      \"capture\": \"benign-2-http\",\n      \"valid\": true,\n      \"window_start\": \"2026-10-15T09:19:00+00:00\",\n      \"raw_alert_count\": 20,\n      \"accepted_events\": {\n        \"baseline\": 20\n      },\n      \"falco_rules\": [\n        \"Baseline File Write\",\n        \"Baseline Process Spawn\",\n        \"Baseline Sensitive Syscall\"\n      ],\n      \"incident_ids\": []\n    },\n    {\n      \"capture\": \"benign-3-admin\",\n      \"valid\": true,\n      \"window_start\": \"2026-10-15T09:22:00+00:00\",\n      \"raw_alert_count\": 24,\n      \"accepted_events\": {\n        \"baseline\": 24\n      },\n      \"falco_rules\": [\n        \"Baseline File Write\",\n        \"Baseline Process Spawn\",\n        \"Baseline Sensitive Syscall\"\n      ],\n      \"incident_ids\": []\n    },\n    {\n      \"capture\": \"benign-3-config\",\n      \"valid\": true,\n      \"window_start\": \"2026-10-15T09:25:00+00:00\",\n      \"raw_alert_count\": 22,\n      \"accepted_events\": {\n        \"baseline\": 22\n      },\n      \"falco_rules\": [\n        \"Baseline File Write\",\n        \"Baseline Process Spawn\",\n        \"Baseline Sensitive Syscall\"\n      ],\n      \"incident_ids\": []\n    },\n    {\n      \"capture\": \"benign-3-http\",\n      \"valid\": true,\n      \"window_start\": \"2026-10-15T09:28:00+00:00\",\n      \"raw_alert_count\": 22,\n      \"accepted_events\": {\n        \"baseline\": 22\n      },\n      \"falco_rules\": [\n        \"Baseline File Write\",\n        \"Baseline Process Spawn\",\n        \"Baseline Sensitive Syscall\"\n      ],\n      \"incident_ids\": []\n    },\n    {\n      \"capture\": \"binary-after\",\n      \"valid\": true,\n      \"window_start\": \"2026-10-15T10:12:00+00:00\",\n      \"raw_alert_count\": 26,\n      \"accepted_events\": {\n        \"baseline\": 24,\n        \"alert\": 2\n      },\n      \"falco_rules\": [\n        \"Auto_Generated_ss_study_true_from_sh_200\",\n        \"Baseline File Write\",\n        \"Baseline Process Spawn\",\n        \"Baseline Sensitive Syscall\",\n        \"Drop and execute new binary in container\"\n      ],\n      \"incident_ids\": [\n        204\n      ]\n    },\n    {\n      \"capture\": \"binary-before\",\n      \"valid\": true,\n      \"window_start\": \"2026-10-15T09:34:00+00:00\",\n      \"raw_alert_count\": 25,\n      \"accepted_events\": {\n        \"baseline\": 24,\n        \"alert\": 1\n      },\n      \"falco_rules\": [\n        \"Baseline File Write\",\n        \"Baseline Process Spawn\",\n        \"Baseline Sensitive Syscall\",\n        \"Drop and execute new binary in container\"\n      ],\n      \"incident_ids\": [\n        200\n      ]\n    },\n    {\n      \"capture\": \"binary-reject-before\",\n      \"valid\": true,\n      \"window_start\": \"2026-10-15T09:48:00+00:00\",\n      \"raw_alert_count\": 25,\n      \"accepted_events\": {\n        \"baseline\": 24,\n        \"alert\": 1\n      },\n      \"falco_rules\": [\n        \"Baseline File Write\",\n        \"Baseline Process Spawn\",\n        \"Baseline Sensitive Syscall\",\n        \"Drop and execute new binary in container\"\n      ],\n      \"incident_ids\": [\n        203\n      ]\n    },\n    {\n      \"capture\": \"holdout-admin\",\n      \"valid\": true,\n      \"window_start\": \"2026-10-15T10:17:00+00:00\",\n      \"raw_alert_count\": 24,\n      \"accepted_events\": {\n        \"baseline\": 24\n      },\n      \"falco_rules\": [\n        \"Baseline File Write\",\n        \"Baseline Process Spawn\",\n        \"Baseline Sensitive Syscall\"\n      ],\n      \"incident_ids\": []\n    },\n    {\n      \"capture\": \"holdout-config\",\n      \"valid\": true,\n      \"window_start\": \"2026-10-15T10:20:00+00:00\",\n      \"raw_alert_count\": 22,\n      \"accepted_events\": {\n        \"baseline\": 22\n      },\n      \"falco_rules\": [\n        \"Baseline File Write\",\n        \"Baseline Process Spawn\",\n        \"Baseline Sensitive Syscall\"\n      ],\n      \"incident_ids\": []\n    },\n    {\n      \"capture\": \"holdout-http\",\n      \"valid\": true,\n      \"window_start\": \"2026-10-15T10:23:00+00:00\",\n      \"raw_alert_count\": 22,\n      \"accepted_events\": {\n        \"baseline\": 22\n      },\n      \"falco_rules\": [\n        \"Baseline File Write\",\n        \"Baseline Process Spawn\",\n        \"Baseline Sensitive Syscall\"\n      ],\n      \"incident_ids\": []\n    },\n    {\n      \"capture\": \"sensitive-before\",\n      \"valid\": true,\n      \"window_start\": \"2026-10-15T09:37:00+00:00\",\n      \"raw_alert_count\": 23,\n      \"accepted_events\": {\n        \"baseline\": 22,\n        \"alert\": 1\n      },\n      \"falco_rules\": [\n        \"Baseline File Write\",\n        \"Baseline Process Spawn\",\n        \"Baseline Sensitive Syscall\",\n        \"Read sensitive file untrusted\"\n      ],\n      \"incident_ids\": [\n        201\n      ]\n    },\n    {\n      \"capture\": \"terminal-before\",\n      \"valid\": true,\n      \"window_start\": \"2026-10-15T09:40:00+00:00\",\n      \"raw_alert_count\": 20,\n      \"accepted_events\": {\n        \"baseline\": 19,\n        \"alert\": 1\n      },\n      \"falco_rules\": [\n        \"Baseline File Write\",\n        \"Baseline Process Spawn\",\n        \"Baseline Sensitive Syscall\",\n        \"Terminal shell in container\"\n      ],\n      \"incident_ids\": [\n        202\n      ]\n    }\n  ],\n  \"valid_captures\": 17,\n  \"invalid_captures_in_archive\": 0,\n  \"baseline_sha256\": \"f354809d2ad5fa7406e34024bb65c9f3aea37815493050b92741debac412fbba\",\n  \"source_commit\": \"f465de1930df502c3ea4b426f0804a47298a2e72\",\n  \"source_working_tree_dirty\": true,\n  \"calibration\": {\n    \"windows\": 9,\n    \"process_spawn_events\": 36,\n    \"incident_ids\": [\n      199\n    ],\n    \"corpus_sha256\": \"7ce5a6fcc58c9403264e59aad7a2339422489895108727aaa42a24d36955dc38\"\n  },\n  \"backtests_recomputed\": {\n    \"binary\": {\n      \"incident_id\": 200,\n      \"pattern\": {\n        \"container_id\": \"12160024642b\",\n        \"rule_name\": \"Drop and execute new binary in container\",\n        \"proc_name\": \"ss-study-true\",\n        \"parent_proc\": \"sh\",\n        \"action\": \"spawned_process\"\n      },\n      \"false_positive_rate\": 0.0,\n      \"matched_events\": 0,\n      \"events_tested\": 36,\n      \"verdict\": \"pass\"\n    },\n    \"sensitive\": {\n      \"incident_id\": 201,\n      \"pattern\": {\n        \"container_id\": \"12160024642b\",\n        \"rule_name\": \"Read sensitive file untrusted\",\n        \"proc_name\": \"cat\",\n        \"parent_proc\": \"sh\",\n        \"action\": \"spawned_process\"\n      },\n      \"false_positive_rate\": 0.0833,\n      \"matched_events\": 3,\n      \"events_tested\": 36,\n      \"verdict\": \"flag_for_revision\"\n    },\n    \"terminal\": {\n      \"incident_id\": 202,\n      \"pattern\": {\n        \"container_id\": \"12160024642b\",\n        \"rule_name\": \"Terminal shell in container\",\n        \"proc_name\": \"sh\",\n        \"parent_proc\": \"containerd-shim\",\n        \"action\": \"spawned_process\"\n      },\n      \"false_positive_rate\": 0.2222,\n      \"matched_events\": 8,\n      \"events_tested\": 36,\n      \"verdict\": \"flag_for_revision\"\n    }\n  },\n  \"decisions\": [\n    {\n      \"rule_id\": 18,\n      \"incident_id\": 200,\n      \"confirmed_by\": \"guna-academic-review\",\n      \"status\": \"deployed\",\n      \"reviewed_by\": \"guna-review\",\n      \"reviewed_at\": \"2026-10-15 15:40:09.002237\",\n      \"backtested_fp_rate\": 0.0,\n      \"rule_yaml\": \"- rule: Auto_Generated_ss_study_true_from_sh_200\\n  desc: \\\"Auto-generated from confirmed incident #200 (pattern: ss-study-true spawned by sh)\\\"\\n  condition: spawned_process and container and proc.name=\\\"ss-study-true\\\" and proc.pname=\\\"sh\\\"\\n  output: \\\"Auto-generated rule matched (user=%user.name container=%container.name proc=%proc.name parent=%proc.pname)\\\"\\n  priority: WARNING\\n  tags: [auto-generated, selfsentry-ai, source_incident_200]\"\n    },\n    {\n      \"rule_id\": 19,\n      \"incident_id\": 203,\n      \"confirmed_by\": \"guna-academic-review\",\n      \"status\": \"rejected\",\n      \"reviewed_by\": \"guna-review\",\n      \"reviewed_at\": \"2026-10-15 15:35:54.355332\",\n      \"backtested_fp_rate\": 0.0,\n      \"rule_yaml\": \"- rule: Auto_Generated_ss_study_true_from_sh_203\\n  desc: \\\"Auto-generated from confirmed incident #203 (pattern: ss-study-true spawned by sh)\\\"\\n  condition: spawned_process and container and proc.name=\\\"ss-study-true\\\" and proc.pname=\\\"sh\\\"\\n  output: \\\"Auto-generated rule matched (user=%user.name container=%container.name proc=%proc.name parent=%proc.pname)\\\"\\n  priority: WARNING\\n  tags: [auto-generated, selfsentry-ai, source_incident_203]\"\n    }\n  ],\n  \"native_refire\": {\n    \"rule\": \"Auto_Generated_ss_study_true_from_sh_200\",\n    \"incident_id\": 204,\n    \"timestamp\": \"2026-10-15T10:12:02.312672440Z\",\n    \"also_detected_by_existing_Falco_rule\": true\n  },\n  \"rejection_control\": {\n    \"rule_id\": 19,\n    \"status\": \"rejected\",\n    \"reviewed_by\": \"guna-review\",\n    \"reviewed_at\": \"2026-10-15 15:35:54.355332\",\n    \"rejected_rule_absent\": true,\n    \"rules_file_unchanged\": true,\n    \"rule_18_status\": \"pending_review\"\n  },\n  \"holdout\": {\n    \"valid_windows\": 3,\n    \"generated_rule_hits\": 0,\n    \"incident_windows\": 0\n  },\n  \"rule_file_sha256_before\": \"59874ffbd84bad5c80c8a75271d1425d58a4ce3c260e6800fb06867097e601d6\",\n  \"rule_file_sha256_after\": \"99ad05160795da3d62787cbd39af3d648821cd2385a21f43f5f5eabcce3425a4\",\n  \"not_measured\": [\n    \"new_attack_coverage\",\n    \"learning_loop_latency\",\n    \"reload_duration\",\n    \"native_reload_journal\",\n    \"sensitive_or_terminal_after_runs\",\n    \"actual_failed_candidate_submission_for_201_202\"\n  ],\n  \"file_hashes\": {\n    \"benign-1-admin/capture.json\": \"f1df80b90a5a9323a6d58e070754fa8f6ae432eb9726780ff599396da3294919\",\n    \"benign-1-admin/clock.json\": \"59d520e97976194c3593e473e5472bedeee779dbda7a1d31c67564758ab3a046\",\n    \"benign-1-admin/falco.jsonl\": \"2d346add1e7223dc518c06e5bd69e4bfcde31ded81cb1d6bdf1d72f8cbd80aed\",\n    \"benign-1-admin/incidents.json\": \"37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570\",\n    \"benign-1-config/capture.json\": \"f858447d631b16cf4cc29cd1e831adcfa8d3126b77216d0d844fa87d862a5ada\",\n    \"benign-1-config/clock.json\": \"418a6a577e79c554542e1d0212067c02d604d01b5e7c9fd60a6865bc50e4d239\",\n    \"benign-1-config/falco.jsonl\": \"88d0010ac368632a00b12d15bd0cc898621b5292b4005599dfdf4c818c6b65b0\",\n    \"benign-1-config/incidents.json\": \"37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570\",\n    \"benign-1-http/capture.json\": \"36eb3dd0b14275674ae11a0bb70293f2bc74a88ba221f5ac0a3a642396b2174a\",\n    \"benign-1-http/clock.json\": \"f8137eb00d84071563b082b6e5abae75c40a4d12aa84dbebdd7df6ca520b9781\",\n    \"benign-1-http/falco.jsonl\": \"00f25b91f52c61f960a74933d5ae99d0bbebc44b5931dd7a47f1fdb9e635c20c\",\n    \"benign-1-http/incidents.json\": \"37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570\",\n    \"benign-2-admin/capture.json\": \"2178f4ae8833117faa5d74e36fbb17756196185a20c1af9287f2f927d96e153a\",\n    \"benign-2-admin/clock.json\": \"3ba27fee33c1f3272894361520236a432fc5d946adf0ada74532acbb4ca697a6\",\n    \"benign-2-admin/falco.jsonl\": \"5221dfd9275df9de5f1b0cac1453425a08eaf40373782ddd6df5e0428b77f3ac\",\n    \"benign-2-admin/incidents.json\": \"131ba842700d5c4aed7ff03e69338c2870b0be496aef80242c76a0034899bd5d\",\n    \"benign-2-config/capture.json\": \"fbf8aa7e5f0694bf9f1cd2fb7922d96a044720b1554089d58b777f16bc353c4d\",\n    \"benign-2-config/clock.json\": \"e11fdd85f7c2df05d80795030cebaf9218a2e7ffde09113e74261f97969942cd\",\n    \"benign-2-config/falco.jsonl\": \"92c43b0f3a150cd03fdaf69dccf2b809c507e0e71611dc02d404cd4ccd45c8db\",\n    \"benign-2-config/incidents.json\": \"37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570\",\n    \"benign-2-http/capture.json\": \"4a285c2e8b2fe0aff767def7fa3e0358102e63e0e8c7595d6158df7fa5e557fc\",\n    \"benign-2-http/clock.json\": \"c1e4ad19835374674010edb51cb678cf2b321fc83bae4a3e6c3d4c0a72ecb44e\",\n    \"benign-2-http/falco.jsonl\": \"759e58170c16d308e5b4cce9b40acffcc4f538fcb97855e3af2422f1a4582522\",\n    \"benign-2-http/incidents.json\": \"37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570\",\n    \"benign-3-admin/capture.json\": \"50910e4863384ed9d470423c632c6cf27b1ff85b92ca7bd20c1da6b690d4ed77\",\n    \"benign-3-admin/clock.json\": \"758295c43e9f1f4308b868ab7fdd14bca774d8849f7d777ce7cd212791465477\",\n    \"benign-3-admin/falco.jsonl\": \"e99120ee4a9db663f72ca30c46cc756394bbfb555d2aa1ebf00503591bba9fd0\",\n    \"benign-3-admin/incidents.json\": \"37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570\",\n    \"benign-3-config/capture.json\": \"04bbfeedecdbca0a13de6924dad580d5e58b914886049d59bddfe349790e8317\",\n    \"benign-3-config/clock.json\": \"e5cd92d2d1ba10b60d0b0d241a9d55c9a048a057273c9b3c2af0938440e0ba6b\",\n    \"benign-3-config/falco.jsonl\": \"440b3c96bf46b6b48f6f787edd683281a4a758c36b453d24c67b0c73563698d0\",\n    \"benign-3-config/incidents.json\": \"37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570\",\n    \"benign-3-http/capture.json\": \"593767a9014fbb58bc087d5b62fadb19e6c7c6b2750e1b90c0761e28f27d2db1\",\n    \"benign-3-http/clock.json\": \"e74a3457eab2d492282a3b27e7dd7f7fc5ecf3616c022ac30aae588aa0c134b9\",\n    \"benign-3-http/falco.jsonl\": \"c9fb721b93f5e0cc449205174f19ea31d9a2a86b2f44c4f229d518233d43cb04\",\n    \"benign-3-http/incidents.json\": \"37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570\",\n    \"benign-calibration.jsonl\": \"7ce5a6fcc58c9403264e59aad7a2339422489895108727aaa42a24d36955dc38\",\n    \"benign-calibration.sha256\": \"7d6586ea67ab09de2671ccc329372733235dfcd7597df993b3b7f914df3d6787\",\n    \"binary-after/capture.json\": \"f133d82b868e8b19b8100f5da909929c07b008336609f394293cdb675521b809\",\n    \"binary-after/clock.json\": \"8c4c4568edea01791c969f369671b8cc26a0ecc92644aef135885333996d2535\",\n    \"binary-after/falco.jsonl\": \"2327c301d6b194ada78fc9895760e512b74f43d544317bf7a35f6304a2b82421\",\n    \"binary-after/incidents.json\": \"4c31bae8b538c854e6c6836d9eff9929a08e571624c61ce729847157640de688\",\n    \"binary-before/capture.json\": \"df7fede566161572b5771c3350e13f6c0ab44db8bc49b55fdfe3059af1c9c6c7\",\n    \"binary-before/clock.json\": \"b31a5fd3b1377c4ce4f25ae83b21dde0c839ab3c9f057988ec27f439f7b0cdd2\",\n    \"binary-before/falco.jsonl\": \"9a4ac875366165262d14a5d76dc9a22d28bc34fadc44df5493bdc6125f5a238a\",\n    \"binary-before/incidents.json\": \"d72a55253f415578c0dc9273c07ae90807bf6a62c899a8468d0748389d3d7378\",\n    \"binary-candidate.json\": \"6fe84befa95507695d6d2a7d43945a6320cc4b9b8f78b51c3e3f1209a4e80db0\",\n    \"binary-candidate.yaml\": \"67c3f8de92c99339b6841f2d32234ec2c3ed384e3e223fd1d1d6e4332c252cfe\",\n    \"binary-reject-before/capture.json\": \"f451f5aa007189f87490a5d7d3e146757b0d28ebe295bd607765e80ac8140f53\",\n    \"binary-reject-before/clock.json\": \"3cd26ce9d4c7fe7223e20462ece6f5a53f87de42940f4577599dddedcca95e94\",\n    \"binary-reject-before/falco.jsonl\": \"6493dbe3e6db6bf93aed7c9712e9e3cb0b0cc285acfe6a7f4bda950a25e5650d\",\n    \"binary-reject-before/incidents.json\": \"bac2f0b0b15fd314f5a823673ffb850b3016b05df3f5a0b56c2fd52e9c248e2e\",\n    \"binary-reject-candidate.json\": \"3a33d0861c12ae808fa4e9594adb8556f0bf254ac8d80219b78647a7de6a45ff\",\n    \"binary-reject-candidate.yaml\": \"af24e5aaacd3b927e2aab35d52fc4dc725a0157d8bab0d239da4384811356c38\",\n    \"holdout-admin/capture.json\": \"fc5afde8636a999dd5c7a259a98cab98b32f8b30f2ca823134c15b301d7a6146\",\n    \"holdout-admin/clock.json\": \"7c0b78fe155479ff47ae7dd830fea0f72334878d475bbd5a09b8f2a03fc5081d\",\n    \"holdout-admin/falco.jsonl\": \"745eaae156190c345b16c16bce11283bfa4f79a947121175cdc701b3fdf3d7e8\",\n    \"holdout-admin/incidents.json\": \"37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570\",\n    \"holdout-config/capture.json\": \"b83b3212a1215a7659d2faf78e6946a347b0f73257651451868cd9a82176a5df\",\n    \"holdout-config/clock.json\": \"8dab1d847fc9f392268e6c8c16de4eb88b0f90687d9bf245c76fac274ecf36bf\",\n    \"holdout-config/falco.jsonl\": \"fd906a80f5689b9380bfd3cc7c84996de6165172b84520ad8fe4cfdcdc28ce50\",\n    \"holdout-config/incidents.json\": \"37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570\",\n    \"holdout-http/capture.json\": \"57084aa882c64535dc4da59370c4c9d507b0d1f3ab7875b7f8e52eec472a21ec\",\n    \"holdout-http/clock.json\": \"361e90a5b41a41f24ad1bb85e518bf75d5c37378cb22cd916c03090306cccb7d\",\n    \"holdout-http/falco.jsonl\": \"496a4bc6c9220298cdbf4d87f9d47b52fc7612499a701bcd3350b8723dc687de\",\n    \"holdout-http/incidents.json\": \"37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570\",\n    \"rejection-verification.json\": \"171a3e8d6297eb453a6296711288c4b4e9e5c0fb34b738104ff5411824b7df69\",\n    \"reviewed-rules.json\": \"31e344998d2bbbcfd1895f00a8ca840adb56360e9cde1e1a4d782991658a11d3\",\n    \"rules-after.yaml\": \"99ad05160795da3d62787cbd39af3d648821cd2385a21f43f5f5eabcce3425a4\",\n    \"sensitive-before/capture.json\": \"0b57c34e7adfe778d87731e8286b9e83d42b5d97edc9f69ec5e3ca8016edc122\",\n    \"sensitive-before/clock.json\": \"f98493f146d395fb01ca6860bfcf7c6ce05ea64d3e1f3b2162753dca8250ec89\",\n    \"sensitive-before/falco.jsonl\": \"2e11c7ddfe683ee668ceec8c05313e4618d85d4d780f1fba32d91589ae2a7895\",\n    \"sensitive-before/incidents.json\": \"646eddbac0e217bd1d0f45c625133d07e92de6caa47e73f28f020178e1a09eec\",\n    \"terminal-before/capture.json\": \"60e3bcba610d926e674d6fe1195a4f664ec195660e8e7c8885778520f201976e\",\n    \"terminal-before/clock.json\": \"fb3d4e0a2c1ce3ff773663f661977d4d26921013b1014394a2b107ff20fd3ab3\",\n    \"terminal-before/falco.jsonl\": \"7ef8caa3de0dcd5ac5a8bf21fe6befca99cab853a8116395796a1b03bb467425\",\n    \"terminal-before/incidents.json\": \"55036378b0e37c76d57f8a966dc023d2b0dd5574830740b830d7b05d2b645d97\"\n  }\n}\n",
+      "sha256": "d21e02b69293d9ff281ec47717c0df945253dfd9c3ddceb478331bdfd23ddad4"
+    }
+  ],
+  "benchmark": {
+    "rows": [
+      {
+        "id": "Terminal shell",
+        "scenario": "Terminal shell",
+        "trials": 20,
+        "label": "attack",
+        "incidents": 20,
+        "ml": "1",
+        "confirmed": 0
+      },
+      {
+        "id": "New binary execution",
+        "scenario": "New binary execution",
+        "trials": 20,
+        "label": "attack",
+        "incidents": 20,
+        "ml": "0",
+        "confirmed": 0
+      },
+      {
+        "id": "Sensitive file read",
+        "scenario": "Sensitive file read",
+        "trials": 20,
+        "label": "attack",
+        "incidents": 20,
+        "ml": "2",
+        "confirmed": 2
+      },
+      {
+        "id": "Symlink over sensitive file",
+        "scenario": "Symlink over sensitive file",
+        "trials": 20,
+        "label": "attack",
+        "incidents": 20,
+        "ml": "3",
+        "confirmed": 3
+      },
+      {
+        "id": "Standard stream/socket redirection",
+        "scenario": "Standard stream/socket redirection",
+        "trials": 20,
+        "label": "attack",
+        "incidents": 20,
+        "ml": "1",
+        "confirmed": 0
+      },
+      {
+        "id": "Benign administration",
+        "scenario": "Benign administration",
+        "trials": 20,
+        "label": "benign",
+        "incidents": 0,
+        "ml": "0 (retrospective replay)",
+        "confirmed": 0
+      },
+      {
+        "id": "Benign configuration read",
+        "scenario": "Benign configuration read",
+        "trials": 10,
+        "label": "benign",
+        "incidents": 2,
+        "ml": "2",
+        "confirmed": 0
+      },
+      {
+        "id": "Benign local HTTP fixture",
+        "scenario": "Benign local HTTP fixture",
+        "trials": 10,
+        "label": "benign",
+        "incidents": 10,
+        "ml": "0",
+        "confirmed": 0
+      },
+      {
+        "id": "Benign shell directory listing",
+        "scenario": "Benign shell directory listing",
+        "trials": 20,
+        "label": "benign",
+        "incidents": 1,
+        "ml": "1",
+        "confirmed": 0
+      },
+      {
+        "id": "Quiet",
+        "scenario": "Quiet",
+        "trials": 40,
+        "label": "benign",
+        "incidents": 0,
+        "ml": "Not scored: no events",
+        "confirmed": 0
+      }
+    ],
+    "attackTrials": 100,
+    "benignTrials": 100,
+    "attackIncidents": 100,
+    "benignIncidents": 13,
+    "autoConfirmed": 5,
+    "latency": {
+      "median": 68.154,
+      "p95": 68.588,
+      "max": 69.279,
+      "n": 100
+    }
+  },
+  "cases": [
+    {
+      "id": 0,
+      "name": "Falco-only high priority",
+      "expected": "Persist alert without invented agreement",
+      "evidence": "Binary incidents 200/204: Critical stock alert, IF ~0.143 nonqualifying, responses off",
+      "result": "PASS-E"
+    },
+    {
+      "id": 1,
+      "name": "No baseline / learning",
+      "expected": "Falco incident, explicit unavailable ML",
+      "evidence": "Incident 178; shell probe `reliability-shell-20261012T174808Z.json`",
+      "result": "PASS-H"
+    },
+    {
+      "id": 2,
+      "name": "Both layers agree",
+      "expected": "Falco + qualifying default IF assessment",
+      "evidence": "Seven frozen attack windows; IF incident 177",
+      "result": "PASS-H; refresh current case"
+    },
+    {
+      "id": 3,
+      "name": "Confirm → candidate",
+      "expected": "Persist confirmation; template; nonempty backtest; pending queue",
+      "evidence": "Incident 200 → rule 18; candidate JSON pending, reviewed export links confirmation",
+      "result": "PASS-E for B1"
+    },
+    {
+      "id": 4,
+      "name": "Anomaly-only synthesis",
+      "expected": "Explicit unsupported extraction; incident retained",
+      "evidence": "`pattern_extractor.py`; SVM incidents 193–196",
+      "result": "Unsupported; TEST refusal"
+    },
+    {
+      "id": 5,
+      "name": "Reject → undeployed",
+      "expected": "Reviewer saved; exact candidate absent; reason audited",
+      "evidence": "Rule 19 rejected; intermediate hash unchanged, rule 18 pending; final YAML/alerts omit `_203`; full reason/audit export missing",
+      "result": "PASS-E core outcome; reason unexported"
+    },
+    {
+      "id": 6,
+      "name": "Approve → reload → re-fire",
+      "expected": "Human decision + active native rule",
+      "evidence": "Rule 18 deployed; `_200` native event and incident 204 timeline; reload log not supplied",
+      "result": "PASS-E re-fire; reload log absent"
+    },
+    {
+      "id": 7,
+      "name": "Monitor restart",
+      "expected": "Resume durable work without duplicate/timeline loss",
+      "evidence": "`test_observed_timeline_survives_outbox_restart_in_chronological_order`; worker replay tests",
+      "result": "TEST; live mid-flight RE-RUN"
+    },
+    {
+      "id": 8,
+      "name": "Backend/DB restart recovery",
+      "expected": "Queue drains to one incident after recovery",
+      "evidence": "Incident 179 PostgreSQL outage in `monitor_final_review.md`",
+      "result": "PASS-H for recorded outage"
+    },
+    {
+      "id": 9,
+      "name": "Isolation default OFF",
+      "expected": "Standard study makes no response attempt",
+      "evidence": "All 17 capture flags false; six incident responses not attempted",
+      "result": "PASS-E for study"
+    },
+    {
+      "id": 10,
+      "name": "Clock skew",
+      "expected": "Reject skew; retain invalid evidence",
+      "evidence": "Prior SVM batch: 19 invalid. Current 17 captures valid/zero skew",
+      "result": "PASS-E current checks; cause unresolved"
+    },
+    {
+      "id": 11,
+      "name": "Broad template preview",
+      "expected": "Flag unsafe corpus match rate",
+      "evidence": "201: 3/36; 202: 8/36; not submitted; no actual refusal calls",
+      "result": "PASS-E preview; submission unrun"
+    },
+    {
+      "id": 12,
+      "name": "Later benign windows",
+      "expected": "No learned-rule hits in new windows",
+      "evidence": "Admin/config/curl: 0/3 hit windows, 0/3 incident windows; repeated workload families",
+      "result": "PASS-E, limited sample"
+    },
+    {
+      "id": 13,
+      "name": "Experimental response",
+      "expected": "Eligible SVM/Falco isolation + recoverable resume",
+      "evidence": "Incident 190, saved JSON + paused-state console; acceptance doc",
+      "result": "PASS-H, SVM-only functional case"
+    }
+  ],
+  "mini": {
+    "study": "academic-loop-20261015T085928Z",
+    "archive_sha256": "0fa955f30775b8c1edbc2638d87d334091e95c56f1311523024dc0e912383981",
+    "scope": "Offline audit of operator-supplied artifacts; not independent VM execution",
+    "captures": [
+      {
+        "capture": "benign-1-admin",
+        "valid": true,
+        "window_start": "2026-10-15T09:01:00+00:00",
+        "raw_alert_count": 24,
+        "accepted_events": {
+          "baseline": 24
+        },
+        "falco_rules": [
+          "Baseline File Write",
+          "Baseline Process Spawn",
+          "Baseline Sensitive Syscall"
+        ],
+        "incident_ids": []
+      },
+      {
+        "capture": "benign-1-config",
+        "valid": true,
+        "window_start": "2026-10-15T09:07:00+00:00",
+        "raw_alert_count": 22,
+        "accepted_events": {
+          "baseline": 22
+        },
+        "falco_rules": [
+          "Baseline File Write",
+          "Baseline Process Spawn",
+          "Baseline Sensitive Syscall"
+        ],
+        "incident_ids": []
+      },
+      {
+        "capture": "benign-1-http",
+        "valid": true,
+        "window_start": "2026-10-15T09:10:00+00:00",
+        "raw_alert_count": 20,
+        "accepted_events": {
+          "baseline": 20
+        },
+        "falco_rules": [
+          "Baseline File Write",
+          "Baseline Process Spawn",
+          "Baseline Sensitive Syscall"
+        ],
+        "incident_ids": []
+      },
+      {
+        "capture": "benign-2-admin",
+        "valid": true,
+        "window_start": "2026-10-15T09:13:00+00:00",
+        "raw_alert_count": 24,
+        "accepted_events": {
+          "baseline": 23
+        },
+        "falco_rules": [
+          "Baseline File Write",
+          "Baseline Process Spawn",
+          "Baseline Sensitive Syscall"
+        ],
+        "incident_ids": [
+          199
+        ]
+      },
+      {
+        "capture": "benign-2-config",
+        "valid": true,
+        "window_start": "2026-10-15T09:16:00+00:00",
+        "raw_alert_count": 22,
+        "accepted_events": {
+          "baseline": 22
+        },
+        "falco_rules": [
+          "Baseline File Write",
+          "Baseline Process Spawn",
+          "Baseline Sensitive Syscall"
+        ],
+        "incident_ids": []
+      },
+      {
+        "capture": "benign-2-http",
+        "valid": true,
+        "window_start": "2026-10-15T09:19:00+00:00",
+        "raw_alert_count": 20,
+        "accepted_events": {
+          "baseline": 20
+        },
+        "falco_rules": [
+          "Baseline File Write",
+          "Baseline Process Spawn",
+          "Baseline Sensitive Syscall"
+        ],
+        "incident_ids": []
+      },
+      {
+        "capture": "benign-3-admin",
+        "valid": true,
+        "window_start": "2026-10-15T09:22:00+00:00",
+        "raw_alert_count": 24,
+        "accepted_events": {
+          "baseline": 24
+        },
+        "falco_rules": [
+          "Baseline File Write",
+          "Baseline Process Spawn",
+          "Baseline Sensitive Syscall"
+        ],
+        "incident_ids": []
+      },
+      {
+        "capture": "benign-3-config",
+        "valid": true,
+        "window_start": "2026-10-15T09:25:00+00:00",
+        "raw_alert_count": 22,
+        "accepted_events": {
+          "baseline": 22
+        },
+        "falco_rules": [
+          "Baseline File Write",
+          "Baseline Process Spawn",
+          "Baseline Sensitive Syscall"
+        ],
+        "incident_ids": []
+      },
+      {
+        "capture": "benign-3-http",
+        "valid": true,
+        "window_start": "2026-10-15T09:28:00+00:00",
+        "raw_alert_count": 22,
+        "accepted_events": {
+          "baseline": 22
+        },
+        "falco_rules": [
+          "Baseline File Write",
+          "Baseline Process Spawn",
+          "Baseline Sensitive Syscall"
+        ],
+        "incident_ids": []
+      },
+      {
+        "capture": "binary-after",
+        "valid": true,
+        "window_start": "2026-10-15T10:12:00+00:00",
+        "raw_alert_count": 26,
+        "accepted_events": {
+          "baseline": 24,
+          "alert": 2
+        },
+        "falco_rules": [
+          "Auto_Generated_ss_study_true_from_sh_200",
+          "Baseline File Write",
+          "Baseline Process Spawn",
+          "Baseline Sensitive Syscall",
+          "Drop and execute new binary in container"
+        ],
+        "incident_ids": [
+          204
+        ]
+      },
+      {
+        "capture": "binary-before",
+        "valid": true,
+        "window_start": "2026-10-15T09:34:00+00:00",
+        "raw_alert_count": 25,
+        "accepted_events": {
+          "baseline": 24,
+          "alert": 1
+        },
+        "falco_rules": [
+          "Baseline File Write",
+          "Baseline Process Spawn",
+          "Baseline Sensitive Syscall",
+          "Drop and execute new binary in container"
+        ],
+        "incident_ids": [
+          200
+        ]
+      },
+      {
+        "capture": "binary-reject-before",
+        "valid": true,
+        "window_start": "2026-10-15T09:48:00+00:00",
+        "raw_alert_count": 25,
+        "accepted_events": {
+          "baseline": 24,
+          "alert": 1
+        },
+        "falco_rules": [
+          "Baseline File Write",
+          "Baseline Process Spawn",
+          "Baseline Sensitive Syscall",
+          "Drop and execute new binary in container"
+        ],
+        "incident_ids": [
+          203
+        ]
+      },
+      {
+        "capture": "holdout-admin",
+        "valid": true,
+        "window_start": "2026-10-15T10:17:00+00:00",
+        "raw_alert_count": 24,
+        "accepted_events": {
+          "baseline": 24
+        },
+        "falco_rules": [
+          "Baseline File Write",
+          "Baseline Process Spawn",
+          "Baseline Sensitive Syscall"
+        ],
+        "incident_ids": []
+      },
+      {
+        "capture": "holdout-config",
+        "valid": true,
+        "window_start": "2026-10-15T10:20:00+00:00",
+        "raw_alert_count": 22,
+        "accepted_events": {
+          "baseline": 22
+        },
+        "falco_rules": [
+          "Baseline File Write",
+          "Baseline Process Spawn",
+          "Baseline Sensitive Syscall"
+        ],
+        "incident_ids": []
+      },
+      {
+        "capture": "holdout-http",
+        "valid": true,
+        "window_start": "2026-10-15T10:23:00+00:00",
+        "raw_alert_count": 22,
+        "accepted_events": {
+          "baseline": 22
+        },
+        "falco_rules": [
+          "Baseline File Write",
+          "Baseline Process Spawn",
+          "Baseline Sensitive Syscall"
+        ],
+        "incident_ids": []
+      },
+      {
+        "capture": "sensitive-before",
+        "valid": true,
+        "window_start": "2026-10-15T09:37:00+00:00",
+        "raw_alert_count": 23,
+        "accepted_events": {
+          "baseline": 22,
+          "alert": 1
+        },
+        "falco_rules": [
+          "Baseline File Write",
+          "Baseline Process Spawn",
+          "Baseline Sensitive Syscall",
+          "Read sensitive file untrusted"
+        ],
+        "incident_ids": [
+          201
+        ]
+      },
+      {
+        "capture": "terminal-before",
+        "valid": true,
+        "window_start": "2026-10-15T09:40:00+00:00",
+        "raw_alert_count": 20,
+        "accepted_events": {
+          "baseline": 19,
+          "alert": 1
+        },
+        "falco_rules": [
+          "Baseline File Write",
+          "Baseline Process Spawn",
+          "Baseline Sensitive Syscall",
+          "Terminal shell in container"
+        ],
+        "incident_ids": [
+          202
+        ]
+      }
+    ],
+    "valid_captures": 17,
+    "invalid_captures_in_archive": 0,
+    "baseline_sha256": "f354809d2ad5fa7406e34024bb65c9f3aea37815493050b92741debac412fbba",
+    "source_commit": "f465de1930df502c3ea4b426f0804a47298a2e72",
+    "source_working_tree_dirty": true,
+    "calibration": {
+      "windows": 9,
+      "process_spawn_events": 36,
+      "incident_ids": [
+        199
+      ],
+      "corpus_sha256": "7ce5a6fcc58c9403264e59aad7a2339422489895108727aaa42a24d36955dc38"
+    },
+    "backtests_recomputed": {
+      "binary": {
+        "incident_id": 200,
+        "pattern": {
+          "container_id": "12160024642b",
+          "rule_name": "Drop and execute new binary in container",
+          "proc_name": "ss-study-true",
+          "parent_proc": "sh",
+          "action": "spawned_process"
+        },
+        "false_positive_rate": 0,
+        "matched_events": 0,
+        "events_tested": 36,
+        "verdict": "pass"
+      },
+      "sensitive": {
+        "incident_id": 201,
+        "pattern": {
+          "container_id": "12160024642b",
+          "rule_name": "Read sensitive file untrusted",
+          "proc_name": "cat",
+          "parent_proc": "sh",
+          "action": "spawned_process"
+        },
+        "false_positive_rate": 0.0833,
+        "matched_events": 3,
+        "events_tested": 36,
+        "verdict": "flag_for_revision"
+      },
+      "terminal": {
+        "incident_id": 202,
+        "pattern": {
+          "container_id": "12160024642b",
+          "rule_name": "Terminal shell in container",
+          "proc_name": "sh",
+          "parent_proc": "containerd-shim",
+          "action": "spawned_process"
+        },
+        "false_positive_rate": 0.2222,
+        "matched_events": 8,
+        "events_tested": 36,
+        "verdict": "flag_for_revision"
+      }
+    },
+    "decisions": [
+      {
+        "rule_id": 18,
+        "incident_id": 200,
+        "confirmed_by": "guna-academic-review",
+        "status": "deployed",
+        "reviewed_by": "guna-review",
+        "reviewed_at": "2026-10-15 15:40:09.002237",
+        "backtested_fp_rate": 0,
+        "rule_yaml": "- rule: Auto_Generated_ss_study_true_from_sh_200\n  desc: \"Auto-generated from confirmed incident #200 (pattern: ss-study-true spawned by sh)\"\n  condition: spawned_process and container and proc.name=\"ss-study-true\" and proc.pname=\"sh\"\n  output: \"Auto-generated rule matched (user=%user.name container=%container.name proc=%proc.name parent=%proc.pname)\"\n  priority: WARNING\n  tags: [auto-generated, selfsentry-ai, source_incident_200]"
+      },
+      {
+        "rule_id": 19,
+        "incident_id": 203,
+        "confirmed_by": "guna-academic-review",
+        "status": "rejected",
+        "reviewed_by": "guna-review",
+        "reviewed_at": "2026-10-15 15:35:54.355332",
+        "backtested_fp_rate": 0,
+        "rule_yaml": "- rule: Auto_Generated_ss_study_true_from_sh_203\n  desc: \"Auto-generated from confirmed incident #203 (pattern: ss-study-true spawned by sh)\"\n  condition: spawned_process and container and proc.name=\"ss-study-true\" and proc.pname=\"sh\"\n  output: \"Auto-generated rule matched (user=%user.name container=%container.name proc=%proc.name parent=%proc.pname)\"\n  priority: WARNING\n  tags: [auto-generated, selfsentry-ai, source_incident_203]"
+      }
+    ],
+    "native_refire": {
+      "rule": "Auto_Generated_ss_study_true_from_sh_200",
+      "incident_id": 204,
+      "timestamp": "2026-10-15T10:12:02.312672440Z",
+      "also_detected_by_existing_Falco_rule": true
+    },
+    "rejection_control": {
+      "rule_id": 19,
+      "status": "rejected",
+      "reviewed_by": "guna-review",
+      "reviewed_at": "2026-10-15 15:35:54.355332",
+      "rejected_rule_absent": true,
+      "rules_file_unchanged": true,
+      "rule_18_status": "pending_review"
+    },
+    "holdout": {
+      "valid_windows": 3,
+      "generated_rule_hits": 0,
+      "incident_windows": 0
+    },
+    "rule_file_sha256_before": "59874ffbd84bad5c80c8a75271d1425d58a4ce3c260e6800fb06867097e601d6",
+    "rule_file_sha256_after": "99ad05160795da3d62787cbd39af3d648821cd2385a21f43f5f5eabcce3425a4",
+    "not_measured": [
+      "new_attack_coverage",
+      "learning_loop_latency",
+      "reload_duration",
+      "native_reload_journal",
+      "sensitive_or_terminal_after_runs",
+      "actual_failed_candidate_submission_for_201_202"
+    ],
+    "file_hashes": {
+      "benign-1-admin/capture.json": "f1df80b90a5a9323a6d58e070754fa8f6ae432eb9726780ff599396da3294919",
+      "benign-1-admin/clock.json": "59d520e97976194c3593e473e5472bedeee779dbda7a1d31c67564758ab3a046",
+      "benign-1-admin/falco.jsonl": "2d346add1e7223dc518c06e5bd69e4bfcde31ded81cb1d6bdf1d72f8cbd80aed",
+      "benign-1-admin/incidents.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+      "benign-1-config/capture.json": "f858447d631b16cf4cc29cd1e831adcfa8d3126b77216d0d844fa87d862a5ada",
+      "benign-1-config/clock.json": "418a6a577e79c554542e1d0212067c02d604d01b5e7c9fd60a6865bc50e4d239",
+      "benign-1-config/falco.jsonl": "88d0010ac368632a00b12d15bd0cc898621b5292b4005599dfdf4c818c6b65b0",
+      "benign-1-config/incidents.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+      "benign-1-http/capture.json": "36eb3dd0b14275674ae11a0bb70293f2bc74a88ba221f5ac0a3a642396b2174a",
+      "benign-1-http/clock.json": "f8137eb00d84071563b082b6e5abae75c40a4d12aa84dbebdd7df6ca520b9781",
+      "benign-1-http/falco.jsonl": "00f25b91f52c61f960a74933d5ae99d0bbebc44b5931dd7a47f1fdb9e635c20c",
+      "benign-1-http/incidents.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+      "benign-2-admin/capture.json": "2178f4ae8833117faa5d74e36fbb17756196185a20c1af9287f2f927d96e153a",
+      "benign-2-admin/clock.json": "3ba27fee33c1f3272894361520236a432fc5d946adf0ada74532acbb4ca697a6",
+      "benign-2-admin/falco.jsonl": "5221dfd9275df9de5f1b0cac1453425a08eaf40373782ddd6df5e0428b77f3ac",
+      "benign-2-admin/incidents.json": "131ba842700d5c4aed7ff03e69338c2870b0be496aef80242c76a0034899bd5d",
+      "benign-2-config/capture.json": "fbf8aa7e5f0694bf9f1cd2fb7922d96a044720b1554089d58b777f16bc353c4d",
+      "benign-2-config/clock.json": "e11fdd85f7c2df05d80795030cebaf9218a2e7ffde09113e74261f97969942cd",
+      "benign-2-config/falco.jsonl": "92c43b0f3a150cd03fdaf69dccf2b809c507e0e71611dc02d404cd4ccd45c8db",
+      "benign-2-config/incidents.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+      "benign-2-http/capture.json": "4a285c2e8b2fe0aff767def7fa3e0358102e63e0e8c7595d6158df7fa5e557fc",
+      "benign-2-http/clock.json": "c1e4ad19835374674010edb51cb678cf2b321fc83bae4a3e6c3d4c0a72ecb44e",
+      "benign-2-http/falco.jsonl": "759e58170c16d308e5b4cce9b40acffcc4f538fcb97855e3af2422f1a4582522",
+      "benign-2-http/incidents.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+      "benign-3-admin/capture.json": "50910e4863384ed9d470423c632c6cf27b1ff85b92ca7bd20c1da6b690d4ed77",
+      "benign-3-admin/clock.json": "758295c43e9f1f4308b868ab7fdd14bca774d8849f7d777ce7cd212791465477",
+      "benign-3-admin/falco.jsonl": "e99120ee4a9db663f72ca30c46cc756394bbfb555d2aa1ebf00503591bba9fd0",
+      "benign-3-admin/incidents.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+      "benign-3-config/capture.json": "04bbfeedecdbca0a13de6924dad580d5e58b914886049d59bddfe349790e8317",
+      "benign-3-config/clock.json": "e5cd92d2d1ba10b60d0b0d241a9d55c9a048a057273c9b3c2af0938440e0ba6b",
+      "benign-3-config/falco.jsonl": "440b3c96bf46b6b48f6f787edd683281a4a758c36b453d24c67b0c73563698d0",
+      "benign-3-config/incidents.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+      "benign-3-http/capture.json": "593767a9014fbb58bc087d5b62fadb19e6c7c6b2750e1b90c0761e28f27d2db1",
+      "benign-3-http/clock.json": "e74a3457eab2d492282a3b27e7dd7f7fc5ecf3616c022ac30aae588aa0c134b9",
+      "benign-3-http/falco.jsonl": "c9fb721b93f5e0cc449205174f19ea31d9a2a86b2f44c4f229d518233d43cb04",
+      "benign-3-http/incidents.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+      "benign-calibration.jsonl": "7ce5a6fcc58c9403264e59aad7a2339422489895108727aaa42a24d36955dc38",
+      "benign-calibration.sha256": "7d6586ea67ab09de2671ccc329372733235dfcd7597df993b3b7f914df3d6787",
+      "binary-after/capture.json": "f133d82b868e8b19b8100f5da909929c07b008336609f394293cdb675521b809",
+      "binary-after/clock.json": "8c4c4568edea01791c969f369671b8cc26a0ecc92644aef135885333996d2535",
+      "binary-after/falco.jsonl": "2327c301d6b194ada78fc9895760e512b74f43d544317bf7a35f6304a2b82421",
+      "binary-after/incidents.json": "4c31bae8b538c854e6c6836d9eff9929a08e571624c61ce729847157640de688",
+      "binary-before/capture.json": "df7fede566161572b5771c3350e13f6c0ab44db8bc49b55fdfe3059af1c9c6c7",
+      "binary-before/clock.json": "b31a5fd3b1377c4ce4f25ae83b21dde0c839ab3c9f057988ec27f439f7b0cdd2",
+      "binary-before/falco.jsonl": "9a4ac875366165262d14a5d76dc9a22d28bc34fadc44df5493bdc6125f5a238a",
+      "binary-before/incidents.json": "d72a55253f415578c0dc9273c07ae90807bf6a62c899a8468d0748389d3d7378",
+      "binary-candidate.json": "6fe84befa95507695d6d2a7d43945a6320cc4b9b8f78b51c3e3f1209a4e80db0",
+      "binary-candidate.yaml": "67c3f8de92c99339b6841f2d32234ec2c3ed384e3e223fd1d1d6e4332c252cfe",
+      "binary-reject-before/capture.json": "f451f5aa007189f87490a5d7d3e146757b0d28ebe295bd607765e80ac8140f53",
+      "binary-reject-before/clock.json": "3cd26ce9d4c7fe7223e20462ece6f5a53f87de42940f4577599dddedcca95e94",
+      "binary-reject-before/falco.jsonl": "6493dbe3e6db6bf93aed7c9712e9e3cb0b0cc285acfe6a7f4bda950a25e5650d",
+      "binary-reject-before/incidents.json": "bac2f0b0b15fd314f5a823673ffb850b3016b05df3f5a0b56c2fd52e9c248e2e",
+      "binary-reject-candidate.json": "3a33d0861c12ae808fa4e9594adb8556f0bf254ac8d80219b78647a7de6a45ff",
+      "binary-reject-candidate.yaml": "af24e5aaacd3b927e2aab35d52fc4dc725a0157d8bab0d239da4384811356c38",
+      "holdout-admin/capture.json": "fc5afde8636a999dd5c7a259a98cab98b32f8b30f2ca823134c15b301d7a6146",
+      "holdout-admin/clock.json": "7c0b78fe155479ff47ae7dd830fea0f72334878d475bbd5a09b8f2a03fc5081d",
+      "holdout-admin/falco.jsonl": "745eaae156190c345b16c16bce11283bfa4f79a947121175cdc701b3fdf3d7e8",
+      "holdout-admin/incidents.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+      "holdout-config/capture.json": "b83b3212a1215a7659d2faf78e6946a347b0f73257651451868cd9a82176a5df",
+      "holdout-config/clock.json": "8dab1d847fc9f392268e6c8c16de4eb88b0f90687d9bf245c76fac274ecf36bf",
+      "holdout-config/falco.jsonl": "fd906a80f5689b9380bfd3cc7c84996de6165172b84520ad8fe4cfdcdc28ce50",
+      "holdout-config/incidents.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+      "holdout-http/capture.json": "57084aa882c64535dc4da59370c4c9d507b0d1f3ab7875b7f8e52eec472a21ec",
+      "holdout-http/clock.json": "361e90a5b41a41f24ad1bb85e518bf75d5c37378cb22cd916c03090306cccb7d",
+      "holdout-http/falco.jsonl": "496a4bc6c9220298cdbf4d87f9d47b52fc7612499a701bcd3350b8723dc687de",
+      "holdout-http/incidents.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+      "rejection-verification.json": "171a3e8d6297eb453a6296711288c4b4e9e5c0fb34b738104ff5411824b7df69",
+      "reviewed-rules.json": "31e344998d2bbbcfd1895f00a8ca840adb56360e9cde1e1a4d782991658a11d3",
+      "rules-after.yaml": "99ad05160795da3d62787cbd39af3d648821cd2385a21f43f5f5eabcce3425a4",
+      "sensitive-before/capture.json": "0b57c34e7adfe778d87731e8286b9e83d42b5d97edc9f69ec5e3ca8016edc122",
+      "sensitive-before/clock.json": "f98493f146d395fb01ca6860bfcf7c6ce05ea64d3e1f3b2162753dca8250ec89",
+      "sensitive-before/falco.jsonl": "2e11c7ddfe683ee668ceec8c05313e4618d85d4d780f1fba32d91589ae2a7895",
+      "sensitive-before/incidents.json": "646eddbac0e217bd1d0f45c625133d07e92de6caa47e73f28f020178e1a09eec",
+      "terminal-before/capture.json": "60e3bcba610d926e674d6fe1195a4f664ec195660e8e7c8885778520f201976e",
+      "terminal-before/clock.json": "fb3d4e0a2c1ce3ff773663f661977d4d26921013b1014394a2b107ff20fd3ab3",
+      "terminal-before/falco.jsonl": "7ef8caa3de0dcd5ac5a8bf21fe6befca99cab853a8116395796a1b03bb467425",
+      "terminal-before/incidents.json": "55036378b0e37c76d57f8a966dc023d2b0dd5574830740b830d7b05d2b645d97"
+    }
+  },
+  "miniError": null,
+  "miniReportAvailable": true
+}

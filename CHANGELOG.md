@@ -5,6 +5,96 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### 2026-10-19 — Dashboard redesign step 8
+- Publish eight actual Chrome captures in light/dark themes for Overview, incident
+  evidence, rule review and presentation, with explicit synthetic Sample data captions.
+- Preserve previous live VM screenshots as historical images; add capture provenance,
+  browser report and an optional reproducible Playwright script outside dependencies.
+- Check native modal Tab/Shift+Tab/Escape, 390px navigation/overflow and absence of
+  backend requests/page errors during sample capture; inspect every captured image.
+- Clean install/build and 149 frontend tests pass. No runtime dependencies, backend
+  APIs or product behavior changed; existing chart chunk warning remains.
+
+### 2026-10-19 — Dashboard redesign step 7
+- Add a read-only Evidence page generated from tracked benchmark/case/study sources,
+  with source hashes, escaped originals, honest missing-file states and explicit limits.
+- Keep historical benchmark and mini-study datasets separate; preserve timing boundaries,
+  revision-preview/rejection/native re-fire distinctions and unmeasured outcomes.
+- Add URL-addressable presentation mode with larger text, hidden secondary navigation,
+  learning-loop visibility and highest-risk open incident focus.
+- Add isolated `/sample/` routes, synthetic local reads and fixed clock, prominent banners,
+  no live fallback, blocked writes/credentials and provenance-marked sample CSV exports.
+- No dependencies or backend changes. Clean install/build and 146 tests pass; existing
+  chart size warning and VM visual acceptance remain documented. Screenshots are Step 8.
+
+### 2026-10-19 — Dashboard redesign step 6
+- Migrate Containers, Deployments, Audit and Monitor to shared controls; add Models
+  and lazy route loading with no added dependencies or backend changes.
+- Add guarded container confirmation, recorded recovery/recheck evidence and links
+  to short/full-ID response history; retain protected workload enforcement.
+- Preserve exact audit ID and older-history access; add scoped actor/UTC-date filters,
+  verification labels and formula-safe CSV export of all filtered loaded pages.
+- Show honest deployment/monitor/model evidence and unavailable telemetry. Pausing
+  monitor/model page snapshots keeps global health and isolation polling active.
+- Clean install/build and 119 frontend tests pass. Existing chart chunk warning and
+  native browser/VM acceptance remain documented.
+
+### 2026-10-19 — Dashboard redesign step 5
+- Rebuild the rule queue with shared table controls, all-pending/history merging,
+  stable rule URLs, escaped lexical YAML highlighting and copy controls.
+- Add explicit human approval/rejection confirmation, required reviewer/rejection
+  reasons, fresh pending-state preflight and in-flight/unknown-outcome guards.
+- Display current recorded backtest verdicts, source incidents, reviewer/history and
+  deployment/reload results; preserve the backend's no-override backtest policy.
+- Clean install/build and 96 frontend tests pass. No new dependencies or backend
+  changes. Native browser visual/keyboard review remains pending.
+
+
+### 2026-10-19 — Dashboard redesign step 4
+- Rebuild Alerts on the shared sortable/filterable/paginated table with stable incident
+  URLs, a modal evidence drawer, refresh controls and explicit loading/error states.
+- Preserve stored timeline order and evidence provenance; label advisory AI and
+  experimental SVM, show confirmation/response metadata and provide Copy ID.
+- Add guarded human confirmation and submission of generated candidate material through
+  existing APIs; keep authoritative backtesting and human deployment approval intact.
+- Add request, action, read-hook and DOM interaction tests: install/build and 69 tests
+  pass. No new dependencies or backend changes; native browser acceptance pending.
+
+
+### 2026-10-19 — Dashboard redesign step 3
+- Build the five-card Overview, period comparisons, UTC incident trend and observed
+  learning-loop bars from existing endpoint data, with explicit snapshot/history limits.
+- Use the shared risk-sorted incident table with source/layer labels and stable links
+  that focus the existing incident card. Add refresh/pause/retry and unavailable states.
+- Exclude benign records from unconfirmed counts and report invalid/future time exclusions;
+  do not infer ML detections from model availability or advisory AI text.
+- Add source-bound timeouts, overlap/unmount protection and DOM/data-model regressions;
+  clean install, build and 47 frontend tests pass. Visual review remains pending.
+- Record operator acceptance of the repaired shell, theme toggle, sidebar and isolation
+  indicator. No new dependencies or backend changes.
+
+
+### 2026-10-16 — Dashboard redesign step 2
+- Add reusable KPI, semantic status, data table, filter chips, empty/error/skeleton
+  and native modal drawer components, plus shared number/date/comparison helpers.
+- Provide stable numeric/text sorting, combined search/filters, pagination, keyboard
+  controls, missing-evidence handling and compatibility exports for existing pages.
+- Add jsdom as a development-only dependency for component interaction tests.
+- Pass clean install, build and 30 tests. Native browser focus trapping/visual QA
+  remains pending; Overview and other page migrations are deferred to later steps.
+
+
+### 2026-10-16 — Dashboard redesign step 1
+- Add system-aware light/dark tokens and a persistent accessible theme toggle.
+- Add collapsible responsive navigation, keyboard skip link and a wider page shell.
+- Surface monitor health warnings globally and report actual isolation configuration,
+  including unknown and cached states; retain human rule approval behavior.
+- Remove remote font loading and use system UI typography with tabular numbers.
+- Add theme rendering, storage fallback, semantic health/isolation and contrast tests.
+- Pass frontend build and 16 tests; browser verification pending due to Chromium
+  download failure. No backend/API/schema or dependency changes.
+
+
 ### 2026-10-15 — Reviewed supervised adaptation mini-study
 - Audit the operator-supplied 17-capture archive and reproduce the three process
   backtests (0/36, 3/36 and 8/36). Preserve benign anomaly-only incident 199.
