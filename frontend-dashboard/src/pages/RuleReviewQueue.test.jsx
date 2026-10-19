@@ -42,3 +42,15 @@ it('does not claim history is empty when the actionable filter excludes complete
   expect(host.textContent).toContain('No rules match these filters')
   expect(host.textContent).not.toContain('No candidates recorded')
 })
+
+it('separates duplicate rejections with reasons from the actionable queue',async()=>{
+  const duplicate={id:3,status:'rejected_duplicate',rejection_reason:'Exact match with existing rule: Administrator Shell'}
+  snapshot={...snapshot,rules:[...snapshot.rules,duplicate],history:[duplicate]}
+  await render()
+  expect(host.querySelectorAll('tbody tr')).toHaveLength(1)
+  const section=host.querySelector('[aria-label="Rejected duplicates"]')
+  expect(section.textContent).toContain('Administrator Shell')
+  expect(section.textContent).toContain('blocked from review and deployment')
+  await act(async()=>section.querySelector('button').click())
+  expect(host.querySelector('[aria-label="URL"]').textContent).toBe('?rule=3')
+})

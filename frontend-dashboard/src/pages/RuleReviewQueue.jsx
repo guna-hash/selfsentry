@@ -12,8 +12,9 @@ import './rules.css'
 const columns=[
   {key:'id',label:'Rule ID',render:value=>`#${value}`},
   {key:'incident_id',label:'Source incident',render:value=>value!=null?<Link to={`/alerts?incident=${encodeURIComponent(value)}`}>#{value}</Link>:'Not recorded'},
-  {key:'status',label:'Status',render:value=><StatusBadge tone={value==='deployed'?'low':value==='rejected'?'critical':value==='approved'?'medium':'neutral'}>{ruleStatus(value)}</StatusBadge>},
+  {key:'status',label:'Status',render:value=><StatusBadge tone={value==='deployed'?'low':['rejected','rejected_duplicate'].includes(value)?'critical':value==='approved'?'medium':'neutral'}>{ruleStatus(value)}</StatusBadge>},
   {key:'rate',label:'Backtest FP rate',accessor:rule=>backtestSummary(rule).rate,render:(value,rule)=><StatusBadge tone={backtestSummary(rule).tone}>{formatNumber(value,{style:'percent',maximumFractionDigits:2})} · {backtestSummary(rule).label}</StatusBadge>},
+  {key:'rejection_reason',label:'Rejection reason'},
   {key:'reviewed_by',label:'Reviewer'},
   {key:'created',label:'Created',accessor:rule=>utcEpoch(rule.created_at),render:value=><time title={formatDate(value)} dateTime={value===null?undefined:new Date(value).toISOString()}>{relativeTime(value)}</time>},
 ]
@@ -45,9 +46,16 @@ export default function RuleReviewQueue(){
     {history && history.length>=100 && <p className="rule-warning" role="note">History is limited to the latest 100 rules. All current pending rules are merged from the separate pending endpoint; older completed history may be missing.</p>}
     {Object.entries(errors).map(([source,error])=><section key={source} aria-label={`${source} rule source error`}><ErrorState error={`${source==='history'?'Rule history':'Current pending queue'}: ${error.message}`} status={error.status} onRetry={refresh} retrying={refreshing}/></section>)}
     {paused && <p role="status" className="rule-caption">Queue refresh paused. Decisions still verify current pending state before writing; monitor health and security services continue.</p>}
+    {!!history?.some(rule=>rule.status==='rejected_duplicate') && <section aria-label="Rejected duplicates" className="rule-detail-section">
+      <h2>Rejected duplicates</h2>
+      <p>These candidates are blocked from review and deployment.</p>
+      <ul>{history.filter(rule=>rule.status==='rejected_duplicate').map(rule=><li key={rule.id}>
+        <button type="button" className="shell-button" onClick={()=>open(rule)}>Rule #{rule.id}</button> {rule.rejection_reason || 'Rejection reason unavailable'}
+      </li>)}</ul>
+    </section>}
     <div className="rule-queue-controls">
       <label htmlFor="rule-status">Status<select id="rule-status" value={status} onChange={event=>setStatus(event.target.value)}>
-        <option value="actionable">Needs action</option><option value="all">All available history</option><option value="pending_review">Pending review</option><option value="approved">Approved · retry deployment</option><option value="deployed">Deployed</option><option value="rejected">Rejected</option><option value="retired">Retired (disabled)</option><option value="disabled">Disabled</option>
+        <option value="actionable">Needs action</option><option value="all">All available history</option><option value="pending_review">Pending review</option><option value="approved">Approved · retry deployment</option><option value="deployed">Deployed</option><option value="rejected">Rejected</option><option value="rejected_duplicate">Rejected – Duplicate</option><option value="retired">Retired (disabled)</option><option value="disabled">Disabled</option>
       </select></label>
       <label htmlFor="rule-period">Creation period<select id="rule-period" value={period} onChange={event=>setPeriod(event.target.value)}><option value="all">All recorded time</option><option value="24h">Last 24 hours</option><option value="7d">Last 7 days</option></select></label>
     </div>

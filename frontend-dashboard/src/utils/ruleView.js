@@ -2,7 +2,7 @@ import { finiteNumber } from './format.js'
 import { utcEpoch } from './overviewModel.js'
 
 export const actionableRule = (rule) => ['pending_review', 'approved'].includes(rule?.status)
-export const ruleStatus = (status) => ({pending_review:'Pending review',approved:'Approved · deployment pending',deployed:'Deployed',rejected:'Rejected',retired:'Retired (disabled)',disabled:'Disabled'})[status] || status || 'Not recorded'
+export const ruleStatus = (status) => ({pending_review:'Pending review',approved:'Approved · deployment pending',deployed:'Deployed',rejected:'Rejected',rejected_duplicate:'Rejected – Duplicate',retired:'Retired (disabled)',disabled:'Disabled'})[status] || status || 'Not recorded'
 export function backtestSummary(rule) {
   const gate = latestEvent(rule, ['RULE_CANDIDATE_CREATED','RULE_BACKTEST_REVALIDATED','RULE_BACKTEST_BLOCKED_DEPLOYMENT'])
   const blockedReport = gate?.event_type === 'RULE_BACKTEST_BLOCKED_DEPLOYMENT' ? gate.detail?.reason : null

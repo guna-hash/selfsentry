@@ -12,6 +12,9 @@ STAMP = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
 OUT = ROOT / "state/evaluation" / f"final-checks-{STAMP}"
 OUT.mkdir(parents=True, exist_ok=True)
 LINT = [
+    "rule-synthesis-engine/rule_deduplicator.py",
+    "tests/test_rule_deduplicator.py",
+    "tests/rule_guard_support.py",
     "scripts/verify_completion_backtest_guard.py",
     "ops",
     "correlation-engine/risk_explanation.py",
