@@ -1,5 +1,11 @@
 # Changelog
 
+### 2026-10-20 — Research documentation reconciliation
+- Distinguish the Falco-backed 15 October study from the implemented literal-witness
+  anomaly-only extension, whose new live chain still awaits acceptance.
+- Add the operator's remaining-work priorities with evidence-based closure criteria;
+  preserve historical results, runtime artifacts and pending live/browser checks.
+
 All notable changes to this project are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 

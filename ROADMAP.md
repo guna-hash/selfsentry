@@ -1,6 +1,7 @@
 # SelfSentry academic roadmap
 
-Updated 15 October 2026. [TODO.md](TODO.md) tracks actions; the
+Updated 20 October 2026. The [remaining-work ledger](docs/remaining_work_20261020.md)
+records the current P0/P1 sequence and required acceptance evidence. [TODO.md](TODO.md) tracks actions; the
 [academic evidence pack](docs/academic_evidence_pack.md) defines the current thesis,
 protocol and evidence boundaries. Production platform expansion is outside scope.
 
@@ -18,7 +19,7 @@ protocol and evidence boundaries. Production platform expansion is outside scope
 Completed implementation/release: image/policy checks; runtime ingestion; per-container
 model lifecycle; correlation/persistence; direct isolation/resume and one experimental
 SVM automatic response; default-shell mapping; observed timeline; human rule review;
-dashboard screenshots; source commits through f465de1. These are bounded functional
+dashboard redesign and sample screenshots merged in `5fba7a2`. These are bounded functional
 results, not production or unseen-workload guarantees.
 
 ## Next sequence
@@ -32,5 +33,5 @@ results, not production or unseen-workload guarantees.
 5. Resume C2 only when requested; link a real checked recording after it exists.
 
 Future academic research: more representative baselines; independent live comparisons;
-richer supported extraction for anomaly-only evidence; measured stage timings and
+live acceptance of the literal-witness anomaly-only extension; measured stage timings and
 controlled fault recovery. No automatic generated-rule deployment is proposed.

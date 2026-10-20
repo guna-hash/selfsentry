@@ -1,5 +1,9 @@
 # SelfSentry release checklist
 
+20 October priorities and closure criteria: [remaining-work ledger](docs/remaining_work_20261020.md).
+Historical checked items below retain their original evidence scope; the ledger
+does not mark new VM/browser checks passed.
+
 ## Dashboard redesign (stepwise review)
 
 - [x] Step 1 implementation: theme tokens/toggle, responsive shell, health/isolation banners.
