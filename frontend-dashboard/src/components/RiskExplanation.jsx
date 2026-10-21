@@ -1,5 +1,7 @@
+import { isSampleMode } from '../utils/demoMode'
+
 export default function RiskExplanation({ value }) {
-  if (!value) return <p>Risk guidance unavailable. Refresh to retry the backend.</p>
+  if (!value) return <p>{isSampleMode() ? 'Risk guidance is not included in this sample record.' : 'Risk guidance unavailable. Refresh to retry the backend.'}</p>
   return (
     <section className="risk-guidance">
       <h4>{value.title}</h4>

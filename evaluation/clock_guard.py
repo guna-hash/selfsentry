@@ -17,6 +17,7 @@ The probe runs a process in the target container; run it between trials, not dur
 
 import argparse
 import json
+import math
 import re
 import subprocess
 import sys
@@ -107,6 +108,37 @@ def judge_events(event_times, window_start, window_end, expect_events, max_skew=
     return result
 
 
+def clock_snapshot():
+    try:
+        boot_id = Path("/proc/sys/kernel/random/boot_id").read_text().strip()
+    except OSError as exc:
+        raise ClockGuardError("cannot establish Linux boot identity") from exc
+    return {
+        "boot_id": boot_id,
+        "realtime": time.time(),
+        "monotonic": time.monotonic(),
+    }
+
+
+def require_same_clock(before, after, tolerance=DEFAULT_MAX_SKEW):
+    try:
+        values = [
+            float(item[key]) for item in (before, after)
+            for key in ("realtime", "monotonic")
+        ]
+        if not all(math.isfinite(value) for value in values):
+            raise ValueError("nonfinite clock")
+        if not before["boot_id"] or before["boot_id"] != after["boot_id"]:
+            raise ValueError("boot changed")
+        elapsed = after["monotonic"] - before["monotonic"]
+        drift = after["realtime"] - before["realtime"] - elapsed
+        if elapsed < 0 or abs(drift) > tolerance:
+            raise ValueError("clock discontinuity")
+    except (KeyError, TypeError, ValueError) as exc:
+        raise ClockGuardError("clock changed or unrecorded; rerun preflight") from exc
+    return elapsed
+
+
 def require_recent_preflight(path, container_id, max_age_seconds=DEFAULT_MAX_AGE_SECONDS):
     try:
         record = json.loads(Path(path).read_text())
@@ -114,7 +146,9 @@ def require_recent_preflight(path, container_id, max_age_seconds=DEFAULT_MAX_AGE
         raise ClockGuardError(
             "no clock preflight on record; run: python3 evaluation/clock_guard.py"
         ) from exc
-    age = time.time() - record.get("checked_at_epoch", 0)
+    if not isinstance(record, dict):
+        raise ClockGuardError("invalid preflight record")
+    age = require_same_clock(record.get("clock_snapshot"), clock_snapshot())
     if record.get("container_id") != container_id:
         raise ClockGuardError("clock preflight was for a different container")
     if not record.get("passed"):
@@ -129,15 +163,22 @@ def run_preflight(container, alerts_path, state_path, max_skew=DEFAULT_MAX_SKEW,
     target = info["Id"][:12]
     tail = AlertTail(alerts_path)
     tail.mark()
-    before = time.time()
+    initial_clock = clock_snapshot()
+    before = initial_clock["realtime"]
     subprocess.run(["docker", "exec", container, "/bin/true"], check=True, capture_output=True)
-    events, deadline = [], time.time() + wait_seconds
-    while not events and time.time() < deadline:
+    events, deadline = [], time.monotonic() + wait_seconds
+    while not events and time.monotonic() < deadline:
         time.sleep(0.5)
         events = tail.new_events(target)
-    after = time.time()
+    final_clock = clock_snapshot()
+    after = final_clock["realtime"]
     verdict = judge_events(events, before, after, expect_events=True, max_skew=max_skew)
+    try:
+        require_same_clock(initial_clock, final_clock)
+    except ClockGuardError:
+        verdict.update(valid=False, status="host_clock_discontinuity")
     record = {
+        "clock_snapshot": final_clock,
         "container_id": target,
         "checked_at_epoch": after,
         "checked_at": datetime.fromtimestamp(after, timezone.utc).isoformat(),

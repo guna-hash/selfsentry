@@ -77,7 +77,7 @@ class Gate(unittest.TestCase):
         tmp = tempfile.TemporaryDirectory()
         self.addCleanup(tmp.cleanup)
         path = Path(tmp.name) / "clock_check.json"
-        record = {"container_id": "abc", "passed": True, "checked_at_epoch": time.time()}
+        record = {"container_id": "abc", "passed": True, "checked_at_epoch": time.time(), "clock_snapshot": cg.clock_snapshot()}
         record.update(overrides)
         path.write_text(json.dumps(record))
         return path
@@ -88,7 +88,7 @@ class Gate(unittest.TestCase):
     def test_missing_failed_old_or_wrong_container_refused(self):
         with self.assertRaises(cg.ClockGuardError):
             cg.require_recent_preflight("/nonexistent/clock.json", "abc")
-        for override in ({"passed": False}, {"checked_at_epoch": time.time() - 99999},
+        for override in ({"passed": False}, {"clock_snapshot": {"boot_id": "other", "realtime": 1, "monotonic": 1}},
                          {"container_id": "other"}):
             with self.assertRaises(cg.ClockGuardError):
                 cg.require_recent_preflight(self._state(**override), "abc")
