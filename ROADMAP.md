@@ -1,5 +1,8 @@
 # SelfSentry academic roadmap
 
+> Current status: [21 October academic handoff](docs/academic_handoff_20261021.md). It records the latest rule workflow, benign false positive and clock recurrence. Historical entries below retain their original scope.
+
+
 Updated 20 October 2026. The [remaining-work ledger](docs/remaining_work_20261020.md)
 records the current P0/P1 sequence and required acceptance evidence. [TODO.md](TODO.md) tracks actions; the
 [academic evidence pack](docs/academic_evidence_pack.md) defines the current thesis,

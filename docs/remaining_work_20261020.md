@@ -1,5 +1,8 @@
 # Remaining work — 20 October 2026
 
+> Current status: [21 October academic handoff](academic_handoff_20261021.md). It records the latest rule workflow, benign false positive and clock recurrence. Historical entries below retain their original scope.
+
+
 Source review: `5fba7a2` (merged dashboard redesign). This ledger reconciles the
 operator's priorities with committed evidence; it is not a fresh VM acceptance run.
 Historical results and runtime artifacts remain unchanged. Documentation commits

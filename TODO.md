@@ -1,5 +1,8 @@
 # SelfSentry release checklist
 
+> Current status: [21 October academic handoff](docs/academic_handoff_20261021.md). It records the latest rule workflow, benign false positive and clock recurrence. Historical entries below retain their original scope.
+
+
 20 October priorities and closure criteria: [remaining-work ledger](docs/remaining_work_20261020.md).
 Historical checked items below retain their original evidence scope; the ledger
 does not mark new VM/browser checks passed.

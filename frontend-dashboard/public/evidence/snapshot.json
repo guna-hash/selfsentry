@@ -9,8 +9,8 @@
     },
     {
       "path": "docs/academic_case_matrix.md",
-      "text": "# Designed-case coverage matrix\n\nSelfSentry is a hybrid container runtime security system that combines Falco rule matching with per-container behavioral anomaly detection, correlates both into incidents, and converts confirmed anomalies into template-generated, backtested, human-approved Falco rules — demonstrating a supervised adaptive detection loop under controlled evaluation.\n\n15 October 2026. **PASS-E**: supplied study artifacts checked offline; **PASS-H**:\nearlier reported live pass; **TEST**: source test; **RE-RUN**: evidence still needed.\nPASS-E does not mean the reviewer independently operated the VM.\nThe 15 October study exercised Falco-backed process metadata. The 16 October\nextension supports proposals with a retained literal syscall witness; aggregate-only\nanomalies remain unsupported. The new anomaly-only live chain remains unverified.\n\n| Case | Expected behavior | Evidence / next artifact | Pass–Fail |\n|---|---|---|---|\n| Falco-only high priority | Persist alert without invented agreement | Binary incidents 200/204: Critical stock alert, IF ~0.143 nonqualifying, responses off | PASS-E |\n| No baseline / learning | Falco incident, explicit unavailable ML | Incident 178; shell probe `reliability-shell-20261012T174808Z.json` | PASS-H |\n| Both layers agree | Falco + qualifying default IF assessment | Seven frozen attack windows; IF incident 177 | PASS-H; refresh current case |\n| Confirm → candidate | Persist confirmation; template; nonempty backtest; pending queue | Incident 200 → rule 18; candidate JSON pending, reviewed export links confirmation | PASS-E for B1 |\n| Anomaly-only synthesis | Retain qualifying same-container/window literal witness; refuse aggregate-only input; require backtest and human approval | `pattern_extractor.py`, `test_final_completion.py`; incidents 193–196 are historical benign outcomes, not new-path acceptance | Implemented/TEST; new live chain NOT RUN |\n| Reject → undeployed | Reviewer saved; exact candidate absent; reason audited | Rule 19 rejected; intermediate hash unchanged, rule 18 pending; final YAML/alerts omit `_203`; full reason/audit export missing | PASS-E core outcome; reason unexported |\n| Approve → reload → re-fire | Human decision + active native rule | Rule 18 deployed; `_200` native event and incident 204 timeline; reload log not supplied | PASS-E re-fire; reload log absent |\n| Monitor restart | Resume durable work without duplicate/timeline loss | [Reviewed graceful restart during DB outage](live_restart_results_20261021.md): pending key retained, incident 208, unchanged timeline, one row in bounded duplicate query | PASS-E for this case; crash/other fault extensions NOT RUN |\n| Backend/DB restart recovery | Queue drains to one incident after recovery | Incident 179 PostgreSQL outage in `monitor_final_review.md` | PASS-H for recorded outage |\n| Isolation default OFF | Standard study makes no response attempt | All 17 capture flags false; six incident responses not attempted | PASS-E for study |\n| Clock skew | Reject skew; retain invalid evidence | Prior SVM batch: 19 invalid. Current 17 captures valid/zero skew | PASS-E current checks; cause unresolved |\n| Broad template preview | Flag unsafe corpus match rate | 201: 3/36; 202: 8/36; not submitted; no actual refusal calls | PASS-E preview; submission unrun |\n| Later benign windows | No learned-rule hits in new windows | Admin/config/curl: 0/3 hit windows, 0/3 incident windows; repeated workload families | PASS-E, limited sample |\n| Experimental response | Eligible SVM/Falco isolation + recoverable resume | Incident 190, saved JSON + paused-state console; acceptance doc | PASS-H, SVM-only functional case |\n\nEvidence index: [measured results](monitor_measured_results_20261011.md),\n[acceptance](reliability_acceptance_20261013.md), [protocol](academic_study.md),\n[reviewed study](academic_results_20261015.md).\nMark actual FAIL, INVALID or NOT RUN where appropriate after execution; preserve IDs,\nartifact paths, exclusions and configuration hashes. Never infer a pass from a proposed command.\n\n**Out of scope:** universal/zero-day coverage; production CWPP/fleets/Kubernetes/\nmulti-tenancy; autonomous rule deployment; model self-retraining; ML-only pattern\ninvention; representative production FPR; unrun independent live ablations;\ncomplete stage/containment latency; exhaustive failure/soak validation. Backtesting\nestimates corpus matches, not safety; templates can lose original context.\n",
-      "sha256": "d6d9bbc97cba4214a76ca4a408d0fd2601e7e78dc7cfed206a7fa45d34830de2"
+      "text": "# Designed-case coverage matrix\n\n> Current status: [21 October academic handoff](academic_handoff_20261021.md). It records the latest rule workflow, benign false positive and clock recurrence. Historical entries below retain their original scope.\n\n\nSelfSentry is a hybrid container runtime security system that combines Falco rule matching with per-container behavioral anomaly detection, correlates both into incidents, and converts confirmed anomalies into template-generated, backtested, human-approved Falco rules — demonstrating a supervised adaptive detection loop under controlled evaluation.\n\n15 October 2026. **PASS-E**: supplied study artifacts checked offline; **PASS-H**:\nearlier reported live pass; **TEST**: source test; **RE-RUN**: evidence still needed.\nPASS-E does not mean the reviewer independently operated the VM.\nThe 15 October study exercised Falco-backed process metadata. The 16 October\nextension supports proposals with a retained literal syscall witness; aggregate-only\nanomalies remain unsupported. The new anomaly-only live chain remains unverified.\n\n| Case | Expected behavior | Evidence / next artifact | Pass–Fail |\n|---|---|---|---|\n| Falco-only high priority | Persist alert without invented agreement | Binary incidents 200/204: Critical stock alert, IF ~0.143 nonqualifying, responses off | PASS-E |\n| No baseline / learning | Falco incident, explicit unavailable ML | Incident 178; shell probe `reliability-shell-20261012T174808Z.json` | PASS-H |\n| Both layers agree | Falco + qualifying default IF assessment | Seven frozen attack windows; IF incident 177 | PASS-H; refresh current case |\n| Confirm → candidate | Persist confirmation; template; nonempty backtest; pending queue | 209 confirmed by guna; candidates 21 and 22; 0/65 corpus matches | Operator-supplied current functional pass |\n| Anomaly-only synthesis | Retain qualifying same-container/window literal witness; refuse aggregate-only input; require backtest and human approval | Benign incident 211: IF 0.821809; no security alert; literal file witness | Detection/witness observed; synthesis/deployment/re-fire unverified |\n| Reject → undeployed | Reviewer saved; exact candidate absent; reason audited | Rule 21 rejected, reason/reviewer retained in audit 949; absent at check | Operator-supplied current functional pass |\n| Approve → reload → re-fire | Human decision + active native rule | Rule 22 approved/deployed, audits 951–953; native match linked 210 via 954 | Operator-supplied current functional pass; refreshed timeline confirmed |\n| Monitor restart | Resume durable work without duplicate/timeline loss | [Reviewed graceful restart during DB outage](live_restart_results_20261021.md): pending key retained, incident 208, unchanged timeline, one row in bounded duplicate query | PASS-E for this case; crash/other fault extensions NOT RUN |\n| Backend/DB restart recovery | Queue drains to one incident after recovery | Incident 179 PostgreSQL outage in `monitor_final_review.md` | PASS-H for recorded outage |\n| Isolation default OFF | Standard study makes no response attempt | All 17 capture flags false; six incident responses not attempted | PASS-E for study |\n| Clock skew | Reject skew; retain invalid evidence | One reboot/resume check passed; later ~67.5s and ~16437.6s skew recurred | Clock guard observed; permanent correction OPEN |\n| Broad template preview | Flag unsafe corpus match rate | 201: 3/36; 202: 8/36; not submitted; no actual refusal calls | PASS-E preview; submission unrun |\n| Later benign windows | No learned-rule hits in new windows | Historical 0/3 learned-rule hit windows separate; current pilot has incident 211 in 1/6 benign windows | Pilot complete; representative longer validation OPEN |\n| Experimental response | Eligible SVM/Falco isolation + recoverable resume | Incident 190, saved JSON + paused-state console; acceptance doc | PASS-H, SVM-only functional case |\n\nEvidence index: [measured results](monitor_measured_results_20261011.md),\n[acceptance](reliability_acceptance_20261013.md), [protocol](academic_study.md),\n[reviewed study](academic_results_20261015.md).\nMark actual FAIL, INVALID or NOT RUN where appropriate after execution; preserve IDs,\nartifact paths, exclusions and configuration hashes. Never infer a pass from a proposed command.\n\n**Out of scope:** universal/zero-day coverage; production CWPP/fleets/Kubernetes/\nmulti-tenancy; autonomous rule deployment; model self-retraining; ML-only pattern\ninvention; representative production FPR; unrun independent live ablations;\ncomplete stage/containment latency; exhaustive failure/soak validation. Backtesting\nestimates corpus matches, not safety; templates can lose original context.\n",
+      "sha256": "f565bfb2074460e07f664501bcdedb930e596dd2ac6629a164381463185d5727"
     },
     {
       "path": "docs/academic_results_20261015.md",
@@ -154,29 +154,29 @@
       "id": 3,
       "name": "Confirm → candidate",
       "expected": "Persist confirmation; template; nonempty backtest; pending queue",
-      "evidence": "Incident 200 → rule 18; candidate JSON pending, reviewed export links confirmation",
-      "result": "PASS-E for B1"
+      "evidence": "209 confirmed by guna; candidates 21 and 22; 0/65 corpus matches",
+      "result": "Operator-supplied current functional pass"
     },
     {
       "id": 4,
       "name": "Anomaly-only synthesis",
       "expected": "Retain qualifying same-container/window literal witness; refuse aggregate-only input; require backtest and human approval",
-      "evidence": "`pattern_extractor.py`, `test_final_completion.py`; incidents 193–196 are historical benign outcomes, not new-path acceptance",
-      "result": "Implemented/TEST; new live chain NOT RUN"
+      "evidence": "Benign incident 211: IF 0.821809; no security alert; literal file witness",
+      "result": "Detection/witness observed; synthesis/deployment/re-fire unverified"
     },
     {
       "id": 5,
       "name": "Reject → undeployed",
       "expected": "Reviewer saved; exact candidate absent; reason audited",
-      "evidence": "Rule 19 rejected; intermediate hash unchanged, rule 18 pending; final YAML/alerts omit `_203`; full reason/audit export missing",
-      "result": "PASS-E core outcome; reason unexported"
+      "evidence": "Rule 21 rejected, reason/reviewer retained in audit 949; absent at check",
+      "result": "Operator-supplied current functional pass"
     },
     {
       "id": 6,
       "name": "Approve → reload → re-fire",
       "expected": "Human decision + active native rule",
-      "evidence": "Rule 18 deployed; `_200` native event and incident 204 timeline; reload log not supplied",
-      "result": "PASS-E re-fire; reload log absent"
+      "evidence": "Rule 22 approved/deployed, audits 951–953; native match linked 210 via 954",
+      "result": "Operator-supplied current functional pass; refreshed timeline confirmed"
     },
     {
       "id": 7,
@@ -203,8 +203,8 @@
       "id": 10,
       "name": "Clock skew",
       "expected": "Reject skew; retain invalid evidence",
-      "evidence": "Prior SVM batch: 19 invalid. Current 17 captures valid/zero skew",
-      "result": "PASS-E current checks; cause unresolved"
+      "evidence": "One reboot/resume check passed; later ~67.5s and ~16437.6s skew recurred",
+      "result": "Clock guard observed; permanent correction OPEN"
     },
     {
       "id": 11,
@@ -217,8 +217,8 @@
       "id": 12,
       "name": "Later benign windows",
       "expected": "No learned-rule hits in new windows",
-      "evidence": "Admin/config/curl: 0/3 hit windows, 0/3 incident windows; repeated workload families",
-      "result": "PASS-E, limited sample"
+      "evidence": "Historical 0/3 learned-rule hit windows separate; current pilot has incident 211 in 1/6 benign windows",
+      "result": "Pilot complete; representative longer validation OPEN"
     },
     {
       "id": 13,

@@ -1,5 +1,8 @@
 # SelfSentry: academic demo — 6 minutes 40 seconds
 
+> Current status: [21 October academic handoff](academic_handoff_20261021.md). It records the latest rule workflow, benign false positive and clock recurrence. Historical entries below retain their original scope.
+
+
 SelfSentry is a hybrid container runtime security system that combines Falco rule matching with per-container behavioral anomaly detection, correlates both into incidents, and converts confirmed anomalies into template-generated, backtested, human-approved Falco rules — demonstrating a supervised adaptive detection loop under controlled evaluation.
 
 **Written talk track; C2 rehearsal/recording is deferred.** The operator's
