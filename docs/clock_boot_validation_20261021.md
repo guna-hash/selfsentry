@@ -33,3 +33,19 @@ Install on another system:
 If synchronization is unavailable, Falco startup may wait. Validate
 ordering and native timestamps after reboot. Automatic study actions
 remain disabled; no unattended-use or permanent clock-fix claim follows.
+
+## Subsequent VMware suspend/resume check
+
+The operator confirmed using VMware Suspend, waiting approximately 30
+seconds, then Resume between the probes. Before: 16 events, zero skew.
+After: 18 events, zero skew. Boot identity and Falco PID were unchanged.
+
+Evidence: state/evaluation/clock-resume-6kze1ycl.
+
+This is an operator-reported pass for one controlled cycle, not a
+guarantee across all future suspensions or clock corrections.
+The earlier clock-resume-4owyys5k run involved no suspension and
+establishes ordinary-running freshness only.
+
+The earlier statement that suspend/resume was unverified describes
+the status before this subsequent check.
