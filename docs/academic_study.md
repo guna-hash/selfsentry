@@ -20,9 +20,10 @@ completed supplied subset. Recording C2 remains deferred. See [case matrix](acad
   Is any labeled attack detected only after adaptation?
 
 Here, “confirmed anomalies” means operator-confirmed suspicious behavior with
-**extractable process/parent metadata in a Falco alert**. `pattern_extractor.py`
-currently rejects anomaly-only incidents without a Falco alert. Do not claim an
-implemented ML-only-to-rule path. The mini-study primarily evaluates workflow
+**extractable process/parent metadata in a Falco alert** in the 15 October study.
+The later implementation can also use a retained literal baseline syscall witness
+for an anomaly-only proposal; aggregate counts alone remain unsupported. That new
+live chain was not exercised by this study and still requires acceptance. The mini-study primarily evaluates workflow
 adaptation, not discovery of unknown attacks, model retraining or new algorithms.
 
 Predeclare all three cases and preserve every failure, revision and rejection:

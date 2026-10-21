@@ -7,6 +7,8 @@ Falco, or sudo is touched.
 import os
 import sys
 import unittest
+import tempfile
+from tests.rule_guard_support import inventory
 from pathlib import Path
 from unittest.mock import patch
 
@@ -34,6 +36,23 @@ RULE_YAML = (
 
 class RulesApiTestCase(unittest.TestCase):
     def setUp(self):
+        temp = tempfile.TemporaryDirectory()
+        self.addCleanup(temp.cleanup)
+        self.config, self.inventory_rules = inventory(temp.name)
+        runtime = patch(
+            "rule_deduplicator._runtime_arguments", return_value=["falco", "-c", str(self.config)]
+        )
+        runtime.start()
+        self.addCleanup(runtime.stop)
+        environment = patch.dict(
+            os.environ,
+            {
+                "FALCO_CONFIG_PATH": str(self.config),
+                "RULE_GUARD_STATE_DIR": str(Path(temp.name) / "guard"),
+            },
+        )
+        environment.start()
+        self.addCleanup(environment.stop)
         self.engine = create_engine(
             "sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool
         )
@@ -117,9 +136,9 @@ class TestSubmitRule(RulesApiTestCase):
     def test_malformed_yaml_is_422(self):
         self.assertEqual(self.submit(rule_yaml="- rule: [unclosed").status_code, 422)
 
-    def test_duplicate_active_rule_for_same_incident_is_409(self):
+    def test_duplicate_active_rule_for_same_incident_is_rejected(self):
         self.assertEqual(self.submit().status_code, 201)
-        self.assertEqual(self.submit().status_code, 409)
+        self.assertEqual(self.submit().json()["status"], "rejected_duplicate")
 
     def test_rejected_rule_can_be_resubmitted(self):
         rule_id = self.add_rule(status="rejected")
@@ -237,3 +256,82 @@ class TestCandidateRecovery(RulesApiTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["id"], rule_id)
         self.assertEqual(response.json()["status"], "deployed")
+
+
+class TestZeroDuplicationGuard(RulesApiTestCase):
+    def manual_rule(self):
+        self.inventory_rules.write_text(self.inventory_rules.read_text() + RULE_YAML)
+
+    def test_manual_duplicate_rejected_audited_and_excluded_from_queue(self):
+        self.manual_rule()
+        with patch.object(rules_module, "_verified_backtest") as backtest:
+            result = self.submit().json()
+        self.assertEqual(result["status"], "rejected_duplicate")
+        self.assertIn("Auto_Generated_Test_1", result["rejection_reason"])
+        backtest.assert_not_called()
+        self.assertEqual(self.client.get("/rules/pending").json(), [])
+        history = self.client.get("/rules/history").json()[0]
+        self.assertEqual(history["rejection_reason"], result["rejection_reason"])
+        self.assertEqual(history["lifecycle_events"][0]["event_type"], "RULE_DUPLICATE_REJECTED")
+        with patch.object(rules_module, "deploy_rule") as deploy:
+            self.assertEqual(self.approve(result["id"]).status_code, 409)
+        deploy.assert_not_called()
+
+    def test_preflight_records_rejection_without_running_backtest(self):
+        self.manual_rule()
+        result = self.client.post(
+            "/rules/preflight",
+            json={
+                "confirmed_incident_id": 1,
+                "rule_yaml": RULE_YAML,
+                "backtested_fp_rate": 0,
+            },
+        )
+        self.assertEqual(result.json()["status"], "rejected_duplicate")
+        self.assertEqual(self.client.get("/rules/pending").json(), [])
+
+    def test_manual_rule_added_after_submission_blocks_human_approval(self):
+        result = self.submit().json()
+        self.manual_rule()
+        with patch.object(rules_module, "deploy_rule") as deploy:
+            response = self.approve(result["id"])
+        self.assertEqual(response.status_code, 409)
+        self.assertEqual(self.rule_status(result["id"]), "rejected_duplicate")
+        deploy.assert_not_called()
+
+    def test_prior_deployment_remains_protected_after_retirement(self):
+        self.add_rule(status="retired")
+        result = self.submit(rule_yaml=RULE_YAML.replace("Test_1", "Renamed_2")).json()
+        self.assertEqual(result["status"], "rejected_duplicate")
+
+    def test_cross_incident_duplicate_cannot_be_queued(self):
+        with self.Session() as db:
+            db.add(ConfirmedIncident(id=2, incident_id=1, confirmed_by="tester"))
+            db.commit()
+        self.assertEqual(self.submit().json()["status"], "pending_review")
+        self.assertEqual(
+            self.submit(confirmed_incident_id=2).json()["status"], "rejected_duplicate"
+        )
+        self.assertEqual(len(self.client.get("/rules/pending").json()), 1)
+
+    def test_unavailable_inventory_fails_closed_before_backtest(self):
+        self.config.unlink()
+        with patch.object(rules_module, "_verified_backtest") as backtest:
+            result = self.submit()
+        self.assertEqual(result.status_code, 503)
+        backtest.assert_not_called()
+        self.assertEqual(self.client.get("/rules/history").json(), [])
+
+    def test_deployment_boundary_rejection_persists_terminal_reason(self):
+        result = self.submit().json()
+        with patch.object(
+            rules_module,
+            "deploy_rule",
+            side_effect=rules_module.DuplicateRule(
+                "Near-duplicate of existing rule: Admin", "Admin"
+            ),
+        ):
+            response = self.approve(result["id"])
+        self.assertEqual(response.status_code, 409)
+        self.assertEqual(self.rule_status(result["id"]), "rejected_duplicate")
+        self.assertIn("Admin", self.client.get("/rules/history").json()[0]["rejection_reason"])

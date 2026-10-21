@@ -1,6 +1,8 @@
 import os
 import sys
 import hashlib
+from contextlib import contextmanager
+from sqlalchemy import text
 from pathlib import Path
 from datetime import datetime, timezone
 
@@ -15,6 +17,7 @@ from database import get_db  # noqa: E402
 from models.db_models import ConfirmedIncident, GeneratedRule, AuditEvent  # noqa: E402
 from rule_deployer import RuleDeploymentError, deploy_rule  # noqa: E402
 from rule_backtester import backtest_rule, BacktestError  # noqa: E402
+from rule_deduplicator import guard, InventoryError, DuplicateRule  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "monitor-service"))
 from monitor_config import load_config  # noqa: E402
@@ -38,7 +41,7 @@ def _audit_rule(db, event_type, rule, detail):
         AuditEvent(
             event_type=event_type,
             source="backend",
-            severity="info",
+            severity="warning" if event_type == "RULE_DUPLICATE_REJECTED" else "info",
             detail={"rule_id": rule.id, **detail},
             occurred_at=datetime.now(timezone.utc).replace(tzinfo=None),
         )
@@ -77,7 +80,7 @@ def _validate_rule_yaml(text: str) -> None:
         raise HTTPException(status_code=422, detail=f"rule_yaml is not valid YAML: {exc}")
     valid = (
         isinstance(parsed, list)
-        and len(parsed) > 0
+        and len(parsed) == 1
         and all(isinstance(r, dict) and "rule" in r and "condition" in r for r in parsed)
     )
     if not valid:
@@ -105,6 +108,14 @@ def rule_history(db: Session = Depends(get_db)):
                     (a.get("detail") or {}).get("backtest")
                     for a in reversed(events)
                     if (a.get("detail") or {}).get("backtest")
+                ),
+                None,
+            ),
+            rejection_reason=next(
+                (
+                    (a.get("detail") or {}).get("reason")
+                    for a in reversed(events)
+                    if a["event_type"] in ("RULE_DUPLICATE_REJECTED", "RULE_REJECTED")
                 ),
                 None,
             ),
@@ -142,69 +153,148 @@ def active_candidate(confirmed_incident_id: int, db: Session = Depends(get_db)):
     return rule
 
 
+@contextmanager
+def _inventory_guard(db):
+    # Serialize even across backend hosts when they share PostgreSQL. All callers
+    # acquire the DB lock before the host lock. Commit occurs inside the guard.
+    if db.bind.dialect.name == "postgresql":
+        db.execute(text("SELECT pg_advisory_xact_lock(1936026727)"))
+    try:
+        with guard() as registry:
+            yield registry
+    except DuplicateRule:
+        raise
+    except (InventoryError, OSError) as exc:
+        raise HTTPException(503, f"Rule guard unavailable: {exc}") from exc
+
+
+def _check_duplicate(db, registry, rule_yaml, exclude_id=None):
+    # A deployment audit survives retirement and later status changes.
+    audits = db.query(AuditEvent).filter(AuditEvent.event_type == "RULE_DEPLOYED").all()
+    deployed_ids = {(a.detail or {}).get("rule_id") for a in audits}
+    rows = db.query(GeneratedRule).all()
+    protected = [
+        r.rule_yaml
+        for r in rows
+        if r.id != exclude_id
+        and (r.status in ACTIVE_STATUSES or r.id in deployed_ids or r.status == "retired")
+    ]
+    return registry.check(rule_yaml, protected)
+
+
+def _reject_duplicate(db, body, exc, rule=None):
+    if rule is None:
+        # Repeated attempts reuse the rejected record instead of flooding history.
+        rule = (
+            db.query(GeneratedRule)
+            .filter(
+                GeneratedRule.confirmed_incident_id == body.confirmed_incident_id,
+                GeneratedRule.rule_yaml == body.rule_yaml,
+                GeneratedRule.status == "rejected_duplicate",
+            )
+            .first()
+        )
+    if rule is None:
+        rule = GeneratedRule(
+            confirmed_incident_id=body.confirmed_incident_id,
+            rule_yaml=body.rule_yaml,
+            status="rejected_duplicate",
+        )
+        db.add(rule)
+        db.flush()
+    rule.status = "rejected_duplicate"
+    _audit_rule(
+        db, "RULE_DUPLICATE_REJECTED", rule, {"reason": exc.reason, "matched_rule": exc.name}
+    )
+    db.commit()
+    return {"id": rule.id, "status": rule.status, "rejection_reason": exc.reason}
+
+
+@router.post("/preflight")
+def preflight_rule(body: CandidateRuleIn, db: Session = Depends(get_db)):
+    """Run before local backtesting; duplicates become terminal history, never pending."""
+    _validate_rule_yaml(body.rule_yaml)
+    if not db.get(ConfirmedIncident, body.confirmed_incident_id):
+        raise HTTPException(404, "Confirmed incident not found")
+    with _inventory_guard(db) as registry:
+        try:
+            _check_duplicate(db, registry, body.rule_yaml)
+        except DuplicateRule as exc:
+            return _reject_duplicate(db, body, exc)
+        registry.revalidate()
+    return {"status": "unique"}
+
+
 @router.post("/", status_code=201)
 def submit_rule(body: CandidateRuleIn, db: Session = Depends(get_db)):
     """Queue a backtested candidate rule for human review. Nothing is deployed here."""
     _validate_rule_yaml(body.rule_yaml)
 
-    confirmed = (
-        db.query(ConfirmedIncident)
-        .filter(ConfirmedIncident.id == body.confirmed_incident_id)
-        .with_for_update()
-        .first()
-    )
-    if not confirmed:
-        raise HTTPException(status_code=404, detail="Confirmed incident not found")
-
-    duplicate = (
-        db.query(GeneratedRule)
-        .filter(
-            GeneratedRule.confirmed_incident_id == body.confirmed_incident_id,
-            GeneratedRule.status.in_(ACTIVE_STATUSES),
+    with _inventory_guard(db) as registry:
+        confirmed = (
+            db.query(ConfirmedIncident)
+            .filter(ConfirmedIncident.id == body.confirmed_incident_id)
+            .with_for_update()
+            .first()
         )
-        .first()
-    )
-    if duplicate:
-        raise HTTPException(
-            status_code=409,
-            detail=f"Rule {duplicate.id} already exists for this confirmed incident "
-            f"(status: {duplicate.status})",
-        )
+        if not confirmed:
+            raise HTTPException(status_code=404, detail="Confirmed incident not found")
 
-    try:
-        verified = _verified_backtest(body.rule_yaml)
-    except HTTPException as exc:
-        db.add(
-            AuditEvent(
-                event_type="RULE_CANDIDATE_BLOCKED",
-                source="backend",
-                severity="warning",
-                detail={
-                    "incident_id": confirmed.incident_id,
-                    "confirmed_incident_id": confirmed.id,
-                    "reason": exc.detail,
-                },
+        try:
+            _check_duplicate(db, registry, body.rule_yaml)
+        except DuplicateRule as exc:
+            return _reject_duplicate(db, body, exc)
+
+        duplicate = (
+            db.query(GeneratedRule)
+            .filter(
+                GeneratedRule.confirmed_incident_id == body.confirmed_incident_id,
+                GeneratedRule.status.in_(ACTIVE_STATUSES),
             )
+            .first()
+        )
+        if duplicate:
+            raise HTTPException(
+                status_code=409,
+                detail=f"Rule {duplicate.id} already exists for this confirmed incident "
+                f"(status: {duplicate.status})",
+            )
+
+        try:
+            verified = _verified_backtest(body.rule_yaml)
+        except HTTPException as exc:
+            db.add(
+                AuditEvent(
+                    event_type="RULE_CANDIDATE_BLOCKED",
+                    source="backend",
+                    severity="warning",
+                    detail={
+                        "incident_id": confirmed.incident_id,
+                        "confirmed_incident_id": confirmed.id,
+                        "reason": exc.detail,
+                    },
+                )
+            )
+            db.commit()
+            raise
+        registry.revalidate()
+        rule = GeneratedRule(
+            confirmed_incident_id=body.confirmed_incident_id,
+            rule_yaml=body.rule_yaml,
+            backtested_fp_rate=verified["false_positive_rate"],
+            status="pending_review",
+        )
+        db.add(rule)
+        db.flush()
+        _audit_rule(
+            db,
+            "RULE_CANDIDATE_CREATED",
+            rule,
+            {"backtest": verified, "incident_id": confirmed.incident_id},
         )
         db.commit()
-        raise
-    rule = GeneratedRule(
-        confirmed_incident_id=body.confirmed_incident_id,
-        rule_yaml=body.rule_yaml,
-        backtested_fp_rate=verified["false_positive_rate"],
-        status="pending_review",
-    )
-    db.add(rule)
-    db.flush()
-    _audit_rule(
-        db,
-        "RULE_CANDIDATE_CREATED",
-        rule,
-        {"backtest": verified, "incident_id": confirmed.incident_id},
-    )
-    db.commit()
-    db.refresh(rule)
-    return {"id": rule.id, "status": rule.status}
+        db.refresh(rule)
+        return {"id": rule.id, "status": rule.status}
 
 
 @router.post("/{rule_id}/approve")
@@ -223,6 +313,14 @@ def approve_rule(rule_id: int, reviewed_by: str, db: Session = Depends(get_db)):
             detail=f"Rule is '{rule.status}'; expected pending_review or approved",
         )
 
+    with _inventory_guard(db) as registry:
+        try:
+            if not registry.receipt(str(rule.id), rule.rule_yaml):
+                _check_duplicate(db, registry, rule.rule_yaml, exclude_id=rule.id)
+        except DuplicateRule as exc:
+            result = _reject_duplicate(db, rule, exc, rule=rule)
+            raise HTTPException(409, result)
+
     try:
         verified = _verified_backtest(rule.rule_yaml)
     except HTTPException as exc:
@@ -239,6 +337,9 @@ def approve_rule(rule_id: int, reviewed_by: str, db: Session = Depends(get_db)):
 
     try:
         deploy_rule(str(rule.id), rule.rule_yaml)
+    except DuplicateRule as exc:
+        result = _reject_duplicate(db, rule, exc, rule=rule)
+        raise HTTPException(409, result) from exc
     except (RuleDeploymentError, OSError) as exc:
         _audit_rule(
             db, "RULE_DEPLOYMENT_FAILED", rule, {"reason": str(exc), "reviewed_by": reviewed_by}

@@ -57,8 +57,9 @@ export default function RuleReviewDialog({rule,onClose,onChanged,onNotice,writeU
   }
   return <Drawer open title={`Rule #${rule.id}`} onClose={()=>{if(!locked.current)onClose()}} busy={busy}>
     {message && <p className={`notice tone-${message.kind==='error'?'critical':'low'}`} role={message.kind==='error'?'alert':'status'}>{message.text}</p>}
-    <div className="rule-detail-heading"><StatusBadge tone={rule.status==='deployed'?'low':rule.status==='rejected'?'critical':'neutral'}>{ruleStatus(rule.status)}</StatusBadge>
+    <div className="rule-detail-heading"><StatusBadge tone={rule.status==='deployed'?'low':['rejected','rejected_duplicate'].includes(rule.status)?'critical':'neutral'}>{ruleStatus(rule.status)}</StatusBadge>
       <button type="button" className="shell-button" onClick={()=>copy(rule.id,'Rule ID')} aria-label="Copy rule ID"><Copy size={16} aria-hidden="true"/>Copy ID</button></div>
+    {rule.rejection_reason && <p className="rule-warning" role="note">{rule.rejection_reason}</p>}
     <dl className="rule-metadata">
       <div><dt>Source incident</dt><dd>{rule.incident_id!=null?<Link to={`/alerts?incident=${encodeURIComponent(rule.incident_id)}`}>Incident #{rule.incident_id}</Link>:'Not recorded'}</dd></div>
       <div><dt>Source confirmation</dt><dd>{text(rule.confirmation_source)}</dd></div>

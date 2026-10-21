@@ -17,11 +17,13 @@ rule approved in Postgres.
 from __future__ import annotations
 
 import subprocess
+from pathlib import Path
 
 import glob
 import os
 
 import yaml
+from rule_deduplicator import guard, InventoryError, DuplicateRule
 
 _REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -116,32 +118,41 @@ def deploy_rule(rule_id: str, rule_yaml: str) -> bool:
     rule_yaml must already be the rendered Falco YAML text (from
     rule_template_generator.generate_rule), not a pattern dict.
     """
-    _require_rule_matching_all()
-
-    original = ""
-    if os.path.exists(AUTO_GENERATED_RULES_PATH):
-        with open(AUTO_GENERATED_RULES_PATH) as f:
-            original = f.read()
-
-    if _rules_already_present(rule_yaml, original):
-        # An earlier attempt already wrote this rule (e.g. the reload failed):
-        # reload only, never duplicate rule definitions in the rules file.
-        _reload_falco()
-        return True
-
-    with open(AUTO_GENERATED_RULES_PATH, "a") as f:
-        f.write("\n" + rule_yaml.strip() + "\n")
-
     try:
-        _validate_yaml(AUTO_GENERATED_RULES_PATH)
-    except RuleDeploymentError:
-        # Restore the previous file so a broken rule can never stop Falco loading.
-        with open(AUTO_GENERATED_RULES_PATH, "w") as f:
-            f.write(original)
-        raise
+        with guard(FALCO_CONFIG_PATH) as registry:
+            _require_rule_matching_all()
+            original = Path(AUTO_GENERATED_RULES_PATH).read_text()
+            if registry.receipt(str(rule_id), rule_yaml):
+                # Retry only this deployment's byte-identical write, never name-only.
+                if not _rules_already_present(rule_yaml, original):
+                    raise RuleDeploymentError(
+                        "Previously written rule missing; operator reconciliation required"
+                    )
+                import yaml as _yaml
 
-    _reload_falco()
-    return True
+                proposed = _yaml.safe_load(rule_yaml)
+                present = _yaml.safe_load(original) or []
+                if not all(item in present for item in proposed):
+                    raise RuleDeploymentError("Previously written rule changed; refusing retry")
+                registry.check_retry(rule_yaml)
+                _reload_falco()
+                return True
+            registry.check(rule_yaml, [original] if _rule_names(original) else [])
+            registry.revalidate()
+            with open(AUTO_GENERATED_RULES_PATH, "a") as handle:
+                handle.write("\n" + rule_yaml.strip() + "\n")
+            try:
+                _validate_yaml(AUTO_GENERATED_RULES_PATH)
+            except RuleDeploymentError:
+                Path(AUTO_GENERATED_RULES_PATH).write_text(original)
+                raise
+            registry.remember(str(rule_id), rule_yaml)
+            _reload_falco()
+            return True
+    except DuplicateRule:
+        raise
+    except InventoryError as exc:
+        raise RuleDeploymentError(f"Rule guard unavailable: {exc}") from exc
 
 
 if __name__ == "__main__":
@@ -159,7 +170,7 @@ if __name__ == "__main__":
 
     try:
         success = deploy_rule(args.rule_id, rule_yaml)
-    except RuleDeploymentError as exc:
+    except (RuleDeploymentError, DuplicateRule) as exc:
         print(f"ERROR: {exc}")
         raise SystemExit(1)
 

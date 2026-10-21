@@ -377,6 +377,14 @@ def test_backend_backtest_recomputed_and_revalidated_at_human_approval(
     from models.db_models import ConfirmedIncident, GeneratedRule, Incident, AuditEvent
     from routes import rules
 
+    from tests.rule_guard_support import inventory
+
+    config, _ = inventory(tmp_path)
+    monkeypatch.setattr(
+        "rule_deduplicator._runtime_arguments", lambda: ["falco", "-c", str(config)]
+    )
+    monkeypatch.setenv("FALCO_CONFIG_PATH", str(config))
+    monkeypatch.setenv("RULE_GUARD_STATE_DIR", str(tmp_path / "guard"))
     http, session = final_api
     corpus = tmp_path / "benign.jsonl"
     benign_corpus(corpus)
@@ -646,6 +654,14 @@ def test_live_backtest_guard_helper_against_real_routes(final_api, tmp_path, mon
     from models.db_models import ConfirmedIncident, GeneratedRule, Incident
     import requests
 
+    from tests.rule_guard_support import inventory
+
+    config, _ = inventory(tmp_path)
+    monkeypatch.setattr(
+        "rule_deduplicator._runtime_arguments", lambda: ["falco", "-c", str(config)]
+    )
+    monkeypatch.setenv("FALCO_CONFIG_PATH", str(config))
+    monkeypatch.setenv("RULE_GUARD_STATE_DIR", str(tmp_path / "guard"))
     http, session = final_api
     with session() as db:
         db.add(Incident(id=203, container_id=CID, risk_score=80))

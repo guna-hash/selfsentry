@@ -17,8 +17,10 @@ Jinja2 and PostgreSQL are reused. No exhaustive novelty/literature claim is made
 
 “Learning” here means supervised expansion of explicit detection rules. It is not
 continuous neural training, self-modifying code or autonomous deployment. Current
-synthesis requires process metadata from a Falco alert; unsupported anomaly-only
-incidents stop at review, so ML-only-to-rule discovery is future research.
+synthesis can use Falco security-alert metadata or a retained literal baseline
+syscall witness. Aggregate-only anomalies cannot supply a pattern. The reviewed
+15 October study exercised the Falco-backed path; the later anomaly-only extension
+still requires a new live acceptance chain.
 
 ## Architecture explanation focused on adaptation
 
@@ -39,8 +41,8 @@ supporting pre-deployment context; isolation is optional and off in the main sto
 a small per-container baseline. The historical run detected all one hundred labeled
 attack trials, but Falco already detected those cases, so we have not demonstrated
 additional attack coverage. Thirteen of one hundred benign windows produced incidents.
-Rule synthesis currently needs process metadata from a Falco alert; anomaly-only
-rule generation is unsupported. Backtests estimate matches on our benign corpus,
+The later anomaly-only proposal path needs a literal syscall witness and still
+awaits live acceptance. Backtests estimate matches on our benign corpus,
 not production safety. SVM remains experimental after benign false positives, and
 the VM has a recurring timestamp issue. Every rule deployment requires human approval.”
 
@@ -79,9 +81,11 @@ so this demonstrates supervised adaptation, not additional attack coverage.”
 - **What exactly adapts?** A human-approved Falco rule is added for a representable
   confirmed pattern; the anomaly model is not automatically retrained. Native re-fire
   plus review/audit linkage is the evidence, not just a database status.
-- **Can an ML-only incident create a rule?** Not currently. The extractor requires
-  concrete process fields from a Falco alert and explicitly refuses unsupported input.
-  We state this boundary rather than fabricate a pattern from aggregate counts.
+- **Can an ML-only incident create a rule?** The current extension can propose a
+  literal template when the incident retains a concrete baseline syscall witness.
+  Aggregate counts alone cannot supply a pattern. Backtesting and human approval
+  still apply; a new anomaly-only live chain has not yet been accepted. The reviewed
+  15 October chain was Falco-backed, so it is not evidence of ML-only discovery.
 - **Does a zero-percent backtest prove safety?** No. It means zero matches among
   a stated nonzero number of eligible corpus events. Sampling and template breadth
   matter; human review and held-out normal behavior checks remain necessary.
@@ -121,7 +125,8 @@ so this demonstrates supervised adaptation, not additional attack coverage.”
 5. **Discussion:** answer each RQ using measured evidence; workflow value versus
    coverage; template context loss; operator tradeoffs; off-the-shelf versus project work.
 6. **Limitations:** threats table; small correlated samples; single VM; baseline size;
-   timestamp skew; unsupported anomaly-only synthesis; no production/zero-day guarantee.
+   timestamp skew; unverified anomaly-only live chain and unsupported aggregate-only
+   synthesis; no production/zero-day guarantee.
 7. **Conclusion:** supported accomplishments without extrapolation; next research:
    representative baselines, independent layer comparison and supported richer pattern
    extraction. No requirement for fleet, Kubernetes or commercial platform features.

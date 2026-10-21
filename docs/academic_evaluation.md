@@ -2,8 +2,10 @@
 
 SelfSentry is a hybrid container runtime security system that combines Falco rule matching with per-container behavioral anomaly detection, correlates both into incidents, and converts confirmed anomalies into template-generated, backtested, human-approved Falco rules — demonstrating a supervised adaptive detection loop under controlled evaluation.
 
-The empirical boundary of this thesis is the supported process-pattern synthesis
-path. Anomaly-only incidents remain visible but cannot yet generate rules. This
+The empirical boundary of the reviewed study is the Falco-backed process-pattern
+synthesis path. The later extension supports anomaly-only proposals with retained
+literal syscall witnesses, but its new live chain remains unverified. Aggregate-only
+anomalies cannot generate rules. This
 document interprets existing results and the operator-supplied
 [15 October mini-study](academic_results_20261015.md). Its results are separate from
 the frozen benchmark; it validates one supported chain, not ML-only discovery.

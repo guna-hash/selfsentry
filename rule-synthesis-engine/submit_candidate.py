@@ -91,6 +91,31 @@ def submit_candidate(
     pattern = extract_pattern(incident)
     rule_yaml = generate_rule(pattern, source_incident_id=incident_id)
 
+    preflight = requests.post(
+        f"{backend_url}/rules/preflight",
+        json={
+            "confirmed_incident_id": confirmed_incident_id,
+            "rule_yaml": rule_yaml,
+            "backtested_fp_rate": 0,
+        },
+        timeout=timeout_seconds,
+        headers=backend_headers(),
+    )
+    if preflight.status_code != 200:
+        raise SubmissionError(f"Rule guard preflight failed: HTTP {preflight.status_code}")
+    checked = preflight.json()
+    if checked.get("status") == "rejected_duplicate":
+        return {
+            "rule_id": checked["id"],
+            "status": checked["status"],
+            "rejection_reason": checked["rejection_reason"],
+            "backtest": None,
+            "rule_yaml": rule_yaml,
+        }
+
+    if checked.get("status") != "unique":
+        raise SubmissionError("Rule guard did not explicitly establish candidate uniqueness")
+
     if events is None:
         events = _load_benign_events(log_path)
     backtest = backtest_rule(rule_yaml, events)
@@ -140,6 +165,7 @@ def submit_candidate(
         "status": body["status"],
         "backtest": backtest,
         "rule_yaml": rule_yaml,
+        "rejection_reason": body.get("rejection_reason"),
     }
 
 

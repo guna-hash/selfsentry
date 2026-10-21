@@ -86,7 +86,7 @@ A fresh approval demonstration needs a new genuine candidate and separate eviden
 | 1:15–1:50 | Run policy probe | “This supporting check uses actual Docker inspect data. The privileged specimen is created but never started and is blocked; a non-root, read-only container with no added capabilities passes. Writable root alone is a medium finding, not an independent block.” |
 | 1:50–3:10 | Run shell probe; show Monitor while waiting | “This is Falco's default terminal-shell rule entering the real monitor, journal and backend. Windows are 60 seconds plus 10 seconds lateness. The disposable target has no ready baseline, so ML is explicitly unavailable. This proves fallback, not two-layer agreement.” |
 | 3:10–3:55 | New incident in Alerts, expanded observed timeline | “The rule, container ID and timestamp connect the incident to the trigger. Evidence survives persistence; an explanation is optional and advisory. A known shell behavior is a controlled simulation, not proof of compromise. Here isolation is off.” |
-| 3:55–5:15 | Rule Review and linked mini-study artifacts, or clearly labeled historical evidence | “Incident 200 became rule 18 after human confirmation and a 0-of-36 benign backtest. The reviewer approved it; the exact generated rule re-fired in incident 204. Rule 19 passed backtesting but was explicitly rejected and stayed absent. Two broader pattern previews matched 3 and 8 of 36 benign events and were not submitted. Three later normal windows had no learned-rule hits. This is supervised adaptation; Falco already detected these behaviors. Anomaly-only synthesis remains unsupported.” |
+| 3:55–5:15 | Rule Review and linked mini-study artifacts, or clearly labeled historical evidence | “Incident 200 became rule 18 after human confirmation and a 0-of-36 benign backtest. The reviewer approved it; the exact generated rule re-fired in incident 204. Rule 19 passed backtesting but was explicitly rejected and stayed absent. Two broader pattern previews matched 3 and 8 of 36 benign events and were not submitted. Three later normal windows had no learned-rule hits. This is supervised adaptation; Falco already detected these behaviors. The later anomaly-only proposal path requires a literal syscall witness and still awaits live acceptance.” |
 | 5:15–5:55 | Frozen measured-results table | “In the historical 200-trial run, incidents covered 100 of 100 labeled attack trials and 13 of 100 benign windows, including 40 quiet windows. Falco already flagged every attack. Retrospective ML replay added three benign flags and no attack coverage. These are bounded lab observations, not production accuracy.” |
 | 5:55–6:40 | Limitations | Read the limitations script below. |
 
@@ -115,8 +115,8 @@ pending row and show previously captured, correctly labeled approval/re-fire pro
 a small per-container baseline. The historical run detected all one hundred labeled
 attack trials, but Falco already detected those cases, so we have not demonstrated
 additional attack coverage. Thirteen of one hundred benign windows produced incidents.
-Rule synthesis currently needs process metadata from a Falco alert; anomaly-only
-rule generation is unsupported. Backtests estimate matches on our benign corpus,
+The later anomaly-only proposal path needs a literal syscall witness and still
+awaits live acceptance. Backtests estimate matches on our benign corpus,
 not production safety. SVM remains experimental after benign false positives, and
 the VM has a recurring timestamp issue. Every rule deployment requires human approval.”
 

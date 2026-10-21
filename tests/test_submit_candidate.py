@@ -39,6 +39,11 @@ class SubmitCandidateTestCase(unittest.TestCase):
         self.requests.get.return_value.json.return_value = {"id": 28, "container_id": "c1"}
         self.requests.post.return_value.status_code = 201
         self.requests.post.return_value.json.return_value = {"id": 7, "status": "pending_review"}
+        self.preflight = MagicMock(status_code=200)
+        self.preflight.json.return_value = {"status": "unique"}
+        self.requests.post.side_effect = lambda url, **kw: (
+            self.preflight if url.endswith("/preflight") else self.requests.post.return_value
+        )
 
     def start_patch(self, name):
         patcher = patch.object(submit_candidate, name)
@@ -65,19 +70,34 @@ class TestSubmitCandidate(SubmitCandidateTestCase):
         self.backtest.return_value = FLAGGED_RESULT
         with self.assertRaises(submit_candidate.SubmissionError):
             self.run_submit()
-        self.requests.post.assert_not_called()
+        self.assertTrue(
+            all(
+                call.args[0].endswith("/rules/preflight")
+                for call in self.requests.post.call_args_list
+            )
+        )
 
     def test_flagged_candidate_cannot_be_queued_even_with_old_override_flag(self):
         self.backtest.return_value = FLAGGED_RESULT
         with self.assertRaises(submit_candidate.SubmissionError):
             self.run_submit(allow_flagged=True)
-        self.requests.post.assert_not_called()
+        self.assertTrue(
+            all(
+                call.args[0].endswith("/rules/preflight")
+                for call in self.requests.post.call_args_list
+            )
+        )
 
     def test_zero_events_tested_is_refused(self):
         self.backtest.return_value = {**PASS_RESULT, "events_tested": 0}
         with self.assertRaises(submit_candidate.SubmissionError):
             self.run_submit()
-        self.requests.post.assert_not_called()
+        self.assertTrue(
+            all(
+                call.args[0].endswith("/rules/preflight")
+                for call in self.requests.post.call_args_list
+            )
+        )
 
     def test_missing_confirmed_incident_id_is_refused(self):
         self.confirm.return_value = {"status": "confirmed"}
@@ -93,3 +113,23 @@ class TestSubmitCandidate(SubmitCandidateTestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestDuplicatePreflight(SubmitCandidateTestCase):
+    def test_duplicate_is_returned_without_backtest_or_review_submission(self):
+        self.preflight.json.return_value = {
+            "id": 8,
+            "status": "rejected_duplicate",
+            "rejection_reason": "Exact match with existing rule: Manual",
+        }
+        result = self.run_submit()
+        self.assertEqual(result["status"], "rejected_duplicate")
+        self.backtest.assert_not_called()
+        self.assertEqual(self.requests.post.call_count, 1)
+        self.assertTrue(self.requests.post.call_args.args[0].endswith("/rules/preflight"))
+
+    def test_unknown_preflight_result_is_not_a_bypass(self):
+        self.preflight.json.return_value = {}
+        with self.assertRaises(submit_candidate.SubmissionError):
+            self.run_submit()
+        self.backtest.assert_not_called()

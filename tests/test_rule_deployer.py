@@ -5,6 +5,8 @@ so these tests never touch the real Falco install or the live rules file.
 """
 
 import sys
+import os
+from tests.rule_guard_support import inventory
 import tempfile
 import unittest
 from pathlib import Path
@@ -30,7 +32,17 @@ class DeployerTestCase(unittest.TestCase):
         root = Path(tmp.name)
         self.rules_path = root / "auto-generated-rules.yaml"
         self.rules_path.write_text("# header\n")
-        self.falco_yaml = root / "falco.yaml"
+        self.falco_yaml, defaults = inventory(root)
+        runtime = patch(
+            "rule_deduplicator._runtime_arguments",
+            return_value=["falco", "-c", str(self.falco_yaml)],
+        )
+        runtime.start()
+        self.addCleanup(runtime.stop)
+        environment = patch.dict(os.environ, {"RULE_GUARD_STATE_DIR": str(root / "guard")})
+        environment.start()
+        self.addCleanup(environment.stop)
+        self.defaults = defaults
         self.config_dir = root / "config.d"
         self.config_dir.mkdir()
         self.set_mode("all")
@@ -47,7 +59,7 @@ class DeployerTestCase(unittest.TestCase):
             self.addCleanup(patcher.stop)
 
     def set_mode(self, mode):
-        self.falco_yaml.write_text(f"rule_matching: {mode}\n")
+        self.falco_yaml.write_text(f"rule_matching: {mode}\nrules_files:\n  - {self.defaults}\n")
 
 
 class TestRuleMatchingGuard(DeployerTestCase):
@@ -105,3 +117,37 @@ class TestIdempotentDeploy(DeployerTestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestDeploymentDuplicates(DeployerTestCase):
+    def test_different_owner_and_name_cannot_duplicate_existing_condition(self):
+        from rule_deduplicator import DuplicateRule
+
+        rule_deployer.deploy_rule("r1", VALID_RULE)
+        before = self.rules_path.read_bytes()
+        with self.assertRaises(DuplicateRule):
+            rule_deployer.deploy_rule("r2", VALID_RULE.replace("Test", "Renamed"))
+        self.assertEqual(self.rules_path.read_bytes(), before)
+        self.assertEqual(self.reload_mock.call_count, 1)
+
+    def test_name_only_retry_cannot_overwrite_a_different_condition(self):
+        from rule_deduplicator import DuplicateRule
+
+        rule_deployer.deploy_rule("r1", VALID_RULE)
+        with self.assertRaises(DuplicateRule):
+            rule_deployer.deploy_rule(
+                "r1", VALID_RULE.replace("spawned_process", "evt.type = unlink")
+            )
+        self.assertEqual(self.reload_mock.call_count, 1)
+
+    def test_new_manual_equivalent_blocks_failed_reload_retry(self):
+        from rule_deduplicator import DuplicateRule
+
+        self.reload_mock.side_effect = rule_deployer.RuleDeploymentError("reload failed")
+        with self.assertRaises(rule_deployer.RuleDeploymentError):
+            rule_deployer.deploy_rule("r1", VALID_RULE)
+        self.reload_mock.side_effect = None
+        self.defaults.write_text(self.defaults.read_text() + VALID_RULE.replace("Test", "Admin"))
+        with self.assertRaises(DuplicateRule):
+            rule_deployer.deploy_rule("r1", VALID_RULE)
+        self.assertEqual(self.reload_mock.call_count, 1)

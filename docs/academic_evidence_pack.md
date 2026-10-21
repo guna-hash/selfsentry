@@ -26,8 +26,10 @@ Additional support: [evaluation interpretation and validity threats](academic_ev
 
 ## Read this claim boundary first
 
-The synthesis implementation needs process metadata from a Falco alert; it cannot
-currently convert ML-only aggregate anomalies into rules. The exact thesis is the
+The 15 October study used process metadata from Falco security alerts. The 16 October
+extension also accepts retained literal baseline syscall witnesses for anomaly-only
+proposals; aggregate counts alone cannot generate rules. That extension still needs
+a new live acceptance chain and does not change the earlier study's results. The exact thesis is the
 framing; the supported subset is stated beside it wherever used. “Learning” means
 human-supervised rule-set adaptation, not automatic model retraining. The strongest
 new empirical result is one complete trace from before incident to confirmation,

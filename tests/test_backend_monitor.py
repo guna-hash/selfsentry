@@ -118,9 +118,23 @@ def test_health_readout_reports_stale_state(client, tmp_path, monkeypatch):
     assert http.get("/monitor/status").json()["healthy"] is False
 
 
-def test_valid_dual_layer_auto_confirmation_persists_once(client):
+@pytest.mark.parametrize("auto_confirm_enabled", ["true", "false"])
+def test_valid_dual_layer_auto_confirmation_persists_once(
+    client, monkeypatch, auto_confirm_enabled
+):
     from datetime import datetime, timezone, timedelta
     from models.db_models import ConfirmedIncident
+
+    # Exercise policy explicitly, independently of operator .env/runtime settings.
+    # monkeypatch restores the test-process environment after each parameter case.
+    for key, value in {
+        "AUTO_CONFIRM_ENABLED": auto_confirm_enabled,
+        "AUTO_CONFIRM_THRESHOLD": "90",
+        "MONITOR_ANOMALY_THRESHOLD": "0.8",
+        "MONITOR_CORRELATION_SECONDS": "60",
+        "MONITOR_RESPONSE_MAX_AGE_SECONDS": "120",
+    }.items():
+        monkeypatch.setenv(key, value)
 
     http, session = client
     now = datetime.now(timezone.utc)
@@ -146,6 +160,14 @@ def test_valid_dual_layer_auto_confirmation_persists_once(client):
     saved = http.post("/incidents/", json=data).json()
     path = f"/incidents/{saved['id']}/confirm"
     first = http.post(path, params={"confirmed_by": "selfsentry-auto"})
+    if auto_confirm_enabled == "false":
+        assert first.status_code == 409
+        assert first.json()["detail"] == "auto-confirm disabled"
+        second = http.post(path, params={"confirmed_by": "selfsentry-auto"})
+        assert second.status_code == 409
+        with session() as db:
+            assert db.query(ConfirmedIncident).count() == 0
+        return
     assert first.status_code == 200
     second = http.post(path, params={"confirmed_by": "selfsentry-auto"})
     assert second.json()["status"] == "already_confirmed"
