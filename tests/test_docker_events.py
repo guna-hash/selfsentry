@@ -1,11 +1,14 @@
 """Tests for monitor-service/docker_events.py with a fake Docker event stream."""
 
 import queue
+import socket
 import sys
 import threading
 import time
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import MagicMock
 
 import docker
 
@@ -34,6 +37,106 @@ def wait_until(predicate, timeout=3.0):
 
 
 class TestDockerEventPump(unittest.TestCase):
+    def test_stop_cancels_sdk_stream_blocked_on_local_socket(self):
+        from docker.types.daemon import CancellableStream
+
+        reader, writer = socket.socketpair()
+        self.addCleanup(reader.close)
+        self.addCleanup(writer.close)
+        entered = threading.Event()
+
+        def events():
+            entered.set()
+            if reader.recv(1):
+                yield {"time": 42}
+
+        raw = SimpleNamespace(
+            closed=False, _fp=SimpleNamespace(fp=SimpleNamespace(raw=SimpleNamespace(_sock=reader)))
+        )
+        stream = CancellableStream(events(), SimpleNamespace(raw=raw))
+        client = MagicMock()
+        client.events.return_value = stream
+        pump = self.make_pump(lambda: client)
+        pump.start()
+        try:
+            self.assertTrue(entered.wait(1))
+            pump.stop()
+            pump.join(1)
+            self.assertFalse(pump.is_alive())
+            self.assertTrue(self.out.empty())
+            client.close.assert_called_once()
+        finally:
+            writer.close()  # unblock the socket even if cancellation regresses
+
+    def test_stream_created_after_stop_is_closed_without_consuming(self):
+        entered, release = threading.Event(), threading.Event()
+        client, stream = MagicMock(), MagicMock()
+
+        def opening(**_):
+            entered.set()
+            release.wait(3)
+            return stream
+
+        client.events.side_effect = opening
+        pump = self.make_pump(lambda: client)
+        pump.start()
+        try:
+            self.assertTrue(entered.wait(1))
+            pump.stop()
+        finally:
+            release.set()
+            pump.join(3)
+        self.assertFalse(pump.is_alive())
+        stream.__iter__.assert_not_called()
+        stream.close.assert_called_once()
+        client.close.assert_called_once()
+
+    def test_stop_during_client_creation_does_not_open_stream(self):
+        entered, release = threading.Event(), threading.Event()
+        client = MagicMock()
+
+        def factory():
+            entered.set()
+            release.wait(3)
+            return client
+
+        pump = self.make_pump(factory)
+        pump.start()
+        try:
+            self.assertTrue(entered.wait(1))
+            pump.stop()
+        finally:
+            release.set()
+            pump.join(3)
+        self.assertFalse(pump.is_alive())
+        client.events.assert_not_called()
+        client.close.assert_called_once()
+
+    def test_full_queue_can_stop_without_advancing_unaccepted_event_time(self):
+        self.out = queue.Queue(maxsize=1)
+        self.out.put({"already": "queued"})
+        pump = self.make_pump(lambda: FakeStreamClient([{"time": 42}]))
+        pump.start()
+        self.assertTrue(pump.reconnected.wait(1))
+        pump.stop()
+        pump.join(1)
+        self.assertFalse(pump.is_alive())
+        self.assertIsNone(pump._last_time)
+        self.assertEqual(self.out.get_nowait(), {"already": "queued"})
+
+    def test_disconnected_stream_and_client_are_closed_before_retry(self):
+        client = MagicMock()
+        stream = MagicMock()
+        stream.__iter__.side_effect = docker.errors.DockerException("lost stream")
+        stream.close.side_effect = self.stop.set
+        client.events.return_value = stream
+        pump = self.make_pump(lambda: client)
+        pump.start()
+        pump.join(timeout=3)
+        self.assertFalse(pump.is_alive())
+        stream.close.assert_called_once()
+        client.close.assert_called_once()
+
     def setUp(self):
         self.out = queue.Queue()
         self.stop = threading.Event()
@@ -41,7 +144,12 @@ class TestDockerEventPump(unittest.TestCase):
 
     def make_pump(self, factory):
         pump = docker_events.DockerEventPump(factory, self.out, self.stop, 0.01, 0.02)
-        self.addCleanup(lambda: pump.join(timeout=3))
+
+        def cleanup():
+            pump.stop()
+            pump.join(timeout=3)
+
+        self.addCleanup(cleanup)
         return pump
 
     def test_events_are_queued_after_a_failed_first_connection(self):

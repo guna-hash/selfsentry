@@ -8,17 +8,19 @@ from types import SimpleNamespace
 from unittest.mock import Mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "monitor-service"))
-import requests
-import pytest
-from automation_policy import eligible
-from incident_pipeline import IncidentPipeline
-from tests.test_behavior_pipeline import setup, START, CID
+import requests  # noqa: E402
+import pytest  # noqa: E402
+from automation_policy import eligible  # noqa: E402
+from incident_pipeline import IncidentPipeline  # noqa: E402
+from tests.test_behavior_pipeline import setup, START, CID  # noqa: E402
 
 
 def payload(score=100):
     from datetime import datetime, timezone
 
-    ts = lambda n: datetime.fromtimestamp(START + n, timezone.utc).isoformat()
+    def ts(n):
+        return datetime.fromtimestamp(START + n, timezone.utc).isoformat()
+
     return {
         "event_key": "window-one",
         "container_id": CID,

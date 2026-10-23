@@ -20,10 +20,9 @@ from anomaly_model import (  # noqa: E402
     AnomalyModelRegistry,
     ModelNotTrainedError,
 )
-from baseline_builder import (
+from baseline_builder import (  # noqa: E402
     BaselineDataset,
     BaselineNotReadyError,
-    MIN_BASELINE_SAMPLES,
 )  # noqa: E402
 from feature_extractor import FeatureVector  # noqa: E402
 

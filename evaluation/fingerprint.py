@@ -64,8 +64,11 @@ def collect_fingerprint(root, target, env, image_id):
         root / "falco-rules/baseline-capture-rules.yaml",
         root / "falco-rules/auto-generated-rules.yaml",
     ]
+    baseline_dir = Path(env.get("MONITOR_BASELINE_DIR") or "behavioral-engine/baselines")
+    if not baseline_dir.is_absolute():
+        baseline_dir = root / baseline_dir
     components = {
-        "baseline_sha256": sha256_file(root / "behavioral-engine/baselines" / f"{target}.json"),
+        "baseline_sha256": sha256_file(baseline_dir / f"{target}.json"),
         "rule_file_sha256": {
             ("falco_rules.yaml" if p.name == "falco_rules.yaml" else p.name): sha256_file(p)
             for p in rule_files

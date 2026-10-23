@@ -19,7 +19,8 @@ def line(cid, epoch):
 
 class Parsing(unittest.TestCase):
     def test_nanosecond_timestamp(self):
-        self.assertAlmostEqual(cg.parse_falco_time("1970-01-01T00:00:10.327827525Z"), 10.327827, places=5)
+        parsed = cg.parse_falco_time("1970-01-01T00:00:10.327827525Z")
+        self.assertAlmostEqual(parsed, 10.327827, places=5)
 
     def test_naive_timestamp_rejected(self):
         with self.assertRaises(ValueError):
@@ -77,7 +78,8 @@ class Gate(unittest.TestCase):
         tmp = tempfile.TemporaryDirectory()
         self.addCleanup(tmp.cleanup)
         path = Path(tmp.name) / "clock_check.json"
-        record = {"container_id": "abc", "passed": True, "checked_at_epoch": time.time(), "clock_snapshot": cg.clock_snapshot()}
+        record = {"container_id": "abc", "passed": True, "checked_at_epoch": time.time(),
+                  "clock_snapshot": cg.clock_snapshot()}
         record.update(overrides)
         path.write_text(json.dumps(record))
         return path
@@ -88,7 +90,8 @@ class Gate(unittest.TestCase):
     def test_missing_failed_old_or_wrong_container_refused(self):
         with self.assertRaises(cg.ClockGuardError):
             cg.require_recent_preflight("/nonexistent/clock.json", "abc")
-        for override in ({"passed": False}, {"clock_snapshot": {"boot_id": "other", "realtime": 1, "monotonic": 1}},
+        for override in ({"passed": False},
+                         {"clock_snapshot": {"boot_id": "other", "realtime": 1, "monotonic": 1}},
                          {"container_id": "other"}):
             with self.assertRaises(cg.ClockGuardError):
                 cg.require_recent_preflight(self._state(**override), "abc")

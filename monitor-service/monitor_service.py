@@ -26,23 +26,22 @@ import queue
 import signal
 import sys
 import threading
+from contextlib import ExitStack
 from datetime import datetime, timezone
 
 import docker
 
-from audit_client import AuditClient, DurableAuditClient, make_event_key
+from audit_client import AuditJournalError, DurableAuditClient, make_event_key
 from container_watcher import BackendRegistrationLookup, ContainerWatcher, DockerInspector
 from docker_events import DockerEventPump
 from event_classifier import MalformedEvent, classify_line
 from falco_ingest import FalcoTailer, IngestUnavailable
 from monitor_config import ConfigError, MonitorConfig, load_config
-from monitor_status import StatusBoard, read_status
+from monitor_status import StatusBoard, read_status, describe_status
 from behavior_pipeline import BehaviorPipeline
-from control_worker import ControlWorker
+from control_worker import ControlWorker, DOCKER_EVENT_QUEUE_SIZE
 
 logger = logging.getLogger("selfsentry.monitor")
-
-STATUS_STALE_SECONDS = 30
 
 
 def _now() -> str:
@@ -89,6 +88,7 @@ class MonitorService:
         self._status = status
         self._sink = sink
         self._docker_events = docker_events
+        self._pending_docker_event = None
         self._pump = pump
         self._incident_pipeline = incident_pipeline
         self._control_worker = control_worker
@@ -130,14 +130,17 @@ class MonitorService:
         except IngestUnavailable as exc:
             self._set_ingest_state(False, str(exc))
             return 0
-        self._set_ingest_state(True)
-
         for line, key in zip(batch.lines, batch.keys):
             self._handle_line(line, key)
         if batch.skipped_duplicates:
             self._status.incr("duplicates_skipped", batch.skipped_duplicates)
         if batch.keys or batch.end_offset != self._tailer.offset:
-            self._tailer.commit(batch)
+            try:
+                self._tailer.commit(batch)
+            except IngestUnavailable as exc:
+                self._set_ingest_state(False, str(exc))
+                return len(batch.lines)
+        self._set_ingest_state(True)
         return len(batch.lines)
 
     def _handle_line(self, line: str, key: str) -> None:
@@ -191,16 +194,23 @@ class MonitorService:
     # ---- Docker --------------------------------------------------------------
 
     def _drain_docker_events(self) -> None:
-        while True:
+        # Leave bursts queued in FIFO order so Falco ingestion and window closure
+        # get another turn even when Docker events keep arriving.
+        for _ in range(self._config.max_batch_lines):
+            event = self._pending_docker_event
+            if event is None:
+                try:
+                    event = self._docker_events.get_nowait()
+                except queue.Empty:
+                    return
             try:
-                event = self._docker_events.get_nowait()
-            except queue.Empty:
-                return
-            try:
-                self._watcher.handle_docker_event(event)
+                if self._watcher.handle_docker_event(event) is False:
+                    self._pending_docker_event = event
+                    return
             except Exception:  # noqa: BLE001 - logged and counted; reconcile can catch up
                 logger.exception("Docker event handling failed")
                 self._status.incr("docker_event_errors")
+            self._pending_docker_event = None
 
     def _reconcile_if_needed(self) -> None:
         if self._pump is None or not self._pump.reconnected.is_set():
@@ -217,6 +227,19 @@ class MonitorService:
     # ---- status --------------------------------------------------------------
 
     def _update_status(self) -> None:
+        cfg = self._config
+        self._status.set_value("configuration", {
+            "auto_isolation_enabled": cfg.auto_isolation_enabled,
+            "auto_isolation_threshold": cfg.auto_isolation_threshold,
+            "protected_containers": list(cfg.protected_containers),
+            "auto_confirm_enabled": cfg.auto_confirm_enabled,
+            "anomaly_proposals_enabled": cfg.auto_confirm_anomaly_enabled,
+            "rule_candidates_enabled": cfg.rule_candidates_enabled,
+        })
+        self._status.set_value("docker_event_queue_depth", self._docker_events.qsize())
+        self._status.set_value("docker_event_pending", self._pending_docker_event is not None)
+        if self._control_worker is not None:
+            self._status.set_value("control_event_queue_depth", self._control_worker.events.qsize())
         if self._pump is not None:
             self._status.set_component("docker", self._pump.state, self._pump.last_error)
         outcome = self._audit.last_outcome
@@ -224,7 +247,16 @@ class MonitorService:
             outcome, "unknown"
         )
         self._status.set_component("backend", backend_state)
-        self._status.set_value("audit_spool_size", self._audit.spool_size())
+        try:
+            spool_size = self._audit.spool_size()
+        except AuditJournalError as exc:
+            self._status.set_value("audit_spool_size", None)
+            self._status.set_component("audit_spool", "degraded", str(exc))
+        else:
+            self._status.set_value("audit_spool_size", spool_size)
+            self._status.set_component(
+                "audit_spool", "ok", "Depth readable; payload validation occurs during delivery"
+            )
         self._status.set_value(
             "containers",
             {
@@ -267,7 +299,7 @@ class MonitorService:
         finally:
             self._status.set_running(False)
             self._status.write()
-            logger.info("SelfSentry monitor stopped")
+            logger.info("monitor ingestion loop stopped; background cleanup pending")
 
 
 # ---- process wiring ----------------------------------------------------------
@@ -301,12 +333,15 @@ def acquire_lock(state_dir):
     """One monitor at a time: two instances would duplicate every action."""
     import fcntl
 
-    handle = open(state_dir / "monitor.lock", "w")
+    # A competing opener must not truncate the current owner's PID before flock.
+    handle = open(state_dir / "monitor.lock", "a+")
     try:
         fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
     except OSError:
         handle.close()
         return None
+    handle.seek(0)
+    handle.truncate()
     handle.write(str(os.getpid()))
     handle.flush()
     return handle
@@ -332,7 +367,7 @@ def build_service(config: MonitorConfig):
     )
     pipeline = BehaviorPipeline(config, status, audit, async_training=True)
     control = ControlWorker(config, watcher, audit, status)
-    events: queue.Queue = queue.Queue()
+    events: queue.Queue = queue.Queue(maxsize=DOCKER_EVENT_QUEUE_SIZE)
     stop_event = threading.Event()
     pump = DockerEventPump(
         docker.from_env, events, stop_event, config.retry_base_seconds, config.retry_max_seconds
@@ -344,18 +379,29 @@ def build_service(config: MonitorConfig):
 
 
 def print_status(config: MonitorConfig) -> int:
-    status = read_status(config.state_dir / "status.json")
-    if status is None:
-        print("No status file found: the monitor has not run (or state dir differs).")
-        return 1
-    updated = status.get("updated_at")
-    age = None
-    if updated:
-        age = (datetime.now(timezone.utc) - datetime.fromisoformat(updated)).total_seconds()
+    status = describe_status(read_status(config.state_dir / "status.json"))
     print(json.dumps(status, indent=2))
-    healthy = bool(status.get("running")) and age is not None and age < STATUS_STALE_SECONDS
-    print(f"\nrunning={status.get('running')} last_update_age_seconds={age}")
-    return 0 if healthy else 1
+    print(f"\nrunning={status.get('running')} "
+          f"last_update_age_seconds={status.get('status_age_seconds')}")
+    return 0 if status["healthy"] else 1
+
+
+def shutdown_service(service, pump, stop_event):
+    """Keep the caller's instance lock held until background work has exited."""
+    stop_event.set()
+    service._control_worker.request_stop()
+    service._status.set_component("shutdown", "stopping")
+    service._status.write()
+    with ExitStack() as cleanup:
+        cleanup.callback(service._sink.close)
+        cleanup.callback(service._control_worker.stop)
+        if pump.ident is not None:
+            cleanup.callback(pump.join)
+        cleanup.callback(pump.stop)
+    service._status.set_running(False)
+    service._status.set_component("shutdown", "stopped")
+    service._status.write()
+    logger.info("SelfSentry monitor background cleanup complete")
 
 
 def main(argv=None) -> int:
@@ -363,11 +409,26 @@ def main(argv=None) -> int:
     parser.add_argument("--status", action="store_true", help="print the monitor's status")
     parser.add_argument("--once", action="store_true", help="run one iteration and exit")
     parser.add_argument("--reset-baseline", metavar="CONTAINER_ID")
-    parser.add_argument("--reason", help="required reason for a baseline reset")
+    parser.add_argument("--review-baseline", metavar="CONTAINER_ID")
+    parser.add_argument("--reviewed-by", help="explicit human baseline reviewer")
+    parser.add_argument(
+        "--evidence-key",
+        action="append",
+        default=[],
+        help="late-alert event key; repeat for all reviewed alerts",
+    )
+    parser.add_argument("--reason", help="required reason for a baseline reset/review")
     args = parser.parse_args(argv)
+    if args.reset_baseline and args.review_baseline:
+        parser.error("reset and review cannot be combined")
+    if args.review_baseline and (not args.reason or not args.reviewed_by or not args.evidence_key):
+        parser.error("--review-baseline requires --reason, --reviewed-by and --evidence-key")
     if args.reset_baseline and not args.reason:
         parser.error("--reset-baseline requires --reason")
 
+    from dotenv import load_dotenv
+
+    load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env"))
     try:
         config = load_config()
     except ConfigError as exc:
@@ -383,34 +444,50 @@ def main(argv=None) -> int:
         print("ERROR: another monitor instance is already running.", file=sys.stderr)
         return 3
 
-    if args.reset_baseline:
+    with lock:
+        if args.reset_baseline or args.review_baseline:
+            pipeline = None
+            try:
+                board = StatusBoard(config.state_dir / "status.json")
+                audit = DurableAuditClient(
+                    config.backend_url, config.state_dir / "audit_spool.jsonl", timeout_seconds=2.0
+                )
+                pipeline = BehaviorPipeline(config, board, audit)
+                if args.review_baseline:
+                    from baseline_review import review_baseline
+                    from behavior_pipeline import container_identity
+
+                    report = review_baseline(
+                        pipeline,
+                        container_identity(args.review_baseline),
+                        args.reviewed_by,
+                        args.reason,
+                        args.evidence_key,
+                    )
+                    print(json.dumps({"status": "reviewed", **report}, indent=2))
+                else:
+                    pipeline.reset_baseline(args.reset_baseline, args.reason)
+                    print(f"Baseline reset for {args.reset_baseline}; prior data archived.")
+                return 0
+            except (OSError, ValueError, KeyError, TypeError) as exc:
+                print(f"ERROR: baseline action refused: {exc}", file=sys.stderr)
+                return 2
+            finally:
+                if pipeline is not None:
+                    pipeline.close()
+        service, pump, stop_event = build_service(config)
         try:
-            board = StatusBoard(config.state_dir / "status.json")
-            audit = AuditClient(config.backend_url, config.state_dir / "audit_spool.jsonl")
-            pipeline = BehaviorPipeline(config, board, audit)
-            pipeline.reset_baseline(args.reset_baseline, args.reason)
-            pipeline.db.close()
-            print(f"Baseline reset for {args.reset_baseline}; prior data archived.")
+            signal.signal(signal.SIGINT, lambda *_: stop_event.set())
+            signal.signal(signal.SIGTERM, lambda *_: stop_event.set())
+            pump.start()
+            service._control_worker.start()
+            if args.once:
+                service.run_once()
+            else:
+                service.run_forever(stop_event)
             return 0
         finally:
-            lock.close()
-    service, pump, stop_event = build_service(config)
-    signal.signal(signal.SIGINT, lambda *_: stop_event.set())
-    signal.signal(signal.SIGTERM, lambda *_: stop_event.set())
-    pump.start()
-    service._control_worker.start()
-    try:
-        if args.once:
-            service.run_once()
-        else:
-            service.run_forever(stop_event)
-        return 0
-    finally:
-        stop_event.set()
-        pump.join(timeout=5)
-        service._control_worker.stop()
-        service._sink.close()
-        lock.close()
+            shutdown_service(service, pump, stop_event)
 
 
 if __name__ == "__main__":

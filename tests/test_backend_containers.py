@@ -7,6 +7,8 @@ import os
 import sys
 import tempfile
 import unittest
+
+import requests
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
@@ -77,6 +79,18 @@ class ContainersApiTestCase(unittest.TestCase):
 
 
 class TestListContainers(ContainersApiTestCase):
+    def test_unreadable_record_reports_unknown_containment_without_hiding_inventory(self):
+        path = containers_module.auto_isolate._record_path(WEB_ID)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text('{"networks":')
+        response = self.client.get("/containers/")
+        self.assertEqual(response.status_code, 200)
+        item = response.json()[0]
+        self.assertIsNone(item["isolated"])
+        self.assertEqual(item["containment_state"], "record_unavailable")
+        self.assertIn("unverified", item["containment_label"])
+        self.assertIn("repair required", item["isolation_error"])
+
     def test_lists_container_with_latest_incident_risk(self):
         self.add_incident(1, 90.0)
         self.add_incident(2, 55.0)
@@ -99,7 +113,8 @@ class TestListContainers(ContainersApiTestCase):
     def test_isolated_flag_and_reason_come_from_the_isolation_record(self):
         containers_module.auto_isolate._write_record(
             WEB_ID,
-            {"state": "isolated", "reason": "high risk", "isolated_at": "2026-10-09T00:00:00+00:00",
+            {"container_id": WEB_ID,
+             "state": "isolated", "reason": "high risk", "isolated_at": "2026-10-09T00:00:00+00:00",
              "networks": {}},
         )
         item = self.client.get("/containers/").json()[0]
@@ -108,11 +123,16 @@ class TestListContainers(ContainersApiTestCase):
 
     def test_resumed_record_does_not_count_as_isolated(self):
         containers_module.auto_isolate._write_record(
-            WEB_ID, {"state": "resumed", "reason": "old", "networks": {}}
+            WEB_ID, {"container_id": WEB_ID, "state": "resumed", "reason": "old", "networks": {}}
         )
         item = self.client.get("/containers/").json()[0]
         self.assertFalse(item["isolated"])
         self.assertIsNone(item["isolation_reason"])
+
+    def test_list_transport_failure_returns_503_and_closes_client(self):
+        self.docker_client.containers.list.side_effect = requests.ReadTimeout("offline")
+        self.assertEqual(self.client.get("/containers/").status_code, 503)
+        self.docker_client.close.assert_called_once_with()
 
     def test_docker_unavailable_returns_503(self):
         self.docker_factory.side_effect = docker.errors.DockerException("daemon down")
@@ -120,6 +140,33 @@ class TestListContainers(ContainersApiTestCase):
 
 
 class TestResumeAndIsolateRoutes(ContainersApiTestCase):
+    def test_corrupt_recovery_state_blocks_and_audits_both_actions(self):
+        from models.db_models import AuditEvent
+
+        path = containers_module.auto_isolate._record_path(WEB_ID)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text('{"networks":')
+        original = path.read_bytes()
+        live = MagicMock(id=WEB_ID, name="web", status="paused")
+        live.attrs = {"HostConfig": {}, "NetworkSettings": {"Networks": {}}}
+        self.docker_client.containers.get.return_value = live
+        with patch.object(
+            containers_module.auto_isolate.docker, "from_env", return_value=self.docker_client
+        ):
+            for response in (self.isolate(), self.resume()):
+                self.assertEqual(response.status_code, 409)
+                self.assertIn("repair required", response.json()["detail"])
+        live.pause.assert_not_called()
+        live.unpause.assert_not_called()
+        self.docker_client.networks.get.assert_not_called()
+        self.assertEqual(path.read_bytes(), original)
+        with self.Session() as db:
+            events = {row.event_type for row in db.query(AuditEvent).all()}
+        self.assertIn("CONTAINER_ISOLATION_FAILED", events)
+        self.assertIn("CONTAINER_RESUME_FAILED", events)
+        self.assertNotIn("CONTAINER_ISOLATED", events)
+        self.assertNotIn("CONTAINER_RESUMED", events)
+
     def resume(self):
         return self.client.post("/containers/web/resume", params={"resumed_by": "alice"})
 
@@ -127,6 +174,40 @@ class TestResumeAndIsolateRoutes(ContainersApiTestCase):
         return self.client.post(
             "/containers/web/isolate", params={"isolated_by": "alice", "reason": "suspicious"}
         )
+
+    def test_pre_action_transport_failures_are_audited_for_both_actions(self):
+        from models.db_models import AuditEvent
+
+        for operation, request in (("isolate_container", self.isolate),
+                                   ("resume_container", self.resume)):
+            with self.subTest(operation=operation), patch.object(
+                containers_module.auto_isolate, operation,
+                side_effect=requests.ConnectionError("daemon unreachable")
+            ):
+                self.assertEqual(request().status_code, 503)
+        with self.Session() as db:
+            events = {row.event_type for row in db.query(AuditEvent).all()}
+        self.assertEqual(events, {"CONTAINER_ISOLATION_REQUESTED", "CONTAINER_ISOLATION_FAILED",
+                                  "CONTAINER_RESUME_REQUESTED", "CONTAINER_RESUME_FAILED"})
+
+    def test_actual_response_connect_timeout_repauses_and_audits_failure(self):
+        from models.db_models import AuditEvent
+        from tests.test_auto_isolate import FakeContainer, FakeClient, FakeNetwork, FULL_ID
+
+        container = FakeContainer()
+        docker_client = FakeClient(container)
+        with patch.object(containers_module.auto_isolate.docker, "from_env",
+                          return_value=docker_client):
+            containers_module.auto_isolate.isolate_container(FULL_ID, "test")
+            with patch.object(FakeNetwork, "connect", side_effect=requests.ReadTimeout("offline")):
+                result = self.resume()
+        self.assertEqual(result.status_code, 409)
+        self.assertEqual(container.status, "paused")
+        self.assertEqual(containers_module.auto_isolate.get_isolation_record(FULL_ID)["state"],
+                         "resume_failed")
+        with self.Session() as db:
+            events = {row.event_type for row in db.query(AuditEvent).all()}
+        self.assertEqual(events, {"CONTAINER_RESUME_REQUESTED", "CONTAINER_RESUME_FAILED"})
 
     def test_resume_success(self):
         outcome = {"container_id": WEB_ID, "networks": ["bridge"], "resumed_by": "alice"}

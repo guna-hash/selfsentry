@@ -21,6 +21,7 @@ export default function Containers() {
   ]
   const live = selected && data.rows.find(r => r.id === selected.id)
   const current = live || selected
+  const recoveryUnavailable = current?.containment_state === 'record_unavailable'
   return <><PageHeader title="Containers">Live Docker inventory. Network disconnection is verified only when the backend containment label explicitly reports it.</PageHeader>
     <RefreshControls {...data} />
     <DataTable {...data} error={data.error?.message} errorStatus={data.error?.status} onRetry={data.refresh} columns={columns} caption="Containers" onRowOpen={setSelected} />
@@ -30,8 +31,8 @@ export default function Containers() {
         <h3>Response error</h3><pre className="rule-yaml">{JSON.stringify(current.isolation_error ?? 'Not recorded', null, 2)}</pre><h3>Risk explanation</h3><pre className="rule-yaml">{JSON.stringify(current.risk_explanation ?? 'Not recorded', null, 2)}</pre>
         {/svm/i.test(current.isolation_reason || '') && <p>Experimental SVM response: review the recorded reason.</p>}
         <p>Response history records action, time, actor, and outcome in the read-only audit log.</p><Link to={`/audit?container_id=${encodeURIComponent(current.full_id || current.id)}&legacy_container_id=${encodeURIComponent(current.id)}`}>View response history</Link>
-        <div className="table-toolbar"><button className="shell-button" disabled={isSampleMode() || !live || !!data.error || data.loading || current.isolated || current.protected !== false} onClick={() => setAction('isolate')}>Isolate</button>
-        <button className="shell-button" disabled={isSampleMode() || !live || !!data.error || data.loading || !current.isolated} onClick={() => setAction('resume')}>Resume / restore networks</button></div>
+        <div className="table-toolbar"><button className="shell-button" disabled={isSampleMode() || !live || !!data.error || data.loading || recoveryUnavailable || current.isolated || current.protected !== false} onClick={() => setAction('isolate')}>Isolate</button>
+        <button className="shell-button" disabled={isSampleMode() || !live || !!data.error || data.loading || recoveryUnavailable || !current.isolated} onClick={() => setAction('resume')}>Resume / restore networks</button></div>
         {!live && <p>Container is absent from the current inventory. Refresh before taking action.</p>}
         {current.protected && <p>Protected workload: manual isolation is disabled.</p>}</>}
     </Drawer>

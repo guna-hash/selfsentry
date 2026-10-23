@@ -16,6 +16,7 @@ import sqlite3
 import subprocess
 import fcntl
 from functools import lru_cache
+from typing import Any
 
 import yaml
 
@@ -89,7 +90,7 @@ def _value(token):
 
 
 def _join(op, nodes):
-    flat = set()
+    flat: set[tuple] = set()
     for node in nodes:
         flat.update(node[1:] if node[0] == op else [node])
     if len(flat) == 1:
@@ -211,17 +212,21 @@ def fingerprint(node):
     Predicates remain exact (no guessed regex/path aliases). Complexity overflow
     fails closed. AND/OR order, distribution, absorption and NOT are canonical.
     """
-    nodes = {0: None, 1: None}
-    unique, applied, negated, built = {}, {}, {0: 1, 1: 0}, {}
+    # Terminal IDs 0/1 are handled before node lookup; only branches need entries.
+    nodes: dict[int, tuple[tuple, int, int]] = {}
+    unique: dict[tuple, int] = {}
+    applied: dict[tuple, int] = {}
+    negated = {0: 1, 1: 0}
+    built: dict[tuple, int] = {}
 
     def make(atom, lo, hi):
         if lo == hi:
             return lo
         key = (atom, lo, hi)
         if key not in unique:
-            if len(nodes) >= 50000:
+            if len(nodes) + 2 >= 50000:
                 raise InventoryError("Semantic comparison complexity limit exceeded")
-            index = len(nodes)
+            index = len(nodes) + 2
             unique[key] = index
             nodes[index] = key
         return unique[key]
@@ -408,7 +413,8 @@ def load_inventory(config_path=None):
     This deliberately errs on the side of blocking regeneration.
     """
     config_path = Path(config_path or os.environ.get("FALCO_CONFIG_PATH", "/etc/falco/falco.yaml"))
-    config, visited = {}, set()
+    config: dict[str, Any] = {}
+    visited: set[Path] = set()
 
     def read_config(path, strategy="override"):
         path = path.resolve()
@@ -487,7 +493,9 @@ def compile_rules(rows):
 @lru_cache(maxsize=16)
 def _compiled(serialized):
     rows = json.loads(serialized)
-    macros, lists, rules = {}, {}, []
+    macros: dict[str, str] = {}
+    lists: dict[str, list] = {}
+    rules: list[dict] = []
     for row in rows:
         key = next((k for k in ("macro", "list", "rule") if k in row), None)
         if key is None:
@@ -632,7 +640,7 @@ def guard(config_path=None):
     state.mkdir(parents=True, exist_ok=True)
     with (state / "guard.lock").open("a") as lock:
         fcntl.flock(lock, fcntl.LOCK_EX)
-        with sqlite3.connect(state / "registry.sqlite3") as db:
+        with contextlib.closing(sqlite3.connect(state / "registry.sqlite3")) as db, db:
             db.execute(
                 "CREATE TABLE IF NOT EXISTS protected_rules ("
                 "identity TEXT PRIMARY KEY, content TEXT NOT NULL, "

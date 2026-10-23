@@ -1,0 +1,2831 @@
+{
+  "base_commit": "18c40d228de66ce3b75c03b23a569b69e28a1b45",
+  "branch": "audit/repository-review-20261021",
+  "review_complete": true,
+  "native_integration_verified": false,
+  "original_tracked_files": 312,
+  "manual_source_review_files": 312,
+  "automated_inventory_only_files": 0,
+  "final_inventory_rows": 336,
+  "baseline": {
+    "python": {
+      "passed": 538,
+      "subtests": 7,
+      "seconds": 12.46
+    },
+    "frontend": {
+      "passed": 150,
+      "files": 34
+    },
+    "build": "PASS",
+    "whole_tree_flake8_findings": 51,
+    "root_collection": "FAIL: live provider operations during import"
+  },
+  "final_release": {
+    "started_at": "2026-10-22T19:18:30.493113+00:00",
+    "checks": [
+      {
+        "name": "python-tests",
+        "returncode": 0,
+        "passed": true,
+        "log": "state/evaluation/final-checks-20261022T191830Z/python-tests.log"
+      },
+      {
+        "name": "lint",
+        "returncode": 0,
+        "passed": true,
+        "log": "state/evaluation/final-checks-20261022T191830Z/lint.log"
+      },
+      {
+        "name": "types",
+        "returncode": 0,
+        "passed": true,
+        "log": "state/evaluation/final-checks-20261022T191830Z/types.log"
+      },
+      {
+        "name": "frontend-tests",
+        "returncode": 0,
+        "passed": true,
+        "log": "state/evaluation/final-checks-20261022T191830Z/frontend-tests.log"
+      },
+      {
+        "name": "frontend-build",
+        "returncode": 0,
+        "passed": true,
+        "log": "state/evaluation/final-checks-20261022T191830Z/frontend-build.log"
+      }
+    ],
+    "source_commit": "18c40d228de66ce3b75c03b23a569b69e28a1b45",
+    "source_status": "M .env.example\n M .gitignore\n M CHANGELOG.md\n M README.md\n M ROADMAP.md\n M TODO.md\n M ai-analysis/attack_timeline_builder.py\n M ai-analysis/root_cause_summarizer.py\n M backend-api/database.py\n M backend-api/main.py\n M backend-api/models/db_models.py\n M backend-api/routes/audit.py\n M backend-api/routes/containers.py\n M backend-api/routes/deployments.py\n M backend-api/routes/incidents.py\n M backend-api/routes/monitor.py\n M backend-api/routes/rules.py\n M behavioral-engine/anomaly_model.py\n M behavioral-engine/baseline_collector.py\n M behavioral-engine/collect_baseline.py\n M behavioral-engine/feature_extractor.py\n M behavioral-engine/validate_live.py\n M correlation-engine/event_router.py\n M correlation-engine/risk_scorer.py\n M correlation-engine/validate_pipeline.py\n M database/schema.sql\n M deployment-gate/deployment_gate.py\n M deployment-gate/deployment_outbox.py\n M docs/academic_study.md\n M docs/deployment_gate.md\n M docs/falco_rule_matching.md\n M docs/interfaces.md\n M docs/known_limitations.md\n M docs/monitor_operations.md\n M docs/phase1_image_scanner.md\n M docs/phase2_deployment_policy_checker.md\n M docs/phase3_falco_integration.md\n M docs/phase3_tracking_updates.md\n M docs/phase4_behavioral_engine.md\n M docs/phase5_correlation_engine.md\n M docs/phase6_rule_synthesis.md\n M docs/zero_duplication_rule_guard.md\n M evaluation/capture_academic_case.py\n M evaluation/clock_guard.py\n M evaluation/compare_saved_layers.py\n M evaluation/coverage_probe.py\n M evaluation/export_final_review.py\n M evaluation/export_layer_evidence.py\n M evaluation/fingerprint.py\n M evaluation/run_full_trial.py\n M evaluation/run_schedule.py\n M evaluation/run_svm_benign.py\n M evaluation/verify_no_baseline.py\n M evaluation/verify_postgres_recovery.py\n M evaluation/verify_protected_container.py\n M frontend-dashboard/scripts/capture-dashboard.test.js\n M frontend-dashboard/src/api.js\n M frontend-dashboard/src/api.test.js\n M frontend-dashboard/src/components/HealthBanner.jsx\n M frontend-dashboard/src/components/HealthBanner.test.jsx\n M frontend-dashboard/src/components/status.js\n M frontend-dashboard/src/components/status.test.js\n M frontend-dashboard/src/pages/Containers.jsx\n M frontend-dashboard/src/pages/Monitor.jsx\n M frontend-dashboard/src/pages/Operations.test.jsx\n M frontend-dashboard/src/pages/RuleReviewQueue.jsx\n M frontend-dashboard/src/utils/operations.js\n M frontend-dashboard/src/utils/operations.test.js\n M frontend-dashboard/src/utils/ruleView.js\n M frontend-dashboard/src/utils/ruleView.test.js\n M image-scanner/trivy_wrapper.py\n M monitor-service/audit_client.py\n M monitor-service/behavior_pipeline.py\n M monitor-service/container_watcher.py\n M monitor-service/control_worker.py\n M monitor-service/docker_events.py\n M monitor-service/falco_ingest.py\n M monitor-service/monitor_service.py\n M monitor-service/monitor_status.py\n M response-engine/auto_isolate.py\n M rule-synthesis-engine/confirmation_manager.py\n M rule-synthesis-engine/rule_deduplicator.py\n M rule-synthesis-engine/rule_lifecycle_manager.py\n M scripts/verify_completion_backtest_guard.py\n M scripts/verify_final_checks.py\n M test_manual_check.py\n M test_timeline_check.py\n M tests/test_academic_case_capture.py\n M tests/test_anomaly_model.py\n M tests/test_anomaly_model_candidate.py\n M tests/test_audit_client.py\n M tests/test_auto_isolate.py\n M tests/test_backend_audit.py\n M tests/test_backend_containers.py\n M tests/test_backend_deployments.py\n M tests/test_backend_monitor.py\n M tests/test_backend_rules.py\n M tests/test_behavior_pipeline.py\n M tests/test_container_watcher.py\n M tests/test_deployment_gate.py\n M tests/test_docker_events.py\n M tests/test_evaluation_clock_guard.py\n M tests/test_evaluation_coverage_probe.py\n M tests/test_evaluation_run_schedule.py\n M tests/test_event_router.py\n M tests/test_falco_ingest.py\n M tests/test_falco_integration.py\n M tests/test_final_completion.py\n M tests/test_incident_pipeline.py\n M tests/test_live_restart_acceptance.py\n M tests/test_monitor_reliability.py\n M tests/test_monitor_service.py\n M tests/test_risk_scorer.py\n M tests/test_rule_deployer.py\n M tests/test_rule_lifecycle_manager.py\n M tests/test_trivy_wrapper.py\n?? alembic.ini\n?? database/migrations/\n?? docs/repository-audit/\n?? evaluation/safety.py\n?? requirements.lock\n?? scripts/verify_schema.py\n?? scripts/verify_types.py\n?? tests/test_ai_import_safety.py\n?? tests/test_audit_resilience.py\n?? tests/test_backend_database.py\n?? tests/test_control_worker.py\n?? tests/test_deployment_outbox.py\n?? tests/test_docker_inspector.py\n?? tests/test_manual_windows.py\n?? tests/test_monitor_shutdown.py\n?? tests/test_rule_review_lock.py\n?? tests/test_schema_migrations.py",
+    "python": "3.12.14 (main, Aug 25 2026, 14:00:49) [Clang 22.1.3 ]",
+    "packages": {
+      "docker": "7.2.0",
+      "scikit-learn": "1.9.1",
+      "fastapi": "0.158.0",
+      "sqlalchemy": "2.1.6",
+      "pytest": "9.1.1",
+      "flake8": "7.4.1"
+    },
+    "node": "v24.19.0",
+    "npm": "11.9.0",
+    "passed": true
+  },
+  "final_counts": {
+    "python": {
+      "passed": 939,
+      "subtests": 104,
+      "seconds": 35.74
+    },
+    "frontend": {
+      "passed": 165,
+      "files": 34
+    },
+    "types": {
+      "files": 79,
+      "status": "PASS",
+      "untyped_bodies_checked": true,
+      "persistent_cache": false,
+      "limitations": "Missing stubs allowed; dynamic values/imported dependencies/tests/root manual diagnostics outside guarantee"
+    },
+    "root_collection": {
+      "passed": 939,
+      "subtests": 104,
+      "seconds": 34.27,
+      "command": "python -m pytest -q",
+      "log": "state/evaluation/audit-batch25/root-tests.log",
+      "environment": "Retained installed-package PYTHONPATH; AUTO_ISOLATION_ENABLED=false",
+      "status": "PASS"
+    }
+  },
+  "additional_checks": {
+    "whole_tree_flake8": {
+      "status": "PASS",
+      "findings": 0,
+      "log": "state/evaluation/audit-batch7/final-lint.log"
+    },
+    "changed_python_lint": "PASS",
+    "mypy": "PASS scoped 79 files including untyped bodies; see final_counts limitations",
+    "git_diff_check": "PASS",
+    "npm_audit": "zero reported known vulnerabilities",
+    "pip_audit_initial": "12 entries / 6 unique IDs for bootstrap pip 25.0.1",
+    "pip_audit_after_installer_update": "zero reported known vulnerabilities",
+    "bandit": {
+      "total": 23,
+      "medium": 3,
+      "low": 17,
+      "high": 3
+    },
+    "secret_scan": {
+      "scope": "Limited pattern scan; not entropy analysis, complete credential detection or proof of absence",
+      "patterns": [
+        "private_key",
+        "github_token",
+        "aws_access_key",
+        "openai_token"
+      ],
+      "current_findings_redacted": [],
+      "history_findings_redacted": [],
+      "history_blobs_scanned": 600,
+      "syntax_and_json": {
+        "files": 312,
+        "python_syntax_pass": 130,
+        "json_parse_pass": 5
+      },
+      "available_live_tools": {
+        "docker": null,
+        "falco": null,
+        "trivy": null,
+        "psql": null,
+        "postgres": null,
+        "chromium": null,
+        "google-chrome": null
+      }
+    }
+  },
+  "controls": {
+    "live_isolation_executed": false,
+    "deleted_original_files": [],
+    "commit_created": false,
+    "pushed": false,
+    "history_rewritten": false
+  },
+  "qualification": "Only explicitly executed checks are passes; mocked/SQLite tests and fresh venvs are not native-host acceptance.",
+  "previous_batches": [
+    {
+      "name": "initial-audit-batch",
+      "release": {
+        "started_at": "2026-10-21T17:18:54.016503+00:00",
+        "checks": [
+          {
+            "name": "python-tests",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261021T171854Z/python-tests.log"
+          },
+          {
+            "name": "lint",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261021T171854Z/lint.log"
+          },
+          {
+            "name": "frontend-tests",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261021T171854Z/frontend-tests.log"
+          },
+          {
+            "name": "frontend-build",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261021T171854Z/frontend-build.log"
+          }
+        ],
+        "source_commit": "18c40d228de66ce3b75c03b23a569b69e28a1b45",
+        "source_status": "M .env.example\n M README.md\n M ai-analysis/attack_timeline_builder.py\n M ai-analysis/root_cause_summarizer.py\n M backend-api/routes/audit.py\n M backend-api/routes/incidents.py\n M correlation-engine/event_router.py\n M correlation-engine/risk_scorer.py\n M database/schema.sql\n M deployment-gate/deployment_gate.py\n M docs/interfaces.md\n M frontend-dashboard/src/api.js\n M frontend-dashboard/src/api.test.js\n M monitor-service/container_watcher.py\n M monitor-service/docker_events.py\n M scripts/verify_final_checks.py\n M test_manual_check.py\n M test_timeline_check.py\n M tests/test_backend_audit.py\n M tests/test_backend_monitor.py\n M tests/test_deployment_gate.py\n M tests/test_docker_events.py\n M tests/test_event_router.py\n M tests/test_risk_scorer.py\n?? docs/repository-audit/\n?? requirements.lock\n?? tests/test_ai_import_safety.py\n?? tests/test_docker_inspector.py",
+        "python": "3.12.14 (main, Aug 25 2026, 14:00:49) [Clang 22.1.3 ]",
+        "packages": {
+          "docker": "7.2.0",
+          "scikit-learn": "1.9.1",
+          "fastapi": "0.158.0",
+          "sqlalchemy": "2.1.6",
+          "pytest": "9.1.1",
+          "flake8": "7.4.1"
+        },
+        "node": "v24.19.0",
+        "npm": "11.9.0",
+        "passed": true
+      },
+      "counts": {
+        "python": {
+          "passed": 550,
+          "subtests": 9,
+          "seconds": 16.18
+        },
+        "frontend": {
+          "passed": 151,
+          "files": 34
+        },
+        "fresh_venv_root": {
+          "passed": 550,
+          "subtests": 9,
+          "seconds": 13.49
+        }
+      },
+      "bandit": {
+        "total": 24,
+        "high": 3,
+        "medium": 4,
+        "low": 17
+      }
+    },
+    {
+      "name": "rule-review-counter-batch",
+      "release": {
+        "started_at": "2026-10-21T17:43:53.662529+00:00",
+        "checks": [
+          {
+            "name": "python-tests",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261021T174353Z/python-tests.log"
+          },
+          {
+            "name": "lint",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261021T174353Z/lint.log"
+          },
+          {
+            "name": "frontend-tests",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261021T174353Z/frontend-tests.log"
+          },
+          {
+            "name": "frontend-build",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261021T174353Z/frontend-build.log"
+          }
+        ],
+        "source_commit": "18c40d228de66ce3b75c03b23a569b69e28a1b45",
+        "source_status": "M .env.example\n M README.md\n M ai-analysis/attack_timeline_builder.py\n M ai-analysis/root_cause_summarizer.py\n M backend-api/routes/audit.py\n M backend-api/routes/incidents.py\n M backend-api/routes/rules.py\n M correlation-engine/event_router.py\n M correlation-engine/risk_scorer.py\n M database/schema.sql\n M deployment-gate/deployment_gate.py\n M docs/interfaces.md\n M frontend-dashboard/src/api.js\n M frontend-dashboard/src/api.test.js\n M frontend-dashboard/src/pages/RuleReviewQueue.jsx\n M frontend-dashboard/src/utils/ruleView.js\n M frontend-dashboard/src/utils/ruleView.test.js\n M monitor-service/container_watcher.py\n M monitor-service/docker_events.py\n M rule-synthesis-engine/rule_lifecycle_manager.py\n M scripts/verify_final_checks.py\n M test_manual_check.py\n M test_timeline_check.py\n M tests/test_backend_audit.py\n M tests/test_backend_monitor.py\n M tests/test_backend_rules.py\n M tests/test_deployment_gate.py\n M tests/test_docker_events.py\n M tests/test_event_router.py\n M tests/test_risk_scorer.py\n M tests/test_rule_lifecycle_manager.py\n?? docs/repository-audit/\n?? requirements.lock\n?? tests/test_ai_import_safety.py\n?? tests/test_docker_inspector.py\n?? tests/test_rule_review_lock.py",
+        "python": "3.12.14 (main, Aug 25 2026, 14:00:49) [Clang 22.1.3 ]",
+        "packages": {
+          "docker": "7.2.0",
+          "scikit-learn": "1.9.1",
+          "fastapi": "0.158.0",
+          "sqlalchemy": "2.1.6",
+          "pytest": "9.1.1",
+          "flake8": "7.4.1"
+        },
+        "node": "v24.19.0",
+        "npm": "11.9.0",
+        "passed": true
+      },
+      "counts": {
+        "python": {
+          "passed": 566,
+          "subtests": 9,
+          "seconds": 12.27
+        },
+        "frontend": {
+          "passed": 152,
+          "files": 34
+        },
+        "fresh_venv_root": {
+          "passed": 566,
+          "subtests": 9,
+          "seconds": 12.5
+        }
+      },
+      "bandit": {
+        "total": 23,
+        "medium": 3,
+        "low": 17,
+        "high": 3
+      }
+    },
+    {
+      "name": "isolation-state-integrity-batch",
+      "release": {
+        "started_at": "2026-10-21T18:03:58.518519+00:00",
+        "checks": [
+          {
+            "name": "python-tests",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261021T180358Z/python-tests.log"
+          },
+          {
+            "name": "lint",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261021T180358Z/lint.log"
+          },
+          {
+            "name": "frontend-tests",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261021T180358Z/frontend-tests.log"
+          },
+          {
+            "name": "frontend-build",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261021T180358Z/frontend-build.log"
+          }
+        ],
+        "source_commit": "18c40d228de66ce3b75c03b23a569b69e28a1b45",
+        "source_status": "M .env.example\n M README.md\n M ai-analysis/attack_timeline_builder.py\n M ai-analysis/root_cause_summarizer.py\n M backend-api/routes/audit.py\n M backend-api/routes/containers.py\n M backend-api/routes/incidents.py\n M backend-api/routes/rules.py\n M correlation-engine/event_router.py\n M correlation-engine/risk_scorer.py\n M database/schema.sql\n M deployment-gate/deployment_gate.py\n M docs/interfaces.md\n M frontend-dashboard/src/api.js\n M frontend-dashboard/src/api.test.js\n M frontend-dashboard/src/pages/Containers.jsx\n M frontend-dashboard/src/pages/Operations.test.jsx\n M frontend-dashboard/src/pages/RuleReviewQueue.jsx\n M frontend-dashboard/src/utils/operations.js\n M frontend-dashboard/src/utils/operations.test.js\n M frontend-dashboard/src/utils/ruleView.js\n M frontend-dashboard/src/utils/ruleView.test.js\n M monitor-service/container_watcher.py\n M monitor-service/docker_events.py\n M response-engine/auto_isolate.py\n M rule-synthesis-engine/rule_lifecycle_manager.py\n M scripts/verify_final_checks.py\n M test_manual_check.py\n M test_timeline_check.py\n M tests/test_auto_isolate.py\n M tests/test_backend_audit.py\n M tests/test_backend_containers.py\n M tests/test_backend_monitor.py\n M tests/test_backend_rules.py\n M tests/test_deployment_gate.py\n M tests/test_docker_events.py\n M tests/test_event_router.py\n M tests/test_risk_scorer.py\n M tests/test_rule_lifecycle_manager.py\n?? docs/repository-audit/\n?? requirements.lock\n?? tests/test_ai_import_safety.py\n?? tests/test_docker_inspector.py\n?? tests/test_rule_review_lock.py",
+        "python": "3.12.14 (main, Aug 25 2026, 14:00:49) [Clang 22.1.3 ]",
+        "packages": {
+          "docker": "7.2.0",
+          "scikit-learn": "1.9.1",
+          "fastapi": "0.158.0",
+          "sqlalchemy": "2.1.6",
+          "pytest": "9.1.1",
+          "flake8": "7.4.1"
+        },
+        "node": "v24.19.0",
+        "npm": "11.9.0",
+        "passed": true
+      },
+      "counts": {
+        "python": {
+          "passed": 576,
+          "subtests": 22,
+          "seconds": 13.81
+        },
+        "frontend": {
+          "passed": 154,
+          "files": 34
+        },
+        "fresh_venv_root": {
+          "passed": 576,
+          "subtests": 22,
+          "seconds": 13.69
+        }
+      }
+    },
+    {
+      "name": "monitor-scheduling-batch",
+      "release": {
+        "started_at": "2026-10-21T18:12:40.383063+00:00",
+        "checks": [
+          {
+            "name": "python-tests",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261021T181240Z/python-tests.log"
+          },
+          {
+            "name": "lint",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261021T181240Z/lint.log"
+          },
+          {
+            "name": "frontend-tests",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261021T181240Z/frontend-tests.log"
+          },
+          {
+            "name": "frontend-build",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261021T181240Z/frontend-build.log"
+          }
+        ],
+        "source_commit": "18c40d228de66ce3b75c03b23a569b69e28a1b45",
+        "source_status": "M .env.example\n M README.md\n M ai-analysis/attack_timeline_builder.py\n M ai-analysis/root_cause_summarizer.py\n M backend-api/routes/audit.py\n M backend-api/routes/containers.py\n M backend-api/routes/incidents.py\n M backend-api/routes/rules.py\n M correlation-engine/event_router.py\n M correlation-engine/risk_scorer.py\n M database/schema.sql\n M deployment-gate/deployment_gate.py\n M docs/interfaces.md\n M docs/monitor_operations.md\n M frontend-dashboard/src/api.js\n M frontend-dashboard/src/api.test.js\n M frontend-dashboard/src/pages/Containers.jsx\n M frontend-dashboard/src/pages/Operations.test.jsx\n M frontend-dashboard/src/pages/RuleReviewQueue.jsx\n M frontend-dashboard/src/utils/operations.js\n M frontend-dashboard/src/utils/operations.test.js\n M frontend-dashboard/src/utils/ruleView.js\n M frontend-dashboard/src/utils/ruleView.test.js\n M monitor-service/container_watcher.py\n M monitor-service/control_worker.py\n M monitor-service/docker_events.py\n M monitor-service/monitor_service.py\n M response-engine/auto_isolate.py\n M rule-synthesis-engine/rule_lifecycle_manager.py\n M scripts/verify_final_checks.py\n M test_manual_check.py\n M test_timeline_check.py\n M tests/test_auto_isolate.py\n M tests/test_backend_audit.py\n M tests/test_backend_containers.py\n M tests/test_backend_monitor.py\n M tests/test_backend_rules.py\n M tests/test_deployment_gate.py\n M tests/test_docker_events.py\n M tests/test_event_router.py\n M tests/test_monitor_service.py\n M tests/test_risk_scorer.py\n M tests/test_rule_lifecycle_manager.py\n?? docs/repository-audit/\n?? requirements.lock\n?? tests/test_ai_import_safety.py\n?? tests/test_control_worker.py\n?? tests/test_docker_inspector.py\n?? tests/test_rule_review_lock.py",
+        "python": "3.12.14 (main, Aug 25 2026, 14:00:49) [Clang 22.1.3 ]",
+        "packages": {
+          "docker": "7.2.0",
+          "scikit-learn": "1.9.1",
+          "fastapi": "0.158.0",
+          "sqlalchemy": "2.1.6",
+          "pytest": "9.1.1",
+          "flake8": "7.4.1"
+        },
+        "node": "v24.19.0",
+        "npm": "11.9.0",
+        "passed": true
+      },
+      "counts": {
+        "python": {
+          "passed": 584,
+          "subtests": 22,
+          "seconds": 14.84
+        },
+        "frontend": {
+          "passed": 154,
+          "files": 34
+        },
+        "fresh_venv_root": {
+          "passed": 584,
+          "subtests": 22,
+          "seconds": 15.53
+        }
+      }
+    }
+  ],
+  "batch2": {
+    "review_lock": "SQLite threaded endpoint regression + mocked PostgreSQL connection protocol; native PostgreSQL NOT VERIFIED",
+    "counters": "Real SQLite table/SQL adapter, explicit duplicate refusal, missing-parent refusal, rollback and connection closure; native PostgreSQL NOT VERIFIED",
+    "retirement": "Audited status only; native unloading NOT IMPLEMENTED; native state unverified in dashboard",
+    "deletions": [],
+    "database_migrations_applied": false
+  },
+  "batch3": {
+    "state_validation": "Full-ID ownership, known lifecycle state, network/alias types; missing and invalid records distinguished",
+    "persistence": "Private unique temporary file, content fsync, atomic replace, directory fsync; controlled failure tests pass",
+    "api_ui": "Corrupt/unreadable record preserved; per-container record_unavailable / isolated=null; both response actions refused and failures audited",
+    "native_docker_or_power_loss": "NOT VERIFIED",
+    "original_files_deleted": []
+  },
+  "batch4": {
+    "before_correction": {
+      "failed": 5,
+      "passed": 14
+    },
+    "focused_checks": {
+      "passed": 72
+    },
+    "first_release": "582 passed + 22 subtests; lint failed on changed line length; corrected",
+    "drain": "FIFO preserved; existing MONITOR_MAX_BATCH_LINES limits Docker forwarding per cycle",
+    "reconcile": "Consume request before work; preserve requests during work; restore on failure",
+    "cleanup": "SQLite closes on setup/initialization and executor cleanup failures",
+    "shutdown": "Cooperative checks only; blocked calls, timed joins and lock-release boundary unresolved",
+    "services": "Fake collaborators; no native Docker/backend failure injection",
+    "fresh_environment": "Previously created locked venv reused; not a fresh host deployment",
+    "original_files_deleted": []
+  },
+  "batch5": {
+    "before_correction": {
+      "shutdown_regressions_failed": 5,
+      "lock_pid_regression_failed": 1
+    },
+    "focused_checks": {
+      "passed": 72
+    },
+    "first_release": "594 Python tests + 22 subtests, 154 frontend tests, lint/build PASS",
+    "lock_ownership": "Real threads/flock: lock retained until control work exits; PID retained on competing acquisition",
+    "stream_cancellation": "Actual installed Docker SDK with local socket pair; no Docker daemon",
+    "cleanup": "Startup failure and baseline-reset failure; unstarted worker stop; wait for running executors and cancel queued jobs",
+    "shutdown": "No maximum duration; blocked dependencies keep process and lock alive",
+    "fresh_environment": "Previously created locked venv reused; not fresh host provisioning",
+    "original_files_deleted": []
+  },
+  "history": [
+    {
+      "checkpoint": "batch5",
+      "release": {
+        "started_at": "2026-10-21T18:21:55.501786+00:00",
+        "checks": [
+          {
+            "name": "python-tests",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261021T182155Z/python-tests.log"
+          },
+          {
+            "name": "lint",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261021T182155Z/lint.log"
+          },
+          {
+            "name": "frontend-tests",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261021T182155Z/frontend-tests.log"
+          },
+          {
+            "name": "frontend-build",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261021T182155Z/frontend-build.log"
+          }
+        ],
+        "source_commit": "18c40d228de66ce3b75c03b23a569b69e28a1b45",
+        "source_status": "M .env.example\n M README.md\n M ai-analysis/attack_timeline_builder.py\n M ai-analysis/root_cause_summarizer.py\n M backend-api/routes/audit.py\n M backend-api/routes/containers.py\n M backend-api/routes/incidents.py\n M backend-api/routes/rules.py\n M correlation-engine/event_router.py\n M correlation-engine/risk_scorer.py\n M database/schema.sql\n M deployment-gate/deployment_gate.py\n M docs/interfaces.md\n M docs/monitor_operations.md\n M frontend-dashboard/src/api.js\n M frontend-dashboard/src/api.test.js\n M frontend-dashboard/src/pages/Containers.jsx\n M frontend-dashboard/src/pages/Operations.test.jsx\n M frontend-dashboard/src/pages/RuleReviewQueue.jsx\n M frontend-dashboard/src/utils/operations.js\n M frontend-dashboard/src/utils/operations.test.js\n M frontend-dashboard/src/utils/ruleView.js\n M frontend-dashboard/src/utils/ruleView.test.js\n M monitor-service/behavior_pipeline.py\n M monitor-service/container_watcher.py\n M monitor-service/control_worker.py\n M monitor-service/docker_events.py\n M monitor-service/monitor_service.py\n M response-engine/auto_isolate.py\n M rule-synthesis-engine/rule_lifecycle_manager.py\n M scripts/verify_final_checks.py\n M test_manual_check.py\n M test_timeline_check.py\n M tests/test_auto_isolate.py\n M tests/test_backend_audit.py\n M tests/test_backend_containers.py\n M tests/test_backend_monitor.py\n M tests/test_backend_rules.py\n M tests/test_deployment_gate.py\n M tests/test_docker_events.py\n M tests/test_event_router.py\n M tests/test_monitor_service.py\n M tests/test_risk_scorer.py\n M tests/test_rule_lifecycle_manager.py\n?? docs/repository-audit/\n?? requirements.lock\n?? tests/test_ai_import_safety.py\n?? tests/test_control_worker.py\n?? tests/test_docker_inspector.py\n?? tests/test_monitor_shutdown.py\n?? tests/test_rule_review_lock.py",
+        "python": "3.12.14 (main, Aug 25 2026, 14:00:49) [Clang 22.1.3 ]",
+        "packages": {
+          "docker": "7.2.0",
+          "scikit-learn": "1.9.1",
+          "fastapi": "0.158.0",
+          "sqlalchemy": "2.1.6",
+          "pytest": "9.1.1",
+          "flake8": "7.4.1"
+        },
+        "node": "v24.19.0",
+        "npm": "11.9.0",
+        "passed": true
+      },
+      "counts": {
+        "python": {
+          "passed": 596,
+          "subtests": 22,
+          "seconds": 14.06
+        },
+        "frontend": {
+          "passed": 154,
+          "files": 34
+        },
+        "fresh_venv_root": {
+          "passed": 596,
+          "subtests": 22,
+          "seconds": 13.28
+        }
+      }
+    },
+    {
+      "checkpoint": "batch6",
+      "release": {
+        "started_at": "2026-10-22T01:19:58.918554+00:00",
+        "checks": [
+          {
+            "name": "python-tests",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T011958Z/python-tests.log"
+          },
+          {
+            "name": "lint",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T011958Z/lint.log"
+          },
+          {
+            "name": "frontend-tests",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T011958Z/frontend-tests.log"
+          },
+          {
+            "name": "frontend-build",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T011958Z/frontend-build.log"
+          }
+        ],
+        "source_commit": "18c40d228de66ce3b75c03b23a569b69e28a1b45",
+        "source_status": "M .env.example\n M README.md\n M ai-analysis/attack_timeline_builder.py\n M ai-analysis/root_cause_summarizer.py\n M backend-api/routes/audit.py\n M backend-api/routes/containers.py\n M backend-api/routes/incidents.py\n M backend-api/routes/monitor.py\n M backend-api/routes/rules.py\n M behavioral-engine/baseline_collector.py\n M behavioral-engine/feature_extractor.py\n M correlation-engine/event_router.py\n M correlation-engine/risk_scorer.py\n M database/schema.sql\n M deployment-gate/deployment_gate.py\n M docs/interfaces.md\n M docs/monitor_operations.md\n M evaluation/capture_academic_case.py\n M evaluation/clock_guard.py\n M evaluation/coverage_probe.py\n M evaluation/export_final_review.py\n M evaluation/fingerprint.py\n M evaluation/run_full_trial.py\n M evaluation/run_schedule.py\n M evaluation/run_svm_benign.py\n M evaluation/verify_no_baseline.py\n M evaluation/verify_postgres_recovery.py\n M evaluation/verify_protected_container.py\n M frontend-dashboard/scripts/capture-dashboard.test.js\n M frontend-dashboard/src/api.js\n M frontend-dashboard/src/api.test.js\n M frontend-dashboard/src/pages/Containers.jsx\n M frontend-dashboard/src/pages/Monitor.jsx\n M frontend-dashboard/src/pages/Operations.test.jsx\n M frontend-dashboard/src/pages/RuleReviewQueue.jsx\n M frontend-dashboard/src/utils/operations.js\n M frontend-dashboard/src/utils/operations.test.js\n M frontend-dashboard/src/utils/ruleView.js\n M frontend-dashboard/src/utils/ruleView.test.js\n M monitor-service/behavior_pipeline.py\n M monitor-service/container_watcher.py\n M monitor-service/control_worker.py\n M monitor-service/docker_events.py\n M monitor-service/monitor_service.py\n M response-engine/auto_isolate.py\n M rule-synthesis-engine/confirmation_manager.py\n M rule-synthesis-engine/rule_deduplicator.py\n M rule-synthesis-engine/rule_lifecycle_manager.py\n M scripts/verify_final_checks.py\n M test_manual_check.py\n M test_timeline_check.py\n M tests/test_academic_case_capture.py\n M tests/test_auto_isolate.py\n M tests/test_backend_audit.py\n M tests/test_backend_containers.py\n M tests/test_backend_monitor.py\n M tests/test_backend_rules.py\n M tests/test_deployment_gate.py\n M tests/test_docker_events.py\n M tests/test_event_router.py\n M tests/test_live_restart_acceptance.py\n M tests/test_monitor_service.py\n M tests/test_risk_scorer.py\n M tests/test_rule_lifecycle_manager.py\n?? docs/repository-audit/\n?? evaluation/safety.py\n?? requirements.lock\n?? tests/test_ai_import_safety.py\n?? tests/test_audit_resilience.py\n?? tests/test_control_worker.py\n?? tests/test_docker_inspector.py\n?? tests/test_monitor_shutdown.py\n?? tests/test_rule_review_lock.py",
+        "python": "3.12.14 (main, Aug 25 2026, 14:00:49) [Clang 22.1.3 ]",
+        "packages": {
+          "docker": "7.2.0",
+          "scikit-learn": "1.9.1",
+          "fastapi": "0.158.0",
+          "sqlalchemy": "2.1.6",
+          "pytest": "9.1.1",
+          "flake8": "7.4.1"
+        },
+        "node": "v24.19.0",
+        "npm": "11.9.0",
+        "passed": true
+      },
+      "counts": {
+        "python": {
+          "passed": 617,
+          "subtests": 22,
+          "seconds": 17.55
+        },
+        "frontend": {
+          "passed": 155,
+          "files": 34
+        },
+        "root_collection": {
+          "passed": 617,
+          "subtests": 22,
+          "seconds": 20.0
+        }
+      }
+    },
+    {
+      "checkpoint": "batch7",
+      "release": {
+        "started_at": "2026-10-22T11:57:42.215308+00:00",
+        "checks": [
+          {
+            "name": "python-tests",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T115742Z/python-tests.log"
+          },
+          {
+            "name": "lint",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T115742Z/lint.log"
+          },
+          {
+            "name": "frontend-tests",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T115742Z/frontend-tests.log"
+          },
+          {
+            "name": "frontend-build",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T115742Z/frontend-build.log"
+          }
+        ],
+        "source_commit": "18c40d228de66ce3b75c03b23a569b69e28a1b45",
+        "source_status": "M .env.example\n M README.md\n M ROADMAP.md\n M TODO.md\n M ai-analysis/attack_timeline_builder.py\n M ai-analysis/root_cause_summarizer.py\n M backend-api/models/db_models.py\n M backend-api/routes/audit.py\n M backend-api/routes/containers.py\n M backend-api/routes/incidents.py\n M backend-api/routes/monitor.py\n M backend-api/routes/rules.py\n M behavioral-engine/baseline_collector.py\n M behavioral-engine/collect_baseline.py\n M behavioral-engine/feature_extractor.py\n M behavioral-engine/validate_live.py\n M correlation-engine/event_router.py\n M correlation-engine/risk_scorer.py\n M correlation-engine/validate_pipeline.py\n M database/schema.sql\n M deployment-gate/deployment_gate.py\n M docs/academic_study.md\n M docs/deployment_gate.md\n M docs/falco_rule_matching.md\n M docs/interfaces.md\n M docs/known_limitations.md\n M docs/monitor_operations.md\n M docs/phase1_image_scanner.md\n M docs/phase2_deployment_policy_checker.md\n M docs/phase3_falco_integration.md\n M docs/phase3_tracking_updates.md\n M docs/phase4_behavioral_engine.md\n M docs/phase5_correlation_engine.md\n M docs/phase6_rule_synthesis.md\n M docs/zero_duplication_rule_guard.md\n M evaluation/capture_academic_case.py\n M evaluation/clock_guard.py\n M evaluation/coverage_probe.py\n M evaluation/export_final_review.py\n M evaluation/fingerprint.py\n M evaluation/run_full_trial.py\n M evaluation/run_schedule.py\n M evaluation/run_svm_benign.py\n M evaluation/verify_no_baseline.py\n M evaluation/verify_postgres_recovery.py\n M evaluation/verify_protected_container.py\n M frontend-dashboard/scripts/capture-dashboard.test.js\n M frontend-dashboard/src/api.js\n M frontend-dashboard/src/api.test.js\n M frontend-dashboard/src/pages/Containers.jsx\n M frontend-dashboard/src/pages/Monitor.jsx\n M frontend-dashboard/src/pages/Operations.test.jsx\n M frontend-dashboard/src/pages/RuleReviewQueue.jsx\n M frontend-dashboard/src/utils/operations.js\n M frontend-dashboard/src/utils/operations.test.js\n M frontend-dashboard/src/utils/ruleView.js\n M frontend-dashboard/src/utils/ruleView.test.js\n M image-scanner/trivy_wrapper.py\n M monitor-service/behavior_pipeline.py\n M monitor-service/container_watcher.py\n M monitor-service/control_worker.py\n M monitor-service/docker_events.py\n M monitor-service/monitor_service.py\n M response-engine/auto_isolate.py\n M rule-synthesis-engine/confirmation_manager.py\n M rule-synthesis-engine/rule_deduplicator.py\n M rule-synthesis-engine/rule_lifecycle_manager.py\n M scripts/verify_final_checks.py\n M test_manual_check.py\n M test_timeline_check.py\n M tests/test_academic_case_capture.py\n M tests/test_anomaly_model.py\n M tests/test_anomaly_model_candidate.py\n M tests/test_auto_isolate.py\n M tests/test_backend_audit.py\n M tests/test_backend_containers.py\n M tests/test_backend_deployments.py\n M tests/test_backend_monitor.py\n M tests/test_backend_rules.py\n M tests/test_behavior_pipeline.py\n M tests/test_container_watcher.py\n M tests/test_deployment_gate.py\n M tests/test_docker_events.py\n M tests/test_evaluation_clock_guard.py\n M tests/test_evaluation_coverage_probe.py\n M tests/test_evaluation_run_schedule.py\n M tests/test_event_router.py\n M tests/test_falco_integration.py\n M tests/test_incident_pipeline.py\n M tests/test_live_restart_acceptance.py\n M tests/test_monitor_reliability.py\n M tests/test_monitor_service.py\n M tests/test_risk_scorer.py\n M tests/test_rule_deployer.py\n M tests/test_rule_lifecycle_manager.py\n M tests/test_trivy_wrapper.py\n?? docs/repository-audit/\n?? evaluation/safety.py\n?? requirements.lock\n?? tests/test_ai_import_safety.py\n?? tests/test_audit_resilience.py\n?? tests/test_control_worker.py\n?? tests/test_docker_inspector.py\n?? tests/test_manual_windows.py\n?? tests/test_monitor_shutdown.py\n?? tests/test_rule_review_lock.py",
+        "python": "3.12.14 (main, Aug 25 2026, 14:00:49) [Clang 22.1.3 ]",
+        "packages": {
+          "docker": "7.2.0",
+          "scikit-learn": "1.9.1",
+          "fastapi": "0.158.0",
+          "sqlalchemy": "2.1.6",
+          "pytest": "9.1.1",
+          "flake8": "7.4.1"
+        },
+        "node": "v24.19.0",
+        "npm": "11.9.0",
+        "passed": true
+      },
+      "counts": {
+        "python": {
+          "passed": 630,
+          "subtests": 33,
+          "seconds": 26.66
+        },
+        "frontend": {
+          "passed": 155,
+          "files": 34
+        },
+        "root_collection": {
+          "passed": 630,
+          "subtests": 33,
+          "seconds": 25.25
+        }
+      }
+    },
+    {
+      "checkpoint": "batch8",
+      "release": {
+        "started_at": "2026-10-22T12:18:10.807218+00:00",
+        "checks": [
+          {
+            "name": "python-tests",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T121810Z/python-tests.log"
+          },
+          {
+            "name": "lint",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T121810Z/lint.log"
+          },
+          {
+            "name": "types",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T121810Z/types.log"
+          },
+          {
+            "name": "frontend-tests",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T121810Z/frontend-tests.log"
+          },
+          {
+            "name": "frontend-build",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T121810Z/frontend-build.log"
+          }
+        ],
+        "source_commit": "18c40d228de66ce3b75c03b23a569b69e28a1b45",
+        "source_status": "M .env.example\n M .gitignore\n M CHANGELOG.md\n M README.md\n M ROADMAP.md\n M TODO.md\n M ai-analysis/attack_timeline_builder.py\n M ai-analysis/root_cause_summarizer.py\n M backend-api/database.py\n M backend-api/models/db_models.py\n M backend-api/routes/audit.py\n M backend-api/routes/containers.py\n M backend-api/routes/incidents.py\n M backend-api/routes/monitor.py\n M backend-api/routes/rules.py\n M behavioral-engine/anomaly_model.py\n M behavioral-engine/baseline_collector.py\n M behavioral-engine/collect_baseline.py\n M behavioral-engine/feature_extractor.py\n M behavioral-engine/validate_live.py\n M correlation-engine/event_router.py\n M correlation-engine/risk_scorer.py\n M correlation-engine/validate_pipeline.py\n M database/schema.sql\n M deployment-gate/deployment_gate.py\n M docs/academic_study.md\n M docs/deployment_gate.md\n M docs/falco_rule_matching.md\n M docs/interfaces.md\n M docs/known_limitations.md\n M docs/monitor_operations.md\n M docs/phase1_image_scanner.md\n M docs/phase2_deployment_policy_checker.md\n M docs/phase3_falco_integration.md\n M docs/phase3_tracking_updates.md\n M docs/phase4_behavioral_engine.md\n M docs/phase5_correlation_engine.md\n M docs/phase6_rule_synthesis.md\n M docs/zero_duplication_rule_guard.md\n M evaluation/capture_academic_case.py\n M evaluation/clock_guard.py\n M evaluation/compare_saved_layers.py\n M evaluation/coverage_probe.py\n M evaluation/export_final_review.py\n M evaluation/export_layer_evidence.py\n M evaluation/fingerprint.py\n M evaluation/run_full_trial.py\n M evaluation/run_schedule.py\n M evaluation/run_svm_benign.py\n M evaluation/verify_no_baseline.py\n M evaluation/verify_postgres_recovery.py\n M evaluation/verify_protected_container.py\n M frontend-dashboard/scripts/capture-dashboard.test.js\n M frontend-dashboard/src/api.js\n M frontend-dashboard/src/api.test.js\n M frontend-dashboard/src/pages/Containers.jsx\n M frontend-dashboard/src/pages/Monitor.jsx\n M frontend-dashboard/src/pages/Operations.test.jsx\n M frontend-dashboard/src/pages/RuleReviewQueue.jsx\n M frontend-dashboard/src/utils/operations.js\n M frontend-dashboard/src/utils/operations.test.js\n M frontend-dashboard/src/utils/ruleView.js\n M frontend-dashboard/src/utils/ruleView.test.js\n M image-scanner/trivy_wrapper.py\n M monitor-service/behavior_pipeline.py\n M monitor-service/container_watcher.py\n M monitor-service/control_worker.py\n M monitor-service/docker_events.py\n M monitor-service/falco_ingest.py\n M monitor-service/monitor_service.py\n M monitor-service/monitor_status.py\n M response-engine/auto_isolate.py\n M rule-synthesis-engine/confirmation_manager.py\n M rule-synthesis-engine/rule_deduplicator.py\n M rule-synthesis-engine/rule_lifecycle_manager.py\n M scripts/verify_completion_backtest_guard.py\n M scripts/verify_final_checks.py\n M test_manual_check.py\n M test_timeline_check.py\n M tests/test_academic_case_capture.py\n M tests/test_anomaly_model.py\n M tests/test_anomaly_model_candidate.py\n M tests/test_auto_isolate.py\n M tests/test_backend_audit.py\n M tests/test_backend_containers.py\n M tests/test_backend_deployments.py\n M tests/test_backend_monitor.py\n M tests/test_backend_rules.py\n M tests/test_behavior_pipeline.py\n M tests/test_container_watcher.py\n M tests/test_deployment_gate.py\n M tests/test_docker_events.py\n M tests/test_evaluation_clock_guard.py\n M tests/test_evaluation_coverage_probe.py\n M tests/test_evaluation_run_schedule.py\n M tests/test_event_router.py\n M tests/test_falco_integration.py\n M tests/test_incident_pipeline.py\n M tests/test_live_restart_acceptance.py\n M tests/test_monitor_reliability.py\n M tests/test_monitor_service.py\n M tests/test_risk_scorer.py\n M tests/test_rule_deployer.py\n M tests/test_rule_lifecycle_manager.py\n M tests/test_trivy_wrapper.py\n?? alembic.ini\n?? database/migrations/\n?? docs/repository-audit/\n?? evaluation/safety.py\n?? requirements.lock\n?? scripts/verify_schema.py\n?? scripts/verify_types.py\n?? tests/test_ai_import_safety.py\n?? tests/test_audit_resilience.py\n?? tests/test_control_worker.py\n?? tests/test_docker_inspector.py\n?? tests/test_manual_windows.py\n?? tests/test_monitor_shutdown.py\n?? tests/test_rule_review_lock.py\n?? tests/test_schema_migrations.py",
+        "python": "3.12.14 (main, Aug 25 2026, 14:00:49) [Clang 22.1.3 ]",
+        "packages": {
+          "docker": "7.2.0",
+          "scikit-learn": "1.9.1",
+          "fastapi": "0.158.0",
+          "sqlalchemy": "2.1.6",
+          "pytest": "9.1.1",
+          "flake8": "7.4.1"
+        },
+        "node": "v24.19.0",
+        "npm": "11.9.0",
+        "passed": true
+      },
+      "counts": {
+        "python": {
+          "passed": 645,
+          "subtests": 33,
+          "seconds": 25.71
+        },
+        "frontend": {
+          "passed": 155,
+          "files": 34
+        },
+        "root_collection": {
+          "passed": 645,
+          "subtests": 33,
+          "seconds": 34.69
+        },
+        "types": {
+          "files": 79,
+          "untyped_bodies_checked": true,
+          "status": "PASS",
+          "limitations": "Missing third-party stubs permitted; dynamic values remain; imported dependencies/test files/root manual diagnostics not checked"
+        }
+      }
+    },
+    {
+      "checkpoint": "batch9",
+      "release": {
+        "started_at": "2026-10-22T12:28:31.262879+00:00",
+        "checks": [
+          {
+            "name": "python-tests",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T122831Z/python-tests.log"
+          },
+          {
+            "name": "lint",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T122831Z/lint.log"
+          },
+          {
+            "name": "types",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T122831Z/types.log"
+          },
+          {
+            "name": "frontend-tests",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T122831Z/frontend-tests.log"
+          },
+          {
+            "name": "frontend-build",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T122831Z/frontend-build.log"
+          }
+        ],
+        "source_commit": "18c40d228de66ce3b75c03b23a569b69e28a1b45",
+        "source_status": "M .env.example\n M .gitignore\n M CHANGELOG.md\n M README.md\n M ROADMAP.md\n M TODO.md\n M ai-analysis/attack_timeline_builder.py\n M ai-analysis/root_cause_summarizer.py\n M backend-api/database.py\n M backend-api/models/db_models.py\n M backend-api/routes/audit.py\n M backend-api/routes/containers.py\n M backend-api/routes/incidents.py\n M backend-api/routes/monitor.py\n M backend-api/routes/rules.py\n M behavioral-engine/anomaly_model.py\n M behavioral-engine/baseline_collector.py\n M behavioral-engine/collect_baseline.py\n M behavioral-engine/feature_extractor.py\n M behavioral-engine/validate_live.py\n M correlation-engine/event_router.py\n M correlation-engine/risk_scorer.py\n M correlation-engine/validate_pipeline.py\n M database/schema.sql\n M deployment-gate/deployment_gate.py\n M docs/academic_study.md\n M docs/deployment_gate.md\n M docs/falco_rule_matching.md\n M docs/interfaces.md\n M docs/known_limitations.md\n M docs/monitor_operations.md\n M docs/phase1_image_scanner.md\n M docs/phase2_deployment_policy_checker.md\n M docs/phase3_falco_integration.md\n M docs/phase3_tracking_updates.md\n M docs/phase4_behavioral_engine.md\n M docs/phase5_correlation_engine.md\n M docs/phase6_rule_synthesis.md\n M docs/zero_duplication_rule_guard.md\n M evaluation/capture_academic_case.py\n M evaluation/clock_guard.py\n M evaluation/compare_saved_layers.py\n M evaluation/coverage_probe.py\n M evaluation/export_final_review.py\n M evaluation/export_layer_evidence.py\n M evaluation/fingerprint.py\n M evaluation/run_full_trial.py\n M evaluation/run_schedule.py\n M evaluation/run_svm_benign.py\n M evaluation/verify_no_baseline.py\n M evaluation/verify_postgres_recovery.py\n M evaluation/verify_protected_container.py\n M frontend-dashboard/scripts/capture-dashboard.test.js\n M frontend-dashboard/src/api.js\n M frontend-dashboard/src/api.test.js\n M frontend-dashboard/src/pages/Containers.jsx\n M frontend-dashboard/src/pages/Monitor.jsx\n M frontend-dashboard/src/pages/Operations.test.jsx\n M frontend-dashboard/src/pages/RuleReviewQueue.jsx\n M frontend-dashboard/src/utils/operations.js\n M frontend-dashboard/src/utils/operations.test.js\n M frontend-dashboard/src/utils/ruleView.js\n M frontend-dashboard/src/utils/ruleView.test.js\n M image-scanner/trivy_wrapper.py\n M monitor-service/behavior_pipeline.py\n M monitor-service/container_watcher.py\n M monitor-service/control_worker.py\n M monitor-service/docker_events.py\n M monitor-service/falco_ingest.py\n M monitor-service/monitor_service.py\n M monitor-service/monitor_status.py\n M response-engine/auto_isolate.py\n M rule-synthesis-engine/confirmation_manager.py\n M rule-synthesis-engine/rule_deduplicator.py\n M rule-synthesis-engine/rule_lifecycle_manager.py\n M scripts/verify_completion_backtest_guard.py\n M scripts/verify_final_checks.py\n M test_manual_check.py\n M test_timeline_check.py\n M tests/test_academic_case_capture.py\n M tests/test_anomaly_model.py\n M tests/test_anomaly_model_candidate.py\n M tests/test_auto_isolate.py\n M tests/test_backend_audit.py\n M tests/test_backend_containers.py\n M tests/test_backend_deployments.py\n M tests/test_backend_monitor.py\n M tests/test_backend_rules.py\n M tests/test_behavior_pipeline.py\n M tests/test_container_watcher.py\n M tests/test_deployment_gate.py\n M tests/test_docker_events.py\n M tests/test_evaluation_clock_guard.py\n M tests/test_evaluation_coverage_probe.py\n M tests/test_evaluation_run_schedule.py\n M tests/test_event_router.py\n M tests/test_falco_ingest.py\n M tests/test_falco_integration.py\n M tests/test_incident_pipeline.py\n M tests/test_live_restart_acceptance.py\n M tests/test_monitor_reliability.py\n M tests/test_monitor_service.py\n M tests/test_risk_scorer.py\n M tests/test_rule_deployer.py\n M tests/test_rule_lifecycle_manager.py\n M tests/test_trivy_wrapper.py\n?? alembic.ini\n?? database/migrations/\n?? docs/repository-audit/\n?? evaluation/safety.py\n?? requirements.lock\n?? scripts/verify_schema.py\n?? scripts/verify_types.py\n?? tests/test_ai_import_safety.py\n?? tests/test_audit_resilience.py\n?? tests/test_control_worker.py\n?? tests/test_docker_inspector.py\n?? tests/test_manual_windows.py\n?? tests/test_monitor_shutdown.py\n?? tests/test_rule_review_lock.py\n?? tests/test_schema_migrations.py",
+        "python": "3.12.14 (main, Aug 25 2026, 14:00:49) [Clang 22.1.3 ]",
+        "packages": {
+          "docker": "7.2.0",
+          "scikit-learn": "1.9.1",
+          "fastapi": "0.158.0",
+          "sqlalchemy": "2.1.6",
+          "pytest": "9.1.1",
+          "flake8": "7.4.1"
+        },
+        "node": "v24.19.0",
+        "npm": "11.9.0",
+        "passed": true
+      },
+      "counts": {
+        "python": {
+          "passed": 657,
+          "subtests": 40,
+          "seconds": 25.53
+        },
+        "frontend": {
+          "passed": 155,
+          "files": 34
+        },
+        "root_collection": {
+          "passed": 657,
+          "subtests": 40,
+          "seconds": 35.19
+        },
+        "types": {
+          "files": 79,
+          "status": "PASS",
+          "untyped_bodies_checked": true,
+          "limitations": "Missing stubs allowed; dynamic values/imported dependencies/tests/root manual diagnostics outside guarantee"
+        }
+      }
+    },
+    {
+      "checkpoint": "batch10",
+      "release": {
+        "started_at": "2026-10-22T12:41:17.964340+00:00",
+        "checks": [
+          {
+            "name": "python-tests",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T124117Z/python-tests.log"
+          },
+          {
+            "name": "lint",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T124117Z/lint.log"
+          },
+          {
+            "name": "types",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T124117Z/types.log"
+          },
+          {
+            "name": "frontend-tests",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T124117Z/frontend-tests.log"
+          },
+          {
+            "name": "frontend-build",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T124117Z/frontend-build.log"
+          }
+        ],
+        "source_commit": "18c40d228de66ce3b75c03b23a569b69e28a1b45",
+        "source_status": "M .env.example\n M .gitignore\n M CHANGELOG.md\n M README.md\n M ROADMAP.md\n M TODO.md\n M ai-analysis/attack_timeline_builder.py\n M ai-analysis/root_cause_summarizer.py\n M backend-api/database.py\n M backend-api/models/db_models.py\n M backend-api/routes/audit.py\n M backend-api/routes/containers.py\n M backend-api/routes/deployments.py\n M backend-api/routes/incidents.py\n M backend-api/routes/monitor.py\n M backend-api/routes/rules.py\n M behavioral-engine/anomaly_model.py\n M behavioral-engine/baseline_collector.py\n M behavioral-engine/collect_baseline.py\n M behavioral-engine/feature_extractor.py\n M behavioral-engine/validate_live.py\n M correlation-engine/event_router.py\n M correlation-engine/risk_scorer.py\n M correlation-engine/validate_pipeline.py\n M database/schema.sql\n M deployment-gate/deployment_gate.py\n M docs/academic_study.md\n M docs/deployment_gate.md\n M docs/falco_rule_matching.md\n M docs/interfaces.md\n M docs/known_limitations.md\n M docs/monitor_operations.md\n M docs/phase1_image_scanner.md\n M docs/phase2_deployment_policy_checker.md\n M docs/phase3_falco_integration.md\n M docs/phase3_tracking_updates.md\n M docs/phase4_behavioral_engine.md\n M docs/phase5_correlation_engine.md\n M docs/phase6_rule_synthesis.md\n M docs/zero_duplication_rule_guard.md\n M evaluation/capture_academic_case.py\n M evaluation/clock_guard.py\n M evaluation/compare_saved_layers.py\n M evaluation/coverage_probe.py\n M evaluation/export_final_review.py\n M evaluation/export_layer_evidence.py\n M evaluation/fingerprint.py\n M evaluation/run_full_trial.py\n M evaluation/run_schedule.py\n M evaluation/run_svm_benign.py\n M evaluation/verify_no_baseline.py\n M evaluation/verify_postgres_recovery.py\n M evaluation/verify_protected_container.py\n M frontend-dashboard/scripts/capture-dashboard.test.js\n M frontend-dashboard/src/api.js\n M frontend-dashboard/src/api.test.js\n M frontend-dashboard/src/pages/Containers.jsx\n M frontend-dashboard/src/pages/Monitor.jsx\n M frontend-dashboard/src/pages/Operations.test.jsx\n M frontend-dashboard/src/pages/RuleReviewQueue.jsx\n M frontend-dashboard/src/utils/operations.js\n M frontend-dashboard/src/utils/operations.test.js\n M frontend-dashboard/src/utils/ruleView.js\n M frontend-dashboard/src/utils/ruleView.test.js\n M image-scanner/trivy_wrapper.py\n M monitor-service/behavior_pipeline.py\n M monitor-service/container_watcher.py\n M monitor-service/control_worker.py\n M monitor-service/docker_events.py\n M monitor-service/falco_ingest.py\n M monitor-service/monitor_service.py\n M monitor-service/monitor_status.py\n M response-engine/auto_isolate.py\n M rule-synthesis-engine/confirmation_manager.py\n M rule-synthesis-engine/rule_deduplicator.py\n M rule-synthesis-engine/rule_lifecycle_manager.py\n M scripts/verify_completion_backtest_guard.py\n M scripts/verify_final_checks.py\n M test_manual_check.py\n M test_timeline_check.py\n M tests/test_academic_case_capture.py\n M tests/test_anomaly_model.py\n M tests/test_anomaly_model_candidate.py\n M tests/test_auto_isolate.py\n M tests/test_backend_audit.py\n M tests/test_backend_containers.py\n M tests/test_backend_deployments.py\n M tests/test_backend_monitor.py\n M tests/test_backend_rules.py\n M tests/test_behavior_pipeline.py\n M tests/test_container_watcher.py\n M tests/test_deployment_gate.py\n M tests/test_docker_events.py\n M tests/test_evaluation_clock_guard.py\n M tests/test_evaluation_coverage_probe.py\n M tests/test_evaluation_run_schedule.py\n M tests/test_event_router.py\n M tests/test_falco_ingest.py\n M tests/test_falco_integration.py\n M tests/test_incident_pipeline.py\n M tests/test_live_restart_acceptance.py\n M tests/test_monitor_reliability.py\n M tests/test_monitor_service.py\n M tests/test_risk_scorer.py\n M tests/test_rule_deployer.py\n M tests/test_rule_lifecycle_manager.py\n M tests/test_trivy_wrapper.py\n?? alembic.ini\n?? database/migrations/\n?? docs/repository-audit/\n?? evaluation/safety.py\n?? requirements.lock\n?? scripts/verify_schema.py\n?? scripts/verify_types.py\n?? tests/test_ai_import_safety.py\n?? tests/test_audit_resilience.py\n?? tests/test_control_worker.py\n?? tests/test_docker_inspector.py\n?? tests/test_manual_windows.py\n?? tests/test_monitor_shutdown.py\n?? tests/test_rule_review_lock.py\n?? tests/test_schema_migrations.py",
+        "python": "3.12.14 (main, Aug 25 2026, 14:00:49) [Clang 22.1.3 ]",
+        "packages": {
+          "docker": "7.2.0",
+          "scikit-learn": "1.9.1",
+          "fastapi": "0.158.0",
+          "sqlalchemy": "2.1.6",
+          "pytest": "9.1.1",
+          "flake8": "7.4.1"
+        },
+        "node": "v24.19.0",
+        "npm": "11.9.0",
+        "passed": true
+      },
+      "counts": {
+        "python": {
+          "passed": 683,
+          "subtests": 65,
+          "seconds": 37.17
+        },
+        "frontend": {
+          "passed": 155,
+          "files": 34
+        },
+        "root_collection": {
+          "passed": 683,
+          "subtests": 65,
+          "seconds": 33.93
+        },
+        "types": {
+          "files": 79,
+          "status": "PASS",
+          "untyped_bodies_checked": true,
+          "limitations": "Missing stubs allowed; dynamic values/imported dependencies/tests/root manual diagnostics outside guarantee"
+        }
+      }
+    },
+    {
+      "checkpoint": "batch11",
+      "release": {
+        "started_at": "2026-10-22T13:21:11.611831+00:00",
+        "checks": [
+          {
+            "name": "python-tests",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T132111Z/python-tests.log"
+          },
+          {
+            "name": "lint",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T132111Z/lint.log"
+          },
+          {
+            "name": "types",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T132111Z/types.log"
+          },
+          {
+            "name": "frontend-tests",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T132111Z/frontend-tests.log"
+          },
+          {
+            "name": "frontend-build",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T132111Z/frontend-build.log"
+          }
+        ],
+        "source_commit": "18c40d228de66ce3b75c03b23a569b69e28a1b45",
+        "source_status": "M .env.example\n M .gitignore\n M CHANGELOG.md\n M README.md\n M ROADMAP.md\n M TODO.md\n M ai-analysis/attack_timeline_builder.py\n M ai-analysis/root_cause_summarizer.py\n M backend-api/database.py\n M backend-api/models/db_models.py\n M backend-api/routes/audit.py\n M backend-api/routes/containers.py\n M backend-api/routes/deployments.py\n M backend-api/routes/incidents.py\n M backend-api/routes/monitor.py\n M backend-api/routes/rules.py\n M behavioral-engine/anomaly_model.py\n M behavioral-engine/baseline_collector.py\n M behavioral-engine/collect_baseline.py\n M behavioral-engine/feature_extractor.py\n M behavioral-engine/validate_live.py\n M correlation-engine/event_router.py\n M correlation-engine/risk_scorer.py\n M correlation-engine/validate_pipeline.py\n M database/schema.sql\n M deployment-gate/deployment_gate.py\n M deployment-gate/deployment_outbox.py\n M docs/academic_study.md\n M docs/deployment_gate.md\n M docs/falco_rule_matching.md\n M docs/interfaces.md\n M docs/known_limitations.md\n M docs/monitor_operations.md\n M docs/phase1_image_scanner.md\n M docs/phase2_deployment_policy_checker.md\n M docs/phase3_falco_integration.md\n M docs/phase3_tracking_updates.md\n M docs/phase4_behavioral_engine.md\n M docs/phase5_correlation_engine.md\n M docs/phase6_rule_synthesis.md\n M docs/zero_duplication_rule_guard.md\n M evaluation/capture_academic_case.py\n M evaluation/clock_guard.py\n M evaluation/compare_saved_layers.py\n M evaluation/coverage_probe.py\n M evaluation/export_final_review.py\n M evaluation/export_layer_evidence.py\n M evaluation/fingerprint.py\n M evaluation/run_full_trial.py\n M evaluation/run_schedule.py\n M evaluation/run_svm_benign.py\n M evaluation/verify_no_baseline.py\n M evaluation/verify_postgres_recovery.py\n M evaluation/verify_protected_container.py\n M frontend-dashboard/scripts/capture-dashboard.test.js\n M frontend-dashboard/src/api.js\n M frontend-dashboard/src/api.test.js\n M frontend-dashboard/src/pages/Containers.jsx\n M frontend-dashboard/src/pages/Monitor.jsx\n M frontend-dashboard/src/pages/Operations.test.jsx\n M frontend-dashboard/src/pages/RuleReviewQueue.jsx\n M frontend-dashboard/src/utils/operations.js\n M frontend-dashboard/src/utils/operations.test.js\n M frontend-dashboard/src/utils/ruleView.js\n M frontend-dashboard/src/utils/ruleView.test.js\n M image-scanner/trivy_wrapper.py\n M monitor-service/behavior_pipeline.py\n M monitor-service/container_watcher.py\n M monitor-service/control_worker.py\n M monitor-service/docker_events.py\n M monitor-service/falco_ingest.py\n M monitor-service/monitor_service.py\n M monitor-service/monitor_status.py\n M response-engine/auto_isolate.py\n M rule-synthesis-engine/confirmation_manager.py\n M rule-synthesis-engine/rule_deduplicator.py\n M rule-synthesis-engine/rule_lifecycle_manager.py\n M scripts/verify_completion_backtest_guard.py\n M scripts/verify_final_checks.py\n M test_manual_check.py\n M test_timeline_check.py\n M tests/test_academic_case_capture.py\n M tests/test_anomaly_model.py\n M tests/test_anomaly_model_candidate.py\n M tests/test_auto_isolate.py\n M tests/test_backend_audit.py\n M tests/test_backend_containers.py\n M tests/test_backend_deployments.py\n M tests/test_backend_monitor.py\n M tests/test_backend_rules.py\n M tests/test_behavior_pipeline.py\n M tests/test_container_watcher.py\n M tests/test_deployment_gate.py\n M tests/test_docker_events.py\n M tests/test_evaluation_clock_guard.py\n M tests/test_evaluation_coverage_probe.py\n M tests/test_evaluation_run_schedule.py\n M tests/test_event_router.py\n M tests/test_falco_ingest.py\n M tests/test_falco_integration.py\n M tests/test_final_completion.py\n M tests/test_incident_pipeline.py\n M tests/test_live_restart_acceptance.py\n M tests/test_monitor_reliability.py\n M tests/test_monitor_service.py\n M tests/test_risk_scorer.py\n M tests/test_rule_deployer.py\n M tests/test_rule_lifecycle_manager.py\n M tests/test_trivy_wrapper.py\n?? alembic.ini\n?? database/migrations/\n?? docs/repository-audit/\n?? evaluation/safety.py\n?? requirements.lock\n?? scripts/verify_schema.py\n?? scripts/verify_types.py\n?? tests/test_ai_import_safety.py\n?? tests/test_audit_resilience.py\n?? tests/test_control_worker.py\n?? tests/test_deployment_outbox.py\n?? tests/test_docker_inspector.py\n?? tests/test_manual_windows.py\n?? tests/test_monitor_shutdown.py\n?? tests/test_rule_review_lock.py\n?? tests/test_schema_migrations.py",
+        "python": "3.12.14 (main, Aug 25 2026, 14:00:49) [Clang 22.1.3 ]",
+        "packages": {
+          "docker": "7.2.0",
+          "scikit-learn": "1.9.1",
+          "fastapi": "0.158.0",
+          "sqlalchemy": "2.1.6",
+          "pytest": "9.1.1",
+          "flake8": "7.4.1"
+        },
+        "node": "v24.19.0",
+        "npm": "11.9.0",
+        "passed": true
+      },
+      "counts": {
+        "python": {
+          "passed": 715,
+          "subtests": 71,
+          "seconds": 37.26
+        },
+        "frontend": {
+          "passed": 155,
+          "files": 34
+        },
+        "root_collection": {
+          "passed": 715,
+          "subtests": 71,
+          "seconds": 49.1
+        },
+        "types": {
+          "files": 79,
+          "status": "PASS",
+          "untyped_bodies_checked": true,
+          "limitations": "Missing stubs allowed; dynamic values/imported dependencies/tests/root manual diagnostics outside guarantee"
+        }
+      }
+    },
+    {
+      "checkpoint": "batch12",
+      "release": {
+        "started_at": "2026-10-22T13:37:00.495368+00:00",
+        "checks": [
+          {
+            "name": "python-tests",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T133700Z/python-tests.log"
+          },
+          {
+            "name": "lint",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T133700Z/lint.log"
+          },
+          {
+            "name": "types",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T133700Z/types.log"
+          },
+          {
+            "name": "frontend-tests",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T133700Z/frontend-tests.log"
+          },
+          {
+            "name": "frontend-build",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T133700Z/frontend-build.log"
+          }
+        ],
+        "source_commit": "18c40d228de66ce3b75c03b23a569b69e28a1b45",
+        "source_status": "M .env.example\n M .gitignore\n M CHANGELOG.md\n M README.md\n M ROADMAP.md\n M TODO.md\n M ai-analysis/attack_timeline_builder.py\n M ai-analysis/root_cause_summarizer.py\n M backend-api/database.py\n M backend-api/models/db_models.py\n M backend-api/routes/audit.py\n M backend-api/routes/containers.py\n M backend-api/routes/deployments.py\n M backend-api/routes/incidents.py\n M backend-api/routes/monitor.py\n M backend-api/routes/rules.py\n M behavioral-engine/anomaly_model.py\n M behavioral-engine/baseline_collector.py\n M behavioral-engine/collect_baseline.py\n M behavioral-engine/feature_extractor.py\n M behavioral-engine/validate_live.py\n M correlation-engine/event_router.py\n M correlation-engine/risk_scorer.py\n M correlation-engine/validate_pipeline.py\n M database/schema.sql\n M deployment-gate/deployment_gate.py\n M deployment-gate/deployment_outbox.py\n M docs/academic_study.md\n M docs/deployment_gate.md\n M docs/falco_rule_matching.md\n M docs/interfaces.md\n M docs/known_limitations.md\n M docs/monitor_operations.md\n M docs/phase1_image_scanner.md\n M docs/phase2_deployment_policy_checker.md\n M docs/phase3_falco_integration.md\n M docs/phase3_tracking_updates.md\n M docs/phase4_behavioral_engine.md\n M docs/phase5_correlation_engine.md\n M docs/phase6_rule_synthesis.md\n M docs/zero_duplication_rule_guard.md\n M evaluation/capture_academic_case.py\n M evaluation/clock_guard.py\n M evaluation/compare_saved_layers.py\n M evaluation/coverage_probe.py\n M evaluation/export_final_review.py\n M evaluation/export_layer_evidence.py\n M evaluation/fingerprint.py\n M evaluation/run_full_trial.py\n M evaluation/run_schedule.py\n M evaluation/run_svm_benign.py\n M evaluation/verify_no_baseline.py\n M evaluation/verify_postgres_recovery.py\n M evaluation/verify_protected_container.py\n M frontend-dashboard/scripts/capture-dashboard.test.js\n M frontend-dashboard/src/api.js\n M frontend-dashboard/src/api.test.js\n M frontend-dashboard/src/pages/Containers.jsx\n M frontend-dashboard/src/pages/Monitor.jsx\n M frontend-dashboard/src/pages/Operations.test.jsx\n M frontend-dashboard/src/pages/RuleReviewQueue.jsx\n M frontend-dashboard/src/utils/operations.js\n M frontend-dashboard/src/utils/operations.test.js\n M frontend-dashboard/src/utils/ruleView.js\n M frontend-dashboard/src/utils/ruleView.test.js\n M image-scanner/trivy_wrapper.py\n M monitor-service/behavior_pipeline.py\n M monitor-service/container_watcher.py\n M monitor-service/control_worker.py\n M monitor-service/docker_events.py\n M monitor-service/falco_ingest.py\n M monitor-service/monitor_service.py\n M monitor-service/monitor_status.py\n M response-engine/auto_isolate.py\n M rule-synthesis-engine/confirmation_manager.py\n M rule-synthesis-engine/rule_deduplicator.py\n M rule-synthesis-engine/rule_lifecycle_manager.py\n M scripts/verify_completion_backtest_guard.py\n M scripts/verify_final_checks.py\n M test_manual_check.py\n M test_timeline_check.py\n M tests/test_academic_case_capture.py\n M tests/test_anomaly_model.py\n M tests/test_anomaly_model_candidate.py\n M tests/test_auto_isolate.py\n M tests/test_backend_audit.py\n M tests/test_backend_containers.py\n M tests/test_backend_deployments.py\n M tests/test_backend_monitor.py\n M tests/test_backend_rules.py\n M tests/test_behavior_pipeline.py\n M tests/test_container_watcher.py\n M tests/test_deployment_gate.py\n M tests/test_docker_events.py\n M tests/test_evaluation_clock_guard.py\n M tests/test_evaluation_coverage_probe.py\n M tests/test_evaluation_run_schedule.py\n M tests/test_event_router.py\n M tests/test_falco_ingest.py\n M tests/test_falco_integration.py\n M tests/test_final_completion.py\n M tests/test_incident_pipeline.py\n M tests/test_live_restart_acceptance.py\n M tests/test_monitor_reliability.py\n M tests/test_monitor_service.py\n M tests/test_risk_scorer.py\n M tests/test_rule_deployer.py\n M tests/test_rule_lifecycle_manager.py\n M tests/test_trivy_wrapper.py\n?? alembic.ini\n?? database/migrations/\n?? docs/repository-audit/\n?? evaluation/safety.py\n?? requirements.lock\n?? scripts/verify_schema.py\n?? scripts/verify_types.py\n?? tests/test_ai_import_safety.py\n?? tests/test_audit_resilience.py\n?? tests/test_control_worker.py\n?? tests/test_deployment_outbox.py\n?? tests/test_docker_inspector.py\n?? tests/test_manual_windows.py\n?? tests/test_monitor_shutdown.py\n?? tests/test_rule_review_lock.py\n?? tests/test_schema_migrations.py",
+        "python": "3.12.14 (main, Aug 25 2026, 14:00:49) [Clang 22.1.3 ]",
+        "packages": {
+          "docker": "7.2.0",
+          "scikit-learn": "1.9.1",
+          "fastapi": "0.158.0",
+          "sqlalchemy": "2.1.6",
+          "pytest": "9.1.1",
+          "flake8": "7.4.1"
+        },
+        "node": "v24.19.0",
+        "npm": "11.9.0",
+        "passed": true
+      },
+      "counts": {
+        "python": {
+          "passed": 725,
+          "subtests": 73,
+          "seconds": 27.52
+        },
+        "frontend": {
+          "passed": 155,
+          "files": 34
+        },
+        "root_collection": {
+          "passed": 725,
+          "subtests": 73,
+          "seconds": 26.21
+        },
+        "types": {
+          "files": 79,
+          "status": "PASS",
+          "untyped_bodies_checked": true,
+          "limitations": "Missing stubs allowed; dynamic values/imported dependencies/tests/root manual diagnostics outside guarantee"
+        }
+      }
+    },
+    {
+      "checkpoint": "batch13",
+      "release": {
+        "started_at": "2026-10-22T13:43:34.017973+00:00",
+        "checks": [
+          {
+            "name": "python-tests",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T134334Z/python-tests.log"
+          },
+          {
+            "name": "lint",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T134334Z/lint.log"
+          },
+          {
+            "name": "types",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T134334Z/types.log"
+          },
+          {
+            "name": "frontend-tests",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T134334Z/frontend-tests.log"
+          },
+          {
+            "name": "frontend-build",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T134334Z/frontend-build.log"
+          }
+        ],
+        "source_commit": "18c40d228de66ce3b75c03b23a569b69e28a1b45",
+        "source_status": "M .env.example\n M .gitignore\n M CHANGELOG.md\n M README.md\n M ROADMAP.md\n M TODO.md\n M ai-analysis/attack_timeline_builder.py\n M ai-analysis/root_cause_summarizer.py\n M backend-api/database.py\n M backend-api/models/db_models.py\n M backend-api/routes/audit.py\n M backend-api/routes/containers.py\n M backend-api/routes/deployments.py\n M backend-api/routes/incidents.py\n M backend-api/routes/monitor.py\n M backend-api/routes/rules.py\n M behavioral-engine/anomaly_model.py\n M behavioral-engine/baseline_collector.py\n M behavioral-engine/collect_baseline.py\n M behavioral-engine/feature_extractor.py\n M behavioral-engine/validate_live.py\n M correlation-engine/event_router.py\n M correlation-engine/risk_scorer.py\n M correlation-engine/validate_pipeline.py\n M database/schema.sql\n M deployment-gate/deployment_gate.py\n M deployment-gate/deployment_outbox.py\n M docs/academic_study.md\n M docs/deployment_gate.md\n M docs/falco_rule_matching.md\n M docs/interfaces.md\n M docs/known_limitations.md\n M docs/monitor_operations.md\n M docs/phase1_image_scanner.md\n M docs/phase2_deployment_policy_checker.md\n M docs/phase3_falco_integration.md\n M docs/phase3_tracking_updates.md\n M docs/phase4_behavioral_engine.md\n M docs/phase5_correlation_engine.md\n M docs/phase6_rule_synthesis.md\n M docs/zero_duplication_rule_guard.md\n M evaluation/capture_academic_case.py\n M evaluation/clock_guard.py\n M evaluation/compare_saved_layers.py\n M evaluation/coverage_probe.py\n M evaluation/export_final_review.py\n M evaluation/export_layer_evidence.py\n M evaluation/fingerprint.py\n M evaluation/run_full_trial.py\n M evaluation/run_schedule.py\n M evaluation/run_svm_benign.py\n M evaluation/verify_no_baseline.py\n M evaluation/verify_postgres_recovery.py\n M evaluation/verify_protected_container.py\n M frontend-dashboard/scripts/capture-dashboard.test.js\n M frontend-dashboard/src/api.js\n M frontend-dashboard/src/api.test.js\n M frontend-dashboard/src/pages/Containers.jsx\n M frontend-dashboard/src/pages/Monitor.jsx\n M frontend-dashboard/src/pages/Operations.test.jsx\n M frontend-dashboard/src/pages/RuleReviewQueue.jsx\n M frontend-dashboard/src/utils/operations.js\n M frontend-dashboard/src/utils/operations.test.js\n M frontend-dashboard/src/utils/ruleView.js\n M frontend-dashboard/src/utils/ruleView.test.js\n M image-scanner/trivy_wrapper.py\n M monitor-service/behavior_pipeline.py\n M monitor-service/container_watcher.py\n M monitor-service/control_worker.py\n M monitor-service/docker_events.py\n M monitor-service/falco_ingest.py\n M monitor-service/monitor_service.py\n M monitor-service/monitor_status.py\n M response-engine/auto_isolate.py\n M rule-synthesis-engine/confirmation_manager.py\n M rule-synthesis-engine/rule_deduplicator.py\n M rule-synthesis-engine/rule_lifecycle_manager.py\n M scripts/verify_completion_backtest_guard.py\n M scripts/verify_final_checks.py\n M test_manual_check.py\n M test_timeline_check.py\n M tests/test_academic_case_capture.py\n M tests/test_anomaly_model.py\n M tests/test_anomaly_model_candidate.py\n M tests/test_auto_isolate.py\n M tests/test_backend_audit.py\n M tests/test_backend_containers.py\n M tests/test_backend_deployments.py\n M tests/test_backend_monitor.py\n M tests/test_backend_rules.py\n M tests/test_behavior_pipeline.py\n M tests/test_container_watcher.py\n M tests/test_deployment_gate.py\n M tests/test_docker_events.py\n M tests/test_evaluation_clock_guard.py\n M tests/test_evaluation_coverage_probe.py\n M tests/test_evaluation_run_schedule.py\n M tests/test_event_router.py\n M tests/test_falco_ingest.py\n M tests/test_falco_integration.py\n M tests/test_final_completion.py\n M tests/test_incident_pipeline.py\n M tests/test_live_restart_acceptance.py\n M tests/test_monitor_reliability.py\n M tests/test_monitor_service.py\n M tests/test_risk_scorer.py\n M tests/test_rule_deployer.py\n M tests/test_rule_lifecycle_manager.py\n M tests/test_trivy_wrapper.py\n?? alembic.ini\n?? database/migrations/\n?? docs/repository-audit/\n?? evaluation/safety.py\n?? requirements.lock\n?? scripts/verify_schema.py\n?? scripts/verify_types.py\n?? tests/test_ai_import_safety.py\n?? tests/test_audit_resilience.py\n?? tests/test_control_worker.py\n?? tests/test_deployment_outbox.py\n?? tests/test_docker_inspector.py\n?? tests/test_manual_windows.py\n?? tests/test_monitor_shutdown.py\n?? tests/test_rule_review_lock.py\n?? tests/test_schema_migrations.py",
+        "python": "3.12.14 (main, Aug 25 2026, 14:00:49) [Clang 22.1.3 ]",
+        "packages": {
+          "docker": "7.2.0",
+          "scikit-learn": "1.9.1",
+          "fastapi": "0.158.0",
+          "sqlalchemy": "2.1.6",
+          "pytest": "9.1.1",
+          "flake8": "7.4.1"
+        },
+        "node": "v24.19.0",
+        "npm": "11.9.0",
+        "passed": true
+      },
+      "counts": {
+        "python": {
+          "passed": 731,
+          "subtests": 77,
+          "seconds": 47.39
+        },
+        "frontend": {
+          "passed": 155,
+          "files": 34
+        },
+        "root_collection": {
+          "passed": 731,
+          "subtests": 77,
+          "seconds": 45.16
+        },
+        "types": {
+          "files": 79,
+          "status": "PASS",
+          "untyped_bodies_checked": true,
+          "limitations": "Missing stubs allowed; dynamic values/imported dependencies/tests/root manual diagnostics outside guarantee"
+        }
+      }
+    },
+    {
+      "checkpoint": "batch14",
+      "release": {
+        "started_at": "2026-10-22T13:59:00.890457+00:00",
+        "checks": [
+          {
+            "name": "python-tests",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T135900Z/python-tests.log"
+          },
+          {
+            "name": "lint",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T135900Z/lint.log"
+          },
+          {
+            "name": "types",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T135900Z/types.log"
+          },
+          {
+            "name": "frontend-tests",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T135900Z/frontend-tests.log"
+          },
+          {
+            "name": "frontend-build",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T135900Z/frontend-build.log"
+          }
+        ],
+        "source_commit": "18c40d228de66ce3b75c03b23a569b69e28a1b45",
+        "source_status": "M .env.example\n M .gitignore\n M CHANGELOG.md\n M README.md\n M ROADMAP.md\n M TODO.md\n M ai-analysis/attack_timeline_builder.py\n M ai-analysis/root_cause_summarizer.py\n M backend-api/database.py\n M backend-api/models/db_models.py\n M backend-api/routes/audit.py\n M backend-api/routes/containers.py\n M backend-api/routes/deployments.py\n M backend-api/routes/incidents.py\n M backend-api/routes/monitor.py\n M backend-api/routes/rules.py\n M behavioral-engine/anomaly_model.py\n M behavioral-engine/baseline_collector.py\n M behavioral-engine/collect_baseline.py\n M behavioral-engine/feature_extractor.py\n M behavioral-engine/validate_live.py\n M correlation-engine/event_router.py\n M correlation-engine/risk_scorer.py\n M correlation-engine/validate_pipeline.py\n M database/schema.sql\n M deployment-gate/deployment_gate.py\n M deployment-gate/deployment_outbox.py\n M docs/academic_study.md\n M docs/deployment_gate.md\n M docs/falco_rule_matching.md\n M docs/interfaces.md\n M docs/known_limitations.md\n M docs/monitor_operations.md\n M docs/phase1_image_scanner.md\n M docs/phase2_deployment_policy_checker.md\n M docs/phase3_falco_integration.md\n M docs/phase3_tracking_updates.md\n M docs/phase4_behavioral_engine.md\n M docs/phase5_correlation_engine.md\n M docs/phase6_rule_synthesis.md\n M docs/zero_duplication_rule_guard.md\n M evaluation/capture_academic_case.py\n M evaluation/clock_guard.py\n M evaluation/compare_saved_layers.py\n M evaluation/coverage_probe.py\n M evaluation/export_final_review.py\n M evaluation/export_layer_evidence.py\n M evaluation/fingerprint.py\n M evaluation/run_full_trial.py\n M evaluation/run_schedule.py\n M evaluation/run_svm_benign.py\n M evaluation/verify_no_baseline.py\n M evaluation/verify_postgres_recovery.py\n M evaluation/verify_protected_container.py\n M frontend-dashboard/scripts/capture-dashboard.test.js\n M frontend-dashboard/src/api.js\n M frontend-dashboard/src/api.test.js\n M frontend-dashboard/src/pages/Containers.jsx\n M frontend-dashboard/src/pages/Monitor.jsx\n M frontend-dashboard/src/pages/Operations.test.jsx\n M frontend-dashboard/src/pages/RuleReviewQueue.jsx\n M frontend-dashboard/src/utils/operations.js\n M frontend-dashboard/src/utils/operations.test.js\n M frontend-dashboard/src/utils/ruleView.js\n M frontend-dashboard/src/utils/ruleView.test.js\n M image-scanner/trivy_wrapper.py\n M monitor-service/behavior_pipeline.py\n M monitor-service/container_watcher.py\n M monitor-service/control_worker.py\n M monitor-service/docker_events.py\n M monitor-service/falco_ingest.py\n M monitor-service/monitor_service.py\n M monitor-service/monitor_status.py\n M response-engine/auto_isolate.py\n M rule-synthesis-engine/confirmation_manager.py\n M rule-synthesis-engine/rule_deduplicator.py\n M rule-synthesis-engine/rule_lifecycle_manager.py\n M scripts/verify_completion_backtest_guard.py\n M scripts/verify_final_checks.py\n M test_manual_check.py\n M test_timeline_check.py\n M tests/test_academic_case_capture.py\n M tests/test_anomaly_model.py\n M tests/test_anomaly_model_candidate.py\n M tests/test_auto_isolate.py\n M tests/test_backend_audit.py\n M tests/test_backend_containers.py\n M tests/test_backend_deployments.py\n M tests/test_backend_monitor.py\n M tests/test_backend_rules.py\n M tests/test_behavior_pipeline.py\n M tests/test_container_watcher.py\n M tests/test_deployment_gate.py\n M tests/test_docker_events.py\n M tests/test_evaluation_clock_guard.py\n M tests/test_evaluation_coverage_probe.py\n M tests/test_evaluation_run_schedule.py\n M tests/test_event_router.py\n M tests/test_falco_ingest.py\n M tests/test_falco_integration.py\n M tests/test_final_completion.py\n M tests/test_incident_pipeline.py\n M tests/test_live_restart_acceptance.py\n M tests/test_monitor_reliability.py\n M tests/test_monitor_service.py\n M tests/test_risk_scorer.py\n M tests/test_rule_deployer.py\n M tests/test_rule_lifecycle_manager.py\n M tests/test_trivy_wrapper.py\n?? alembic.ini\n?? database/migrations/\n?? docs/repository-audit/\n?? evaluation/safety.py\n?? requirements.lock\n?? scripts/verify_schema.py\n?? scripts/verify_types.py\n?? tests/test_ai_import_safety.py\n?? tests/test_audit_resilience.py\n?? tests/test_control_worker.py\n?? tests/test_deployment_outbox.py\n?? tests/test_docker_inspector.py\n?? tests/test_manual_windows.py\n?? tests/test_monitor_shutdown.py\n?? tests/test_rule_review_lock.py\n?? tests/test_schema_migrations.py",
+        "python": "3.12.14 (main, Aug 25 2026, 14:00:49) [Clang 22.1.3 ]",
+        "packages": {
+          "docker": "7.2.0",
+          "scikit-learn": "1.9.1",
+          "fastapi": "0.158.0",
+          "sqlalchemy": "2.1.6",
+          "pytest": "9.1.1",
+          "flake8": "7.4.1"
+        },
+        "node": "v24.19.0",
+        "npm": "11.9.0",
+        "passed": true
+      },
+      "counts": {
+        "python": {
+          "passed": 741,
+          "subtests": 81,
+          "seconds": 31.27
+        },
+        "frontend": {
+          "passed": 155,
+          "files": 34
+        },
+        "root_collection": {
+          "passed": 741,
+          "subtests": 81,
+          "seconds": 34.32
+        },
+        "types": {
+          "files": 79,
+          "status": "PASS",
+          "untyped_bodies_checked": true,
+          "limitations": "Missing stubs allowed; dynamic values/imported dependencies/tests/root manual diagnostics outside guarantee"
+        }
+      }
+    },
+    {
+      "checkpoint": "batch15",
+      "release": {
+        "started_at": "2026-10-22T14:13:14.307261+00:00",
+        "checks": [
+          {
+            "name": "python-tests",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T141314Z/python-tests.log"
+          },
+          {
+            "name": "lint",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T141314Z/lint.log"
+          },
+          {
+            "name": "types",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T141314Z/types.log"
+          },
+          {
+            "name": "frontend-tests",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T141314Z/frontend-tests.log"
+          },
+          {
+            "name": "frontend-build",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T141314Z/frontend-build.log"
+          }
+        ],
+        "source_commit": "18c40d228de66ce3b75c03b23a569b69e28a1b45",
+        "source_status": "M .env.example\n M .gitignore\n M CHANGELOG.md\n M README.md\n M ROADMAP.md\n M TODO.md\n M ai-analysis/attack_timeline_builder.py\n M ai-analysis/root_cause_summarizer.py\n M backend-api/database.py\n M backend-api/models/db_models.py\n M backend-api/routes/audit.py\n M backend-api/routes/containers.py\n M backend-api/routes/deployments.py\n M backend-api/routes/incidents.py\n M backend-api/routes/monitor.py\n M backend-api/routes/rules.py\n M behavioral-engine/anomaly_model.py\n M behavioral-engine/baseline_collector.py\n M behavioral-engine/collect_baseline.py\n M behavioral-engine/feature_extractor.py\n M behavioral-engine/validate_live.py\n M correlation-engine/event_router.py\n M correlation-engine/risk_scorer.py\n M correlation-engine/validate_pipeline.py\n M database/schema.sql\n M deployment-gate/deployment_gate.py\n M deployment-gate/deployment_outbox.py\n M docs/academic_study.md\n M docs/deployment_gate.md\n M docs/falco_rule_matching.md\n M docs/interfaces.md\n M docs/known_limitations.md\n M docs/monitor_operations.md\n M docs/phase1_image_scanner.md\n M docs/phase2_deployment_policy_checker.md\n M docs/phase3_falco_integration.md\n M docs/phase3_tracking_updates.md\n M docs/phase4_behavioral_engine.md\n M docs/phase5_correlation_engine.md\n M docs/phase6_rule_synthesis.md\n M docs/zero_duplication_rule_guard.md\n M evaluation/capture_academic_case.py\n M evaluation/clock_guard.py\n M evaluation/compare_saved_layers.py\n M evaluation/coverage_probe.py\n M evaluation/export_final_review.py\n M evaluation/export_layer_evidence.py\n M evaluation/fingerprint.py\n M evaluation/run_full_trial.py\n M evaluation/run_schedule.py\n M evaluation/run_svm_benign.py\n M evaluation/verify_no_baseline.py\n M evaluation/verify_postgres_recovery.py\n M evaluation/verify_protected_container.py\n M frontend-dashboard/scripts/capture-dashboard.test.js\n M frontend-dashboard/src/api.js\n M frontend-dashboard/src/api.test.js\n M frontend-dashboard/src/pages/Containers.jsx\n M frontend-dashboard/src/pages/Monitor.jsx\n M frontend-dashboard/src/pages/Operations.test.jsx\n M frontend-dashboard/src/pages/RuleReviewQueue.jsx\n M frontend-dashboard/src/utils/operations.js\n M frontend-dashboard/src/utils/operations.test.js\n M frontend-dashboard/src/utils/ruleView.js\n M frontend-dashboard/src/utils/ruleView.test.js\n M image-scanner/trivy_wrapper.py\n M monitor-service/behavior_pipeline.py\n M monitor-service/container_watcher.py\n M monitor-service/control_worker.py\n M monitor-service/docker_events.py\n M monitor-service/falco_ingest.py\n M monitor-service/monitor_service.py\n M monitor-service/monitor_status.py\n M response-engine/auto_isolate.py\n M rule-synthesis-engine/confirmation_manager.py\n M rule-synthesis-engine/rule_deduplicator.py\n M rule-synthesis-engine/rule_lifecycle_manager.py\n M scripts/verify_completion_backtest_guard.py\n M scripts/verify_final_checks.py\n M test_manual_check.py\n M test_timeline_check.py\n M tests/test_academic_case_capture.py\n M tests/test_anomaly_model.py\n M tests/test_anomaly_model_candidate.py\n M tests/test_auto_isolate.py\n M tests/test_backend_audit.py\n M tests/test_backend_containers.py\n M tests/test_backend_deployments.py\n M tests/test_backend_monitor.py\n M tests/test_backend_rules.py\n M tests/test_behavior_pipeline.py\n M tests/test_container_watcher.py\n M tests/test_deployment_gate.py\n M tests/test_docker_events.py\n M tests/test_evaluation_clock_guard.py\n M tests/test_evaluation_coverage_probe.py\n M tests/test_evaluation_run_schedule.py\n M tests/test_event_router.py\n M tests/test_falco_ingest.py\n M tests/test_falco_integration.py\n M tests/test_final_completion.py\n M tests/test_incident_pipeline.py\n M tests/test_live_restart_acceptance.py\n M tests/test_monitor_reliability.py\n M tests/test_monitor_service.py\n M tests/test_risk_scorer.py\n M tests/test_rule_deployer.py\n M tests/test_rule_lifecycle_manager.py\n M tests/test_trivy_wrapper.py\n?? alembic.ini\n?? database/migrations/\n?? docs/repository-audit/\n?? evaluation/safety.py\n?? requirements.lock\n?? scripts/verify_schema.py\n?? scripts/verify_types.py\n?? tests/test_ai_import_safety.py\n?? tests/test_audit_resilience.py\n?? tests/test_control_worker.py\n?? tests/test_deployment_outbox.py\n?? tests/test_docker_inspector.py\n?? tests/test_manual_windows.py\n?? tests/test_monitor_shutdown.py\n?? tests/test_rule_review_lock.py\n?? tests/test_schema_migrations.py",
+        "python": "3.12.14 (main, Aug 25 2026, 14:00:49) [Clang 22.1.3 ]",
+        "packages": {
+          "docker": "7.2.0",
+          "scikit-learn": "1.9.1",
+          "fastapi": "0.158.0",
+          "sqlalchemy": "2.1.6",
+          "pytest": "9.1.1",
+          "flake8": "7.4.1"
+        },
+        "node": "v24.19.0",
+        "npm": "11.9.0",
+        "passed": true
+      },
+      "counts": {
+        "python": {
+          "passed": 754,
+          "subtests": 86,
+          "seconds": 27.63
+        },
+        "frontend": {
+          "passed": 155,
+          "files": 34
+        },
+        "root_collection": {
+          "passed": 754,
+          "subtests": 86,
+          "seconds": 34.46
+        },
+        "types": {
+          "files": 79,
+          "status": "PASS",
+          "untyped_bodies_checked": true,
+          "persistent_cache": false,
+          "limitations": "Missing stubs allowed; dynamic values/imported dependencies/tests/root manual diagnostics outside guarantee"
+        }
+      }
+    },
+    {
+      "checkpoint": "batch16",
+      "release": {
+        "started_at": "2026-10-22T14:25:12.877489+00:00",
+        "checks": [
+          {
+            "name": "python-tests",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T142512Z/python-tests.log"
+          },
+          {
+            "name": "lint",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T142512Z/lint.log"
+          },
+          {
+            "name": "types",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T142512Z/types.log"
+          },
+          {
+            "name": "frontend-tests",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T142512Z/frontend-tests.log"
+          },
+          {
+            "name": "frontend-build",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T142512Z/frontend-build.log"
+          }
+        ],
+        "source_commit": "18c40d228de66ce3b75c03b23a569b69e28a1b45",
+        "source_status": "M .env.example\n M .gitignore\n M CHANGELOG.md\n M README.md\n M ROADMAP.md\n M TODO.md\n M ai-analysis/attack_timeline_builder.py\n M ai-analysis/root_cause_summarizer.py\n M backend-api/database.py\n M backend-api/models/db_models.py\n M backend-api/routes/audit.py\n M backend-api/routes/containers.py\n M backend-api/routes/deployments.py\n M backend-api/routes/incidents.py\n M backend-api/routes/monitor.py\n M backend-api/routes/rules.py\n M behavioral-engine/anomaly_model.py\n M behavioral-engine/baseline_collector.py\n M behavioral-engine/collect_baseline.py\n M behavioral-engine/feature_extractor.py\n M behavioral-engine/validate_live.py\n M correlation-engine/event_router.py\n M correlation-engine/risk_scorer.py\n M correlation-engine/validate_pipeline.py\n M database/schema.sql\n M deployment-gate/deployment_gate.py\n M deployment-gate/deployment_outbox.py\n M docs/academic_study.md\n M docs/deployment_gate.md\n M docs/falco_rule_matching.md\n M docs/interfaces.md\n M docs/known_limitations.md\n M docs/monitor_operations.md\n M docs/phase1_image_scanner.md\n M docs/phase2_deployment_policy_checker.md\n M docs/phase3_falco_integration.md\n M docs/phase3_tracking_updates.md\n M docs/phase4_behavioral_engine.md\n M docs/phase5_correlation_engine.md\n M docs/phase6_rule_synthesis.md\n M docs/zero_duplication_rule_guard.md\n M evaluation/capture_academic_case.py\n M evaluation/clock_guard.py\n M evaluation/compare_saved_layers.py\n M evaluation/coverage_probe.py\n M evaluation/export_final_review.py\n M evaluation/export_layer_evidence.py\n M evaluation/fingerprint.py\n M evaluation/run_full_trial.py\n M evaluation/run_schedule.py\n M evaluation/run_svm_benign.py\n M evaluation/verify_no_baseline.py\n M evaluation/verify_postgres_recovery.py\n M evaluation/verify_protected_container.py\n M frontend-dashboard/scripts/capture-dashboard.test.js\n M frontend-dashboard/src/api.js\n M frontend-dashboard/src/api.test.js\n M frontend-dashboard/src/components/HealthBanner.jsx\n M frontend-dashboard/src/components/HealthBanner.test.jsx\n M frontend-dashboard/src/components/status.js\n M frontend-dashboard/src/components/status.test.js\n M frontend-dashboard/src/pages/Containers.jsx\n M frontend-dashboard/src/pages/Monitor.jsx\n M frontend-dashboard/src/pages/Operations.test.jsx\n M frontend-dashboard/src/pages/RuleReviewQueue.jsx\n M frontend-dashboard/src/utils/operations.js\n M frontend-dashboard/src/utils/operations.test.js\n M frontend-dashboard/src/utils/ruleView.js\n M frontend-dashboard/src/utils/ruleView.test.js\n M image-scanner/trivy_wrapper.py\n M monitor-service/behavior_pipeline.py\n M monitor-service/container_watcher.py\n M monitor-service/control_worker.py\n M monitor-service/docker_events.py\n M monitor-service/falco_ingest.py\n M monitor-service/monitor_service.py\n M monitor-service/monitor_status.py\n M response-engine/auto_isolate.py\n M rule-synthesis-engine/confirmation_manager.py\n M rule-synthesis-engine/rule_deduplicator.py\n M rule-synthesis-engine/rule_lifecycle_manager.py\n M scripts/verify_completion_backtest_guard.py\n M scripts/verify_final_checks.py\n M test_manual_check.py\n M test_timeline_check.py\n M tests/test_academic_case_capture.py\n M tests/test_anomaly_model.py\n M tests/test_anomaly_model_candidate.py\n M tests/test_auto_isolate.py\n M tests/test_backend_audit.py\n M tests/test_backend_containers.py\n M tests/test_backend_deployments.py\n M tests/test_backend_monitor.py\n M tests/test_backend_rules.py\n M tests/test_behavior_pipeline.py\n M tests/test_container_watcher.py\n M tests/test_deployment_gate.py\n M tests/test_docker_events.py\n M tests/test_evaluation_clock_guard.py\n M tests/test_evaluation_coverage_probe.py\n M tests/test_evaluation_run_schedule.py\n M tests/test_event_router.py\n M tests/test_falco_ingest.py\n M tests/test_falco_integration.py\n M tests/test_final_completion.py\n M tests/test_incident_pipeline.py\n M tests/test_live_restart_acceptance.py\n M tests/test_monitor_reliability.py\n M tests/test_monitor_service.py\n M tests/test_risk_scorer.py\n M tests/test_rule_deployer.py\n M tests/test_rule_lifecycle_manager.py\n M tests/test_trivy_wrapper.py\n?? alembic.ini\n?? database/migrations/\n?? docs/repository-audit/\n?? evaluation/safety.py\n?? requirements.lock\n?? scripts/verify_schema.py\n?? scripts/verify_types.py\n?? tests/test_ai_import_safety.py\n?? tests/test_audit_resilience.py\n?? tests/test_control_worker.py\n?? tests/test_deployment_outbox.py\n?? tests/test_docker_inspector.py\n?? tests/test_manual_windows.py\n?? tests/test_monitor_shutdown.py\n?? tests/test_rule_review_lock.py\n?? tests/test_schema_migrations.py",
+        "python": "3.12.14 (main, Aug 25 2026, 14:00:49) [Clang 22.1.3 ]",
+        "packages": {
+          "docker": "7.2.0",
+          "scikit-learn": "1.9.1",
+          "fastapi": "0.158.0",
+          "sqlalchemy": "2.1.6",
+          "pytest": "9.1.1",
+          "flake8": "7.4.1"
+        },
+        "node": "v24.19.0",
+        "npm": "11.9.0",
+        "passed": true
+      },
+      "counts": {
+        "python": {
+          "passed": 781,
+          "subtests": 86,
+          "seconds": 32.27
+        },
+        "frontend": {
+          "passed": 165,
+          "files": 34
+        },
+        "root_collection": {
+          "passed": 781,
+          "subtests": 86,
+          "seconds": 31.72
+        },
+        "types": {
+          "files": 79,
+          "status": "PASS",
+          "untyped_bodies_checked": true,
+          "persistent_cache": false,
+          "limitations": "Missing stubs allowed; dynamic values/imported dependencies/tests/root manual diagnostics outside guarantee"
+        }
+      }
+    },
+    {
+      "checkpoint": "batch17",
+      "release": {
+        "started_at": "2026-10-22T14:49:59.665800+00:00",
+        "checks": [
+          {
+            "name": "python-tests",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T144959Z/python-tests.log"
+          },
+          {
+            "name": "lint",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T144959Z/lint.log"
+          },
+          {
+            "name": "types",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T144959Z/types.log"
+          },
+          {
+            "name": "frontend-tests",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T144959Z/frontend-tests.log"
+          },
+          {
+            "name": "frontend-build",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T144959Z/frontend-build.log"
+          }
+        ],
+        "source_commit": "18c40d228de66ce3b75c03b23a569b69e28a1b45",
+        "source_status": "M .env.example\n M .gitignore\n M CHANGELOG.md\n M README.md\n M ROADMAP.md\n M TODO.md\n M ai-analysis/attack_timeline_builder.py\n M ai-analysis/root_cause_summarizer.py\n M backend-api/database.py\n M backend-api/models/db_models.py\n M backend-api/routes/audit.py\n M backend-api/routes/containers.py\n M backend-api/routes/deployments.py\n M backend-api/routes/incidents.py\n M backend-api/routes/monitor.py\n M backend-api/routes/rules.py\n M behavioral-engine/anomaly_model.py\n M behavioral-engine/baseline_collector.py\n M behavioral-engine/collect_baseline.py\n M behavioral-engine/feature_extractor.py\n M behavioral-engine/validate_live.py\n M correlation-engine/event_router.py\n M correlation-engine/risk_scorer.py\n M correlation-engine/validate_pipeline.py\n M database/schema.sql\n M deployment-gate/deployment_gate.py\n M deployment-gate/deployment_outbox.py\n M docs/academic_study.md\n M docs/deployment_gate.md\n M docs/falco_rule_matching.md\n M docs/interfaces.md\n M docs/known_limitations.md\n M docs/monitor_operations.md\n M docs/phase1_image_scanner.md\n M docs/phase2_deployment_policy_checker.md\n M docs/phase3_falco_integration.md\n M docs/phase3_tracking_updates.md\n M docs/phase4_behavioral_engine.md\n M docs/phase5_correlation_engine.md\n M docs/phase6_rule_synthesis.md\n M docs/zero_duplication_rule_guard.md\n M evaluation/capture_academic_case.py\n M evaluation/clock_guard.py\n M evaluation/compare_saved_layers.py\n M evaluation/coverage_probe.py\n M evaluation/export_final_review.py\n M evaluation/export_layer_evidence.py\n M evaluation/fingerprint.py\n M evaluation/run_full_trial.py\n M evaluation/run_schedule.py\n M evaluation/run_svm_benign.py\n M evaluation/verify_no_baseline.py\n M evaluation/verify_postgres_recovery.py\n M evaluation/verify_protected_container.py\n M frontend-dashboard/scripts/capture-dashboard.test.js\n M frontend-dashboard/src/api.js\n M frontend-dashboard/src/api.test.js\n M frontend-dashboard/src/components/HealthBanner.jsx\n M frontend-dashboard/src/components/HealthBanner.test.jsx\n M frontend-dashboard/src/components/status.js\n M frontend-dashboard/src/components/status.test.js\n M frontend-dashboard/src/pages/Containers.jsx\n M frontend-dashboard/src/pages/Monitor.jsx\n M frontend-dashboard/src/pages/Operations.test.jsx\n M frontend-dashboard/src/pages/RuleReviewQueue.jsx\n M frontend-dashboard/src/utils/operations.js\n M frontend-dashboard/src/utils/operations.test.js\n M frontend-dashboard/src/utils/ruleView.js\n M frontend-dashboard/src/utils/ruleView.test.js\n M image-scanner/trivy_wrapper.py\n M monitor-service/behavior_pipeline.py\n M monitor-service/container_watcher.py\n M monitor-service/control_worker.py\n M monitor-service/docker_events.py\n M monitor-service/falco_ingest.py\n M monitor-service/monitor_service.py\n M monitor-service/monitor_status.py\n M response-engine/auto_isolate.py\n M rule-synthesis-engine/confirmation_manager.py\n M rule-synthesis-engine/rule_deduplicator.py\n M rule-synthesis-engine/rule_lifecycle_manager.py\n M scripts/verify_completion_backtest_guard.py\n M scripts/verify_final_checks.py\n M test_manual_check.py\n M test_timeline_check.py\n M tests/test_academic_case_capture.py\n M tests/test_anomaly_model.py\n M tests/test_anomaly_model_candidate.py\n M tests/test_auto_isolate.py\n M tests/test_backend_audit.py\n M tests/test_backend_containers.py\n M tests/test_backend_deployments.py\n M tests/test_backend_monitor.py\n M tests/test_backend_rules.py\n M tests/test_behavior_pipeline.py\n M tests/test_container_watcher.py\n M tests/test_deployment_gate.py\n M tests/test_docker_events.py\n M tests/test_evaluation_clock_guard.py\n M tests/test_evaluation_coverage_probe.py\n M tests/test_evaluation_run_schedule.py\n M tests/test_event_router.py\n M tests/test_falco_ingest.py\n M tests/test_falco_integration.py\n M tests/test_final_completion.py\n M tests/test_incident_pipeline.py\n M tests/test_live_restart_acceptance.py\n M tests/test_monitor_reliability.py\n M tests/test_monitor_service.py\n M tests/test_risk_scorer.py\n M tests/test_rule_deployer.py\n M tests/test_rule_lifecycle_manager.py\n M tests/test_trivy_wrapper.py\n?? alembic.ini\n?? database/migrations/\n?? docs/repository-audit/\n?? evaluation/safety.py\n?? requirements.lock\n?? scripts/verify_schema.py\n?? scripts/verify_types.py\n?? tests/test_ai_import_safety.py\n?? tests/test_audit_resilience.py\n?? tests/test_control_worker.py\n?? tests/test_deployment_outbox.py\n?? tests/test_docker_inspector.py\n?? tests/test_manual_windows.py\n?? tests/test_monitor_shutdown.py\n?? tests/test_rule_review_lock.py\n?? tests/test_schema_migrations.py",
+        "python": "3.12.14 (main, Aug 25 2026, 14:00:49) [Clang 22.1.3 ]",
+        "packages": {
+          "docker": "7.2.0",
+          "scikit-learn": "1.9.1",
+          "fastapi": "0.158.0",
+          "sqlalchemy": "2.1.6",
+          "pytest": "9.1.1",
+          "flake8": "7.4.1"
+        },
+        "node": "v24.19.0",
+        "npm": "11.9.0",
+        "passed": true
+      },
+      "counts": {
+        "python": {
+          "passed": 795,
+          "subtests": 86,
+          "seconds": 34.68
+        },
+        "frontend": {
+          "passed": 165,
+          "files": 34
+        },
+        "root_collection": {
+          "passed": 795,
+          "subtests": 86,
+          "seconds": 36.52
+        },
+        "types": {
+          "files": 79,
+          "status": "PASS",
+          "untyped_bodies_checked": true,
+          "persistent_cache": false,
+          "limitations": "Missing stubs allowed; dynamic values/imported dependencies/tests/root manual diagnostics outside guarantee"
+        }
+      }
+    },
+    {
+      "checkpoint": "batch18",
+      "release": {
+        "started_at": "2026-10-22T15:05:34.750091+00:00",
+        "checks": [
+          {
+            "name": "python-tests",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T150534Z/python-tests.log"
+          },
+          {
+            "name": "lint",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T150534Z/lint.log"
+          },
+          {
+            "name": "types",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T150534Z/types.log"
+          },
+          {
+            "name": "frontend-tests",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T150534Z/frontend-tests.log"
+          },
+          {
+            "name": "frontend-build",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T150534Z/frontend-build.log"
+          }
+        ],
+        "source_commit": "18c40d228de66ce3b75c03b23a569b69e28a1b45",
+        "source_status": "M .env.example\n M .gitignore\n M CHANGELOG.md\n M README.md\n M ROADMAP.md\n M TODO.md\n M ai-analysis/attack_timeline_builder.py\n M ai-analysis/root_cause_summarizer.py\n M backend-api/database.py\n M backend-api/models/db_models.py\n M backend-api/routes/audit.py\n M backend-api/routes/containers.py\n M backend-api/routes/deployments.py\n M backend-api/routes/incidents.py\n M backend-api/routes/monitor.py\n M backend-api/routes/rules.py\n M behavioral-engine/anomaly_model.py\n M behavioral-engine/baseline_collector.py\n M behavioral-engine/collect_baseline.py\n M behavioral-engine/feature_extractor.py\n M behavioral-engine/validate_live.py\n M correlation-engine/event_router.py\n M correlation-engine/risk_scorer.py\n M correlation-engine/validate_pipeline.py\n M database/schema.sql\n M deployment-gate/deployment_gate.py\n M deployment-gate/deployment_outbox.py\n M docs/academic_study.md\n M docs/deployment_gate.md\n M docs/falco_rule_matching.md\n M docs/interfaces.md\n M docs/known_limitations.md\n M docs/monitor_operations.md\n M docs/phase1_image_scanner.md\n M docs/phase2_deployment_policy_checker.md\n M docs/phase3_falco_integration.md\n M docs/phase3_tracking_updates.md\n M docs/phase4_behavioral_engine.md\n M docs/phase5_correlation_engine.md\n M docs/phase6_rule_synthesis.md\n M docs/zero_duplication_rule_guard.md\n M evaluation/capture_academic_case.py\n M evaluation/clock_guard.py\n M evaluation/compare_saved_layers.py\n M evaluation/coverage_probe.py\n M evaluation/export_final_review.py\n M evaluation/export_layer_evidence.py\n M evaluation/fingerprint.py\n M evaluation/run_full_trial.py\n M evaluation/run_schedule.py\n M evaluation/run_svm_benign.py\n M evaluation/verify_no_baseline.py\n M evaluation/verify_postgres_recovery.py\n M evaluation/verify_protected_container.py\n M frontend-dashboard/scripts/capture-dashboard.test.js\n M frontend-dashboard/src/api.js\n M frontend-dashboard/src/api.test.js\n M frontend-dashboard/src/components/HealthBanner.jsx\n M frontend-dashboard/src/components/HealthBanner.test.jsx\n M frontend-dashboard/src/components/status.js\n M frontend-dashboard/src/components/status.test.js\n M frontend-dashboard/src/pages/Containers.jsx\n M frontend-dashboard/src/pages/Monitor.jsx\n M frontend-dashboard/src/pages/Operations.test.jsx\n M frontend-dashboard/src/pages/RuleReviewQueue.jsx\n M frontend-dashboard/src/utils/operations.js\n M frontend-dashboard/src/utils/operations.test.js\n M frontend-dashboard/src/utils/ruleView.js\n M frontend-dashboard/src/utils/ruleView.test.js\n M image-scanner/trivy_wrapper.py\n M monitor-service/behavior_pipeline.py\n M monitor-service/container_watcher.py\n M monitor-service/control_worker.py\n M monitor-service/docker_events.py\n M monitor-service/falco_ingest.py\n M monitor-service/monitor_service.py\n M monitor-service/monitor_status.py\n M response-engine/auto_isolate.py\n M rule-synthesis-engine/confirmation_manager.py\n M rule-synthesis-engine/rule_deduplicator.py\n M rule-synthesis-engine/rule_lifecycle_manager.py\n M scripts/verify_completion_backtest_guard.py\n M scripts/verify_final_checks.py\n M test_manual_check.py\n M test_timeline_check.py\n M tests/test_academic_case_capture.py\n M tests/test_anomaly_model.py\n M tests/test_anomaly_model_candidate.py\n M tests/test_auto_isolate.py\n M tests/test_backend_audit.py\n M tests/test_backend_containers.py\n M tests/test_backend_deployments.py\n M tests/test_backend_monitor.py\n M tests/test_backend_rules.py\n M tests/test_behavior_pipeline.py\n M tests/test_container_watcher.py\n M tests/test_deployment_gate.py\n M tests/test_docker_events.py\n M tests/test_evaluation_clock_guard.py\n M tests/test_evaluation_coverage_probe.py\n M tests/test_evaluation_run_schedule.py\n M tests/test_event_router.py\n M tests/test_falco_ingest.py\n M tests/test_falco_integration.py\n M tests/test_final_completion.py\n M tests/test_incident_pipeline.py\n M tests/test_live_restart_acceptance.py\n M tests/test_monitor_reliability.py\n M tests/test_monitor_service.py\n M tests/test_risk_scorer.py\n M tests/test_rule_deployer.py\n M tests/test_rule_lifecycle_manager.py\n M tests/test_trivy_wrapper.py\n?? alembic.ini\n?? database/migrations/\n?? docs/repository-audit/\n?? evaluation/safety.py\n?? requirements.lock\n?? scripts/verify_schema.py\n?? scripts/verify_types.py\n?? tests/test_ai_import_safety.py\n?? tests/test_audit_resilience.py\n?? tests/test_backend_database.py\n?? tests/test_control_worker.py\n?? tests/test_deployment_outbox.py\n?? tests/test_docker_inspector.py\n?? tests/test_manual_windows.py\n?? tests/test_monitor_shutdown.py\n?? tests/test_rule_review_lock.py\n?? tests/test_schema_migrations.py",
+        "python": "3.12.14 (main, Aug 25 2026, 14:00:49) [Clang 22.1.3 ]",
+        "packages": {
+          "docker": "7.2.0",
+          "scikit-learn": "1.9.1",
+          "fastapi": "0.158.0",
+          "sqlalchemy": "2.1.6",
+          "pytest": "9.1.1",
+          "flake8": "7.4.1"
+        },
+        "node": "v24.19.0",
+        "npm": "11.9.0",
+        "passed": true
+      },
+      "counts": {
+        "python": {
+          "passed": 806,
+          "subtests": 86,
+          "seconds": 44.08
+        },
+        "frontend": {
+          "passed": 165,
+          "files": 34
+        },
+        "root_collection": {
+          "passed": 806,
+          "subtests": 86,
+          "seconds": 40.45
+        },
+        "types": {
+          "files": 79,
+          "status": "PASS",
+          "untyped_bodies_checked": true,
+          "persistent_cache": false,
+          "limitations": "Missing stubs allowed; dynamic values/imported dependencies/tests/root manual diagnostics outside guarantee"
+        }
+      }
+    },
+    {
+      "checkpoint": "batch19",
+      "release": {
+        "started_at": "2026-10-22T17:15:55.430387+00:00",
+        "checks": [
+          {
+            "name": "python-tests",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T171555Z/python-tests.log"
+          },
+          {
+            "name": "lint",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T171555Z/lint.log"
+          },
+          {
+            "name": "types",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T171555Z/types.log"
+          },
+          {
+            "name": "frontend-tests",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T171555Z/frontend-tests.log"
+          },
+          {
+            "name": "frontend-build",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T171555Z/frontend-build.log"
+          }
+        ],
+        "source_commit": "18c40d228de66ce3b75c03b23a569b69e28a1b45",
+        "source_status": "M .env.example\n M .gitignore\n M CHANGELOG.md\n M README.md\n M ROADMAP.md\n M TODO.md\n M ai-analysis/attack_timeline_builder.py\n M ai-analysis/root_cause_summarizer.py\n M backend-api/database.py\n M backend-api/main.py\n M backend-api/models/db_models.py\n M backend-api/routes/audit.py\n M backend-api/routes/containers.py\n M backend-api/routes/deployments.py\n M backend-api/routes/incidents.py\n M backend-api/routes/monitor.py\n M backend-api/routes/rules.py\n M behavioral-engine/anomaly_model.py\n M behavioral-engine/baseline_collector.py\n M behavioral-engine/collect_baseline.py\n M behavioral-engine/feature_extractor.py\n M behavioral-engine/validate_live.py\n M correlation-engine/event_router.py\n M correlation-engine/risk_scorer.py\n M correlation-engine/validate_pipeline.py\n M database/schema.sql\n M deployment-gate/deployment_gate.py\n M deployment-gate/deployment_outbox.py\n M docs/academic_study.md\n M docs/deployment_gate.md\n M docs/falco_rule_matching.md\n M docs/interfaces.md\n M docs/known_limitations.md\n M docs/monitor_operations.md\n M docs/phase1_image_scanner.md\n M docs/phase2_deployment_policy_checker.md\n M docs/phase3_falco_integration.md\n M docs/phase3_tracking_updates.md\n M docs/phase4_behavioral_engine.md\n M docs/phase5_correlation_engine.md\n M docs/phase6_rule_synthesis.md\n M docs/zero_duplication_rule_guard.md\n M evaluation/capture_academic_case.py\n M evaluation/clock_guard.py\n M evaluation/compare_saved_layers.py\n M evaluation/coverage_probe.py\n M evaluation/export_final_review.py\n M evaluation/export_layer_evidence.py\n M evaluation/fingerprint.py\n M evaluation/run_full_trial.py\n M evaluation/run_schedule.py\n M evaluation/run_svm_benign.py\n M evaluation/verify_no_baseline.py\n M evaluation/verify_postgres_recovery.py\n M evaluation/verify_protected_container.py\n M frontend-dashboard/scripts/capture-dashboard.test.js\n M frontend-dashboard/src/api.js\n M frontend-dashboard/src/api.test.js\n M frontend-dashboard/src/components/HealthBanner.jsx\n M frontend-dashboard/src/components/HealthBanner.test.jsx\n M frontend-dashboard/src/components/status.js\n M frontend-dashboard/src/components/status.test.js\n M frontend-dashboard/src/pages/Containers.jsx\n M frontend-dashboard/src/pages/Monitor.jsx\n M frontend-dashboard/src/pages/Operations.test.jsx\n M frontend-dashboard/src/pages/RuleReviewQueue.jsx\n M frontend-dashboard/src/utils/operations.js\n M frontend-dashboard/src/utils/operations.test.js\n M frontend-dashboard/src/utils/ruleView.js\n M frontend-dashboard/src/utils/ruleView.test.js\n M image-scanner/trivy_wrapper.py\n M monitor-service/behavior_pipeline.py\n M monitor-service/container_watcher.py\n M monitor-service/control_worker.py\n M monitor-service/docker_events.py\n M monitor-service/falco_ingest.py\n M monitor-service/monitor_service.py\n M monitor-service/monitor_status.py\n M response-engine/auto_isolate.py\n M rule-synthesis-engine/confirmation_manager.py\n M rule-synthesis-engine/rule_deduplicator.py\n M rule-synthesis-engine/rule_lifecycle_manager.py\n M scripts/verify_completion_backtest_guard.py\n M scripts/verify_final_checks.py\n M test_manual_check.py\n M test_timeline_check.py\n M tests/test_academic_case_capture.py\n M tests/test_anomaly_model.py\n M tests/test_anomaly_model_candidate.py\n M tests/test_auto_isolate.py\n M tests/test_backend_audit.py\n M tests/test_backend_containers.py\n M tests/test_backend_deployments.py\n M tests/test_backend_monitor.py\n M tests/test_backend_rules.py\n M tests/test_behavior_pipeline.py\n M tests/test_container_watcher.py\n M tests/test_deployment_gate.py\n M tests/test_docker_events.py\n M tests/test_evaluation_clock_guard.py\n M tests/test_evaluation_coverage_probe.py\n M tests/test_evaluation_run_schedule.py\n M tests/test_event_router.py\n M tests/test_falco_ingest.py\n M tests/test_falco_integration.py\n M tests/test_final_completion.py\n M tests/test_incident_pipeline.py\n M tests/test_live_restart_acceptance.py\n M tests/test_monitor_reliability.py\n M tests/test_monitor_service.py\n M tests/test_risk_scorer.py\n M tests/test_rule_deployer.py\n M tests/test_rule_lifecycle_manager.py\n M tests/test_trivy_wrapper.py\n?? alembic.ini\n?? database/migrations/\n?? docs/repository-audit/\n?? evaluation/safety.py\n?? requirements.lock\n?? scripts/verify_schema.py\n?? scripts/verify_types.py\n?? tests/test_ai_import_safety.py\n?? tests/test_audit_resilience.py\n?? tests/test_backend_database.py\n?? tests/test_control_worker.py\n?? tests/test_deployment_outbox.py\n?? tests/test_docker_inspector.py\n?? tests/test_manual_windows.py\n?? tests/test_monitor_shutdown.py\n?? tests/test_rule_review_lock.py\n?? tests/test_schema_migrations.py",
+        "python": "3.12.14 (main, Aug 25 2026, 14:00:49) [Clang 22.1.3 ]",
+        "packages": {
+          "docker": "7.2.0",
+          "scikit-learn": "1.9.1",
+          "fastapi": "0.158.0",
+          "sqlalchemy": "2.1.6",
+          "pytest": "9.1.1",
+          "flake8": "7.4.1"
+        },
+        "node": "v24.19.0",
+        "npm": "11.9.0",
+        "passed": true
+      },
+      "counts": {
+        "python": {
+          "passed": 813,
+          "subtests": 86,
+          "seconds": 35.7
+        },
+        "frontend": {
+          "passed": 165,
+          "files": 34
+        },
+        "root_collection": {
+          "passed": 813,
+          "subtests": 86,
+          "seconds": 40.34
+        },
+        "types": {
+          "files": 79,
+          "status": "PASS",
+          "untyped_bodies_checked": true,
+          "persistent_cache": false,
+          "limitations": "Missing stubs allowed; dynamic values/imported dependencies/tests/root manual diagnostics outside guarantee"
+        }
+      }
+    },
+    {
+      "checkpoint": "batch20",
+      "release": {
+        "started_at": "2026-10-22T18:01:25.974333+00:00",
+        "checks": [
+          {
+            "name": "python-tests",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T180125Z/python-tests.log"
+          },
+          {
+            "name": "lint",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T180125Z/lint.log"
+          },
+          {
+            "name": "types",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T180125Z/types.log"
+          },
+          {
+            "name": "frontend-tests",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T180125Z/frontend-tests.log"
+          },
+          {
+            "name": "frontend-build",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T180125Z/frontend-build.log"
+          }
+        ],
+        "source_commit": "18c40d228de66ce3b75c03b23a569b69e28a1b45",
+        "source_status": "M .env.example\n M .gitignore\n M CHANGELOG.md\n M README.md\n M ROADMAP.md\n M TODO.md\n M ai-analysis/attack_timeline_builder.py\n M ai-analysis/root_cause_summarizer.py\n M backend-api/database.py\n M backend-api/main.py\n M backend-api/models/db_models.py\n M backend-api/routes/audit.py\n M backend-api/routes/containers.py\n M backend-api/routes/deployments.py\n M backend-api/routes/incidents.py\n M backend-api/routes/monitor.py\n M backend-api/routes/rules.py\n M behavioral-engine/anomaly_model.py\n M behavioral-engine/baseline_collector.py\n M behavioral-engine/collect_baseline.py\n M behavioral-engine/feature_extractor.py\n M behavioral-engine/validate_live.py\n M correlation-engine/event_router.py\n M correlation-engine/risk_scorer.py\n M correlation-engine/validate_pipeline.py\n M database/schema.sql\n M deployment-gate/deployment_gate.py\n M deployment-gate/deployment_outbox.py\n M docs/academic_study.md\n M docs/deployment_gate.md\n M docs/falco_rule_matching.md\n M docs/interfaces.md\n M docs/known_limitations.md\n M docs/monitor_operations.md\n M docs/phase1_image_scanner.md\n M docs/phase2_deployment_policy_checker.md\n M docs/phase3_falco_integration.md\n M docs/phase3_tracking_updates.md\n M docs/phase4_behavioral_engine.md\n M docs/phase5_correlation_engine.md\n M docs/phase6_rule_synthesis.md\n M docs/zero_duplication_rule_guard.md\n M evaluation/capture_academic_case.py\n M evaluation/clock_guard.py\n M evaluation/compare_saved_layers.py\n M evaluation/coverage_probe.py\n M evaluation/export_final_review.py\n M evaluation/export_layer_evidence.py\n M evaluation/fingerprint.py\n M evaluation/run_full_trial.py\n M evaluation/run_schedule.py\n M evaluation/run_svm_benign.py\n M evaluation/verify_no_baseline.py\n M evaluation/verify_postgres_recovery.py\n M evaluation/verify_protected_container.py\n M frontend-dashboard/scripts/capture-dashboard.test.js\n M frontend-dashboard/src/api.js\n M frontend-dashboard/src/api.test.js\n M frontend-dashboard/src/components/HealthBanner.jsx\n M frontend-dashboard/src/components/HealthBanner.test.jsx\n M frontend-dashboard/src/components/status.js\n M frontend-dashboard/src/components/status.test.js\n M frontend-dashboard/src/pages/Containers.jsx\n M frontend-dashboard/src/pages/Monitor.jsx\n M frontend-dashboard/src/pages/Operations.test.jsx\n M frontend-dashboard/src/pages/RuleReviewQueue.jsx\n M frontend-dashboard/src/utils/operations.js\n M frontend-dashboard/src/utils/operations.test.js\n M frontend-dashboard/src/utils/ruleView.js\n M frontend-dashboard/src/utils/ruleView.test.js\n M image-scanner/trivy_wrapper.py\n M monitor-service/behavior_pipeline.py\n M monitor-service/container_watcher.py\n M monitor-service/control_worker.py\n M monitor-service/docker_events.py\n M monitor-service/falco_ingest.py\n M monitor-service/monitor_service.py\n M monitor-service/monitor_status.py\n M response-engine/auto_isolate.py\n M rule-synthesis-engine/confirmation_manager.py\n M rule-synthesis-engine/rule_deduplicator.py\n M rule-synthesis-engine/rule_lifecycle_manager.py\n M scripts/verify_completion_backtest_guard.py\n M scripts/verify_final_checks.py\n M test_manual_check.py\n M test_timeline_check.py\n M tests/test_academic_case_capture.py\n M tests/test_anomaly_model.py\n M tests/test_anomaly_model_candidate.py\n M tests/test_auto_isolate.py\n M tests/test_backend_audit.py\n M tests/test_backend_containers.py\n M tests/test_backend_deployments.py\n M tests/test_backend_monitor.py\n M tests/test_backend_rules.py\n M tests/test_behavior_pipeline.py\n M tests/test_container_watcher.py\n M tests/test_deployment_gate.py\n M tests/test_docker_events.py\n M tests/test_evaluation_clock_guard.py\n M tests/test_evaluation_coverage_probe.py\n M tests/test_evaluation_run_schedule.py\n M tests/test_event_router.py\n M tests/test_falco_ingest.py\n M tests/test_falco_integration.py\n M tests/test_final_completion.py\n M tests/test_incident_pipeline.py\n M tests/test_live_restart_acceptance.py\n M tests/test_monitor_reliability.py\n M tests/test_monitor_service.py\n M tests/test_risk_scorer.py\n M tests/test_rule_deployer.py\n M tests/test_rule_lifecycle_manager.py\n M tests/test_trivy_wrapper.py\n?? alembic.ini\n?? database/migrations/\n?? docs/repository-audit/\n?? evaluation/safety.py\n?? requirements.lock\n?? scripts/verify_schema.py\n?? scripts/verify_types.py\n?? tests/test_ai_import_safety.py\n?? tests/test_audit_resilience.py\n?? tests/test_backend_database.py\n?? tests/test_control_worker.py\n?? tests/test_deployment_outbox.py\n?? tests/test_docker_inspector.py\n?? tests/test_manual_windows.py\n?? tests/test_monitor_shutdown.py\n?? tests/test_rule_review_lock.py\n?? tests/test_schema_migrations.py",
+        "python": "3.12.14 (main, Aug 25 2026, 14:00:49) [Clang 22.1.3 ]",
+        "packages": {
+          "docker": "7.2.0",
+          "scikit-learn": "1.9.1",
+          "fastapi": "0.158.0",
+          "sqlalchemy": "2.1.6",
+          "pytest": "9.1.1",
+          "flake8": "7.4.1"
+        },
+        "node": "v24.19.0",
+        "npm": "11.9.0",
+        "passed": true
+      },
+      "counts": {
+        "python": {
+          "passed": 829,
+          "subtests": 86,
+          "seconds": 40.08
+        },
+        "frontend": {
+          "passed": 165,
+          "files": 34
+        },
+        "types": {
+          "files": 79,
+          "status": "PASS",
+          "untyped_bodies_checked": true,
+          "persistent_cache": false,
+          "limitations": "Missing stubs allowed; dynamic values/imported dependencies/tests/root manual diagnostics outside guarantee"
+        },
+        "root_collection": {
+          "status": "NOT RERUN in Batch 20",
+          "last_completed": "batch19, 813 tests + 86 subtests",
+          "scope": "Final release reruns tests/ with all new regressions; unrelated root diagnostic files unchanged"
+        }
+      }
+    },
+    {
+      "checkpoint": "batch21",
+      "release": {
+        "started_at": "2026-10-22T18:10:22.291621+00:00",
+        "checks": [
+          {
+            "name": "python-tests",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T181022Z/python-tests.log"
+          },
+          {
+            "name": "lint",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T181022Z/lint.log"
+          },
+          {
+            "name": "types",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T181022Z/types.log"
+          },
+          {
+            "name": "frontend-tests",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T181022Z/frontend-tests.log"
+          },
+          {
+            "name": "frontend-build",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T181022Z/frontend-build.log"
+          }
+        ],
+        "source_commit": "18c40d228de66ce3b75c03b23a569b69e28a1b45",
+        "source_status": "M .env.example\n M .gitignore\n M CHANGELOG.md\n M README.md\n M ROADMAP.md\n M TODO.md\n M ai-analysis/attack_timeline_builder.py\n M ai-analysis/root_cause_summarizer.py\n M backend-api/database.py\n M backend-api/main.py\n M backend-api/models/db_models.py\n M backend-api/routes/audit.py\n M backend-api/routes/containers.py\n M backend-api/routes/deployments.py\n M backend-api/routes/incidents.py\n M backend-api/routes/monitor.py\n M backend-api/routes/rules.py\n M behavioral-engine/anomaly_model.py\n M behavioral-engine/baseline_collector.py\n M behavioral-engine/collect_baseline.py\n M behavioral-engine/feature_extractor.py\n M behavioral-engine/validate_live.py\n M correlation-engine/event_router.py\n M correlation-engine/risk_scorer.py\n M correlation-engine/validate_pipeline.py\n M database/schema.sql\n M deployment-gate/deployment_gate.py\n M deployment-gate/deployment_outbox.py\n M docs/academic_study.md\n M docs/deployment_gate.md\n M docs/falco_rule_matching.md\n M docs/interfaces.md\n M docs/known_limitations.md\n M docs/monitor_operations.md\n M docs/phase1_image_scanner.md\n M docs/phase2_deployment_policy_checker.md\n M docs/phase3_falco_integration.md\n M docs/phase3_tracking_updates.md\n M docs/phase4_behavioral_engine.md\n M docs/phase5_correlation_engine.md\n M docs/phase6_rule_synthesis.md\n M docs/zero_duplication_rule_guard.md\n M evaluation/capture_academic_case.py\n M evaluation/clock_guard.py\n M evaluation/compare_saved_layers.py\n M evaluation/coverage_probe.py\n M evaluation/export_final_review.py\n M evaluation/export_layer_evidence.py\n M evaluation/fingerprint.py\n M evaluation/run_full_trial.py\n M evaluation/run_schedule.py\n M evaluation/run_svm_benign.py\n M evaluation/verify_no_baseline.py\n M evaluation/verify_postgres_recovery.py\n M evaluation/verify_protected_container.py\n M frontend-dashboard/scripts/capture-dashboard.test.js\n M frontend-dashboard/src/api.js\n M frontend-dashboard/src/api.test.js\n M frontend-dashboard/src/components/HealthBanner.jsx\n M frontend-dashboard/src/components/HealthBanner.test.jsx\n M frontend-dashboard/src/components/status.js\n M frontend-dashboard/src/components/status.test.js\n M frontend-dashboard/src/pages/Containers.jsx\n M frontend-dashboard/src/pages/Monitor.jsx\n M frontend-dashboard/src/pages/Operations.test.jsx\n M frontend-dashboard/src/pages/RuleReviewQueue.jsx\n M frontend-dashboard/src/utils/operations.js\n M frontend-dashboard/src/utils/operations.test.js\n M frontend-dashboard/src/utils/ruleView.js\n M frontend-dashboard/src/utils/ruleView.test.js\n M image-scanner/trivy_wrapper.py\n M monitor-service/audit_client.py\n M monitor-service/behavior_pipeline.py\n M monitor-service/container_watcher.py\n M monitor-service/control_worker.py\n M monitor-service/docker_events.py\n M monitor-service/falco_ingest.py\n M monitor-service/monitor_service.py\n M monitor-service/monitor_status.py\n M response-engine/auto_isolate.py\n M rule-synthesis-engine/confirmation_manager.py\n M rule-synthesis-engine/rule_deduplicator.py\n M rule-synthesis-engine/rule_lifecycle_manager.py\n M scripts/verify_completion_backtest_guard.py\n M scripts/verify_final_checks.py\n M test_manual_check.py\n M test_timeline_check.py\n M tests/test_academic_case_capture.py\n M tests/test_anomaly_model.py\n M tests/test_anomaly_model_candidate.py\n M tests/test_audit_client.py\n M tests/test_auto_isolate.py\n M tests/test_backend_audit.py\n M tests/test_backend_containers.py\n M tests/test_backend_deployments.py\n M tests/test_backend_monitor.py\n M tests/test_backend_rules.py\n M tests/test_behavior_pipeline.py\n M tests/test_container_watcher.py\n M tests/test_deployment_gate.py\n M tests/test_docker_events.py\n M tests/test_evaluation_clock_guard.py\n M tests/test_evaluation_coverage_probe.py\n M tests/test_evaluation_run_schedule.py\n M tests/test_event_router.py\n M tests/test_falco_ingest.py\n M tests/test_falco_integration.py\n M tests/test_final_completion.py\n M tests/test_incident_pipeline.py\n M tests/test_live_restart_acceptance.py\n M tests/test_monitor_reliability.py\n M tests/test_monitor_service.py\n M tests/test_risk_scorer.py\n M tests/test_rule_deployer.py\n M tests/test_rule_lifecycle_manager.py\n M tests/test_trivy_wrapper.py\n?? alembic.ini\n?? database/migrations/\n?? docs/repository-audit/\n?? evaluation/safety.py\n?? requirements.lock\n?? scripts/verify_schema.py\n?? scripts/verify_types.py\n?? tests/test_ai_import_safety.py\n?? tests/test_audit_resilience.py\n?? tests/test_backend_database.py\n?? tests/test_control_worker.py\n?? tests/test_deployment_outbox.py\n?? tests/test_docker_inspector.py\n?? tests/test_manual_windows.py\n?? tests/test_monitor_shutdown.py\n?? tests/test_rule_review_lock.py\n?? tests/test_schema_migrations.py",
+        "python": "3.12.14 (main, Aug 25 2026, 14:00:49) [Clang 22.1.3 ]",
+        "packages": {
+          "docker": "7.2.0",
+          "scikit-learn": "1.9.1",
+          "fastapi": "0.158.0",
+          "sqlalchemy": "2.1.6",
+          "pytest": "9.1.1",
+          "flake8": "7.4.1"
+        },
+        "node": "v24.19.0",
+        "npm": "11.9.0",
+        "passed": true
+      },
+      "counts": {
+        "python": {
+          "passed": 874,
+          "subtests": 86,
+          "seconds": 63.06
+        },
+        "frontend": {
+          "passed": 165,
+          "files": 34
+        },
+        "types": {
+          "files": 79,
+          "status": "PASS",
+          "untyped_bodies_checked": true,
+          "persistent_cache": false,
+          "limitations": "Missing stubs allowed; dynamic values/imported dependencies/tests/root manual diagnostics outside guarantee"
+        },
+        "root_collection": {
+          "status": "NOT RERUN in Batch 21",
+          "last_completed": "batch19, 813 tests + 86 subtests",
+          "scope": "Final release reruns tests/ with all new regressions; unrelated root diagnostic files unchanged"
+        }
+      }
+    },
+    {
+      "checkpoint": "batch22",
+      "release": {
+        "started_at": "2026-10-22T18:21:49.223361+00:00",
+        "checks": [
+          {
+            "name": "python-tests",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T182149Z/python-tests.log"
+          },
+          {
+            "name": "lint",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T182149Z/lint.log"
+          },
+          {
+            "name": "types",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T182149Z/types.log"
+          },
+          {
+            "name": "frontend-tests",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T182149Z/frontend-tests.log"
+          },
+          {
+            "name": "frontend-build",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T182149Z/frontend-build.log"
+          }
+        ],
+        "source_commit": "18c40d228de66ce3b75c03b23a569b69e28a1b45",
+        "source_status": "M .env.example\n M .gitignore\n M CHANGELOG.md\n M README.md\n M ROADMAP.md\n M TODO.md\n M ai-analysis/attack_timeline_builder.py\n M ai-analysis/root_cause_summarizer.py\n M backend-api/database.py\n M backend-api/main.py\n M backend-api/models/db_models.py\n M backend-api/routes/audit.py\n M backend-api/routes/containers.py\n M backend-api/routes/deployments.py\n M backend-api/routes/incidents.py\n M backend-api/routes/monitor.py\n M backend-api/routes/rules.py\n M behavioral-engine/anomaly_model.py\n M behavioral-engine/baseline_collector.py\n M behavioral-engine/collect_baseline.py\n M behavioral-engine/feature_extractor.py\n M behavioral-engine/validate_live.py\n M correlation-engine/event_router.py\n M correlation-engine/risk_scorer.py\n M correlation-engine/validate_pipeline.py\n M database/schema.sql\n M deployment-gate/deployment_gate.py\n M deployment-gate/deployment_outbox.py\n M docs/academic_study.md\n M docs/deployment_gate.md\n M docs/falco_rule_matching.md\n M docs/interfaces.md\n M docs/known_limitations.md\n M docs/monitor_operations.md\n M docs/phase1_image_scanner.md\n M docs/phase2_deployment_policy_checker.md\n M docs/phase3_falco_integration.md\n M docs/phase3_tracking_updates.md\n M docs/phase4_behavioral_engine.md\n M docs/phase5_correlation_engine.md\n M docs/phase6_rule_synthesis.md\n M docs/zero_duplication_rule_guard.md\n M evaluation/capture_academic_case.py\n M evaluation/clock_guard.py\n M evaluation/compare_saved_layers.py\n M evaluation/coverage_probe.py\n M evaluation/export_final_review.py\n M evaluation/export_layer_evidence.py\n M evaluation/fingerprint.py\n M evaluation/run_full_trial.py\n M evaluation/run_schedule.py\n M evaluation/run_svm_benign.py\n M evaluation/verify_no_baseline.py\n M evaluation/verify_postgres_recovery.py\n M evaluation/verify_protected_container.py\n M frontend-dashboard/scripts/capture-dashboard.test.js\n M frontend-dashboard/src/api.js\n M frontend-dashboard/src/api.test.js\n M frontend-dashboard/src/components/HealthBanner.jsx\n M frontend-dashboard/src/components/HealthBanner.test.jsx\n M frontend-dashboard/src/components/status.js\n M frontend-dashboard/src/components/status.test.js\n M frontend-dashboard/src/pages/Containers.jsx\n M frontend-dashboard/src/pages/Monitor.jsx\n M frontend-dashboard/src/pages/Operations.test.jsx\n M frontend-dashboard/src/pages/RuleReviewQueue.jsx\n M frontend-dashboard/src/utils/operations.js\n M frontend-dashboard/src/utils/operations.test.js\n M frontend-dashboard/src/utils/ruleView.js\n M frontend-dashboard/src/utils/ruleView.test.js\n M image-scanner/trivy_wrapper.py\n M monitor-service/audit_client.py\n M monitor-service/behavior_pipeline.py\n M monitor-service/container_watcher.py\n M monitor-service/control_worker.py\n M monitor-service/docker_events.py\n M monitor-service/falco_ingest.py\n M monitor-service/monitor_service.py\n M monitor-service/monitor_status.py\n M response-engine/auto_isolate.py\n M rule-synthesis-engine/confirmation_manager.py\n M rule-synthesis-engine/rule_deduplicator.py\n M rule-synthesis-engine/rule_lifecycle_manager.py\n M scripts/verify_completion_backtest_guard.py\n M scripts/verify_final_checks.py\n M test_manual_check.py\n M test_timeline_check.py\n M tests/test_academic_case_capture.py\n M tests/test_anomaly_model.py\n M tests/test_anomaly_model_candidate.py\n M tests/test_audit_client.py\n M tests/test_auto_isolate.py\n M tests/test_backend_audit.py\n M tests/test_backend_containers.py\n M tests/test_backend_deployments.py\n M tests/test_backend_monitor.py\n M tests/test_backend_rules.py\n M tests/test_behavior_pipeline.py\n M tests/test_container_watcher.py\n M tests/test_deployment_gate.py\n M tests/test_docker_events.py\n M tests/test_evaluation_clock_guard.py\n M tests/test_evaluation_coverage_probe.py\n M tests/test_evaluation_run_schedule.py\n M tests/test_event_router.py\n M tests/test_falco_ingest.py\n M tests/test_falco_integration.py\n M tests/test_final_completion.py\n M tests/test_incident_pipeline.py\n M tests/test_live_restart_acceptance.py\n M tests/test_monitor_reliability.py\n M tests/test_monitor_service.py\n M tests/test_risk_scorer.py\n M tests/test_rule_deployer.py\n M tests/test_rule_lifecycle_manager.py\n M tests/test_trivy_wrapper.py\n?? alembic.ini\n?? database/migrations/\n?? docs/repository-audit/\n?? evaluation/safety.py\n?? requirements.lock\n?? scripts/verify_schema.py\n?? scripts/verify_types.py\n?? tests/test_ai_import_safety.py\n?? tests/test_audit_resilience.py\n?? tests/test_backend_database.py\n?? tests/test_control_worker.py\n?? tests/test_deployment_outbox.py\n?? tests/test_docker_inspector.py\n?? tests/test_manual_windows.py\n?? tests/test_monitor_shutdown.py\n?? tests/test_rule_review_lock.py\n?? tests/test_schema_migrations.py",
+        "python": "3.12.14 (main, Aug 25 2026, 14:00:49) [Clang 22.1.3 ]",
+        "packages": {
+          "docker": "7.2.0",
+          "scikit-learn": "1.9.1",
+          "fastapi": "0.158.0",
+          "sqlalchemy": "2.1.6",
+          "pytest": "9.1.1",
+          "flake8": "7.4.1"
+        },
+        "node": "v24.19.0",
+        "npm": "11.9.0",
+        "passed": true
+      },
+      "counts": {
+        "python": {
+          "passed": 895,
+          "subtests": 86,
+          "seconds": 35.72
+        },
+        "frontend": {
+          "passed": 165,
+          "files": 34
+        },
+        "types": {
+          "files": 79,
+          "status": "PASS",
+          "untyped_bodies_checked": true,
+          "persistent_cache": false,
+          "limitations": "Missing stubs allowed; dynamic values/imported dependencies/tests/root manual diagnostics outside guarantee"
+        },
+        "root_collection": {
+          "status": "NOT RERUN in Batch 22",
+          "last_completed": "batch19, 813 tests + 86 subtests",
+          "scope": "Final release reruns tests/ with all new regressions; unrelated root diagnostic files unchanged"
+        }
+      }
+    },
+    {
+      "checkpoint": "batch23",
+      "release": {
+        "started_at": "2026-10-22T18:33:40.122435+00:00",
+        "checks": [
+          {
+            "name": "python-tests",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T183340Z/python-tests.log"
+          },
+          {
+            "name": "lint",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T183340Z/lint.log"
+          },
+          {
+            "name": "types",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T183340Z/types.log"
+          },
+          {
+            "name": "frontend-tests",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T183340Z/frontend-tests.log"
+          },
+          {
+            "name": "frontend-build",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T183340Z/frontend-build.log"
+          }
+        ],
+        "source_commit": "18c40d228de66ce3b75c03b23a569b69e28a1b45",
+        "source_status": "M .env.example\n M .gitignore\n M CHANGELOG.md\n M README.md\n M ROADMAP.md\n M TODO.md\n M ai-analysis/attack_timeline_builder.py\n M ai-analysis/root_cause_summarizer.py\n M backend-api/database.py\n M backend-api/main.py\n M backend-api/models/db_models.py\n M backend-api/routes/audit.py\n M backend-api/routes/containers.py\n M backend-api/routes/deployments.py\n M backend-api/routes/incidents.py\n M backend-api/routes/monitor.py\n M backend-api/routes/rules.py\n M behavioral-engine/anomaly_model.py\n M behavioral-engine/baseline_collector.py\n M behavioral-engine/collect_baseline.py\n M behavioral-engine/feature_extractor.py\n M behavioral-engine/validate_live.py\n M correlation-engine/event_router.py\n M correlation-engine/risk_scorer.py\n M correlation-engine/validate_pipeline.py\n M database/schema.sql\n M deployment-gate/deployment_gate.py\n M deployment-gate/deployment_outbox.py\n M docs/academic_study.md\n M docs/deployment_gate.md\n M docs/falco_rule_matching.md\n M docs/interfaces.md\n M docs/known_limitations.md\n M docs/monitor_operations.md\n M docs/phase1_image_scanner.md\n M docs/phase2_deployment_policy_checker.md\n M docs/phase3_falco_integration.md\n M docs/phase3_tracking_updates.md\n M docs/phase4_behavioral_engine.md\n M docs/phase5_correlation_engine.md\n M docs/phase6_rule_synthesis.md\n M docs/zero_duplication_rule_guard.md\n M evaluation/capture_academic_case.py\n M evaluation/clock_guard.py\n M evaluation/compare_saved_layers.py\n M evaluation/coverage_probe.py\n M evaluation/export_final_review.py\n M evaluation/export_layer_evidence.py\n M evaluation/fingerprint.py\n M evaluation/run_full_trial.py\n M evaluation/run_schedule.py\n M evaluation/run_svm_benign.py\n M evaluation/verify_no_baseline.py\n M evaluation/verify_postgres_recovery.py\n M evaluation/verify_protected_container.py\n M frontend-dashboard/scripts/capture-dashboard.test.js\n M frontend-dashboard/src/api.js\n M frontend-dashboard/src/api.test.js\n M frontend-dashboard/src/components/HealthBanner.jsx\n M frontend-dashboard/src/components/HealthBanner.test.jsx\n M frontend-dashboard/src/components/status.js\n M frontend-dashboard/src/components/status.test.js\n M frontend-dashboard/src/pages/Containers.jsx\n M frontend-dashboard/src/pages/Monitor.jsx\n M frontend-dashboard/src/pages/Operations.test.jsx\n M frontend-dashboard/src/pages/RuleReviewQueue.jsx\n M frontend-dashboard/src/utils/operations.js\n M frontend-dashboard/src/utils/operations.test.js\n M frontend-dashboard/src/utils/ruleView.js\n M frontend-dashboard/src/utils/ruleView.test.js\n M image-scanner/trivy_wrapper.py\n M monitor-service/audit_client.py\n M monitor-service/behavior_pipeline.py\n M monitor-service/container_watcher.py\n M monitor-service/control_worker.py\n M monitor-service/docker_events.py\n M monitor-service/falco_ingest.py\n M monitor-service/monitor_service.py\n M monitor-service/monitor_status.py\n M response-engine/auto_isolate.py\n M rule-synthesis-engine/confirmation_manager.py\n M rule-synthesis-engine/rule_deduplicator.py\n M rule-synthesis-engine/rule_lifecycle_manager.py\n M scripts/verify_completion_backtest_guard.py\n M scripts/verify_final_checks.py\n M test_manual_check.py\n M test_timeline_check.py\n M tests/test_academic_case_capture.py\n M tests/test_anomaly_model.py\n M tests/test_anomaly_model_candidate.py\n M tests/test_audit_client.py\n M tests/test_auto_isolate.py\n M tests/test_backend_audit.py\n M tests/test_backend_containers.py\n M tests/test_backend_deployments.py\n M tests/test_backend_monitor.py\n M tests/test_backend_rules.py\n M tests/test_behavior_pipeline.py\n M tests/test_container_watcher.py\n M tests/test_deployment_gate.py\n M tests/test_docker_events.py\n M tests/test_evaluation_clock_guard.py\n M tests/test_evaluation_coverage_probe.py\n M tests/test_evaluation_run_schedule.py\n M tests/test_event_router.py\n M tests/test_falco_ingest.py\n M tests/test_falco_integration.py\n M tests/test_final_completion.py\n M tests/test_incident_pipeline.py\n M tests/test_live_restart_acceptance.py\n M tests/test_monitor_reliability.py\n M tests/test_monitor_service.py\n M tests/test_risk_scorer.py\n M tests/test_rule_deployer.py\n M tests/test_rule_lifecycle_manager.py\n M tests/test_trivy_wrapper.py\n?? alembic.ini\n?? database/migrations/\n?? docs/repository-audit/\n?? evaluation/safety.py\n?? requirements.lock\n?? scripts/verify_schema.py\n?? scripts/verify_types.py\n?? tests/test_ai_import_safety.py\n?? tests/test_audit_resilience.py\n?? tests/test_backend_database.py\n?? tests/test_control_worker.py\n?? tests/test_deployment_outbox.py\n?? tests/test_docker_inspector.py\n?? tests/test_manual_windows.py\n?? tests/test_monitor_shutdown.py\n?? tests/test_rule_review_lock.py\n?? tests/test_schema_migrations.py",
+        "python": "3.12.14 (main, Aug 25 2026, 14:00:49) [Clang 22.1.3 ]",
+        "packages": {
+          "docker": "7.2.0",
+          "scikit-learn": "1.9.1",
+          "fastapi": "0.158.0",
+          "sqlalchemy": "2.1.6",
+          "pytest": "9.1.1",
+          "flake8": "7.4.1"
+        },
+        "node": "v24.19.0",
+        "npm": "11.9.0",
+        "passed": true
+      },
+      "counts": {
+        "python": {
+          "passed": 917,
+          "subtests": 86,
+          "seconds": 35.61
+        },
+        "frontend": {
+          "passed": 165,
+          "files": 34
+        },
+        "types": {
+          "files": 79,
+          "status": "PASS",
+          "untyped_bodies_checked": true,
+          "persistent_cache": false,
+          "limitations": "Missing stubs allowed; dynamic values/imported dependencies/tests/root manual diagnostics outside guarantee"
+        },
+        "root_collection": {
+          "passed": 917,
+          "subtests": 86,
+          "seconds": 35.14,
+          "command": "python -m pytest -q",
+          "log": "state/evaluation/audit-final/root-tests.log",
+          "environment": "Retained installed-package PYTHONPATH; AUTO_ISOLATION_ENABLED=false",
+          "status": "PASS"
+        }
+      }
+    },
+    {
+      "checkpoint": "final_handoff_after_batch23",
+      "release": {
+        "started_at": "2026-10-22T18:33:40.122435+00:00",
+        "checks": [
+          {
+            "name": "python-tests",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T183340Z/python-tests.log"
+          },
+          {
+            "name": "lint",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T183340Z/lint.log"
+          },
+          {
+            "name": "types",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T183340Z/types.log"
+          },
+          {
+            "name": "frontend-tests",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T183340Z/frontend-tests.log"
+          },
+          {
+            "name": "frontend-build",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T183340Z/frontend-build.log"
+          }
+        ],
+        "source_commit": "18c40d228de66ce3b75c03b23a569b69e28a1b45",
+        "source_status": "M .env.example\n M .gitignore\n M CHANGELOG.md\n M README.md\n M ROADMAP.md\n M TODO.md\n M ai-analysis/attack_timeline_builder.py\n M ai-analysis/root_cause_summarizer.py\n M backend-api/database.py\n M backend-api/main.py\n M backend-api/models/db_models.py\n M backend-api/routes/audit.py\n M backend-api/routes/containers.py\n M backend-api/routes/deployments.py\n M backend-api/routes/incidents.py\n M backend-api/routes/monitor.py\n M backend-api/routes/rules.py\n M behavioral-engine/anomaly_model.py\n M behavioral-engine/baseline_collector.py\n M behavioral-engine/collect_baseline.py\n M behavioral-engine/feature_extractor.py\n M behavioral-engine/validate_live.py\n M correlation-engine/event_router.py\n M correlation-engine/risk_scorer.py\n M correlation-engine/validate_pipeline.py\n M database/schema.sql\n M deployment-gate/deployment_gate.py\n M deployment-gate/deployment_outbox.py\n M docs/academic_study.md\n M docs/deployment_gate.md\n M docs/falco_rule_matching.md\n M docs/interfaces.md\n M docs/known_limitations.md\n M docs/monitor_operations.md\n M docs/phase1_image_scanner.md\n M docs/phase2_deployment_policy_checker.md\n M docs/phase3_falco_integration.md\n M docs/phase3_tracking_updates.md\n M docs/phase4_behavioral_engine.md\n M docs/phase5_correlation_engine.md\n M docs/phase6_rule_synthesis.md\n M docs/zero_duplication_rule_guard.md\n M evaluation/capture_academic_case.py\n M evaluation/clock_guard.py\n M evaluation/compare_saved_layers.py\n M evaluation/coverage_probe.py\n M evaluation/export_final_review.py\n M evaluation/export_layer_evidence.py\n M evaluation/fingerprint.py\n M evaluation/run_full_trial.py\n M evaluation/run_schedule.py\n M evaluation/run_svm_benign.py\n M evaluation/verify_no_baseline.py\n M evaluation/verify_postgres_recovery.py\n M evaluation/verify_protected_container.py\n M frontend-dashboard/scripts/capture-dashboard.test.js\n M frontend-dashboard/src/api.js\n M frontend-dashboard/src/api.test.js\n M frontend-dashboard/src/components/HealthBanner.jsx\n M frontend-dashboard/src/components/HealthBanner.test.jsx\n M frontend-dashboard/src/components/status.js\n M frontend-dashboard/src/components/status.test.js\n M frontend-dashboard/src/pages/Containers.jsx\n M frontend-dashboard/src/pages/Monitor.jsx\n M frontend-dashboard/src/pages/Operations.test.jsx\n M frontend-dashboard/src/pages/RuleReviewQueue.jsx\n M frontend-dashboard/src/utils/operations.js\n M frontend-dashboard/src/utils/operations.test.js\n M frontend-dashboard/src/utils/ruleView.js\n M frontend-dashboard/src/utils/ruleView.test.js\n M image-scanner/trivy_wrapper.py\n M monitor-service/audit_client.py\n M monitor-service/behavior_pipeline.py\n M monitor-service/container_watcher.py\n M monitor-service/control_worker.py\n M monitor-service/docker_events.py\n M monitor-service/falco_ingest.py\n M monitor-service/monitor_service.py\n M monitor-service/monitor_status.py\n M response-engine/auto_isolate.py\n M rule-synthesis-engine/confirmation_manager.py\n M rule-synthesis-engine/rule_deduplicator.py\n M rule-synthesis-engine/rule_lifecycle_manager.py\n M scripts/verify_completion_backtest_guard.py\n M scripts/verify_final_checks.py\n M test_manual_check.py\n M test_timeline_check.py\n M tests/test_academic_case_capture.py\n M tests/test_anomaly_model.py\n M tests/test_anomaly_model_candidate.py\n M tests/test_audit_client.py\n M tests/test_auto_isolate.py\n M tests/test_backend_audit.py\n M tests/test_backend_containers.py\n M tests/test_backend_deployments.py\n M tests/test_backend_monitor.py\n M tests/test_backend_rules.py\n M tests/test_behavior_pipeline.py\n M tests/test_container_watcher.py\n M tests/test_deployment_gate.py\n M tests/test_docker_events.py\n M tests/test_evaluation_clock_guard.py\n M tests/test_evaluation_coverage_probe.py\n M tests/test_evaluation_run_schedule.py\n M tests/test_event_router.py\n M tests/test_falco_ingest.py\n M tests/test_falco_integration.py\n M tests/test_final_completion.py\n M tests/test_incident_pipeline.py\n M tests/test_live_restart_acceptance.py\n M tests/test_monitor_reliability.py\n M tests/test_monitor_service.py\n M tests/test_risk_scorer.py\n M tests/test_rule_deployer.py\n M tests/test_rule_lifecycle_manager.py\n M tests/test_trivy_wrapper.py\n?? alembic.ini\n?? database/migrations/\n?? docs/repository-audit/\n?? evaluation/safety.py\n?? requirements.lock\n?? scripts/verify_schema.py\n?? scripts/verify_types.py\n?? tests/test_ai_import_safety.py\n?? tests/test_audit_resilience.py\n?? tests/test_backend_database.py\n?? tests/test_control_worker.py\n?? tests/test_deployment_outbox.py\n?? tests/test_docker_inspector.py\n?? tests/test_manual_windows.py\n?? tests/test_monitor_shutdown.py\n?? tests/test_rule_review_lock.py\n?? tests/test_schema_migrations.py",
+        "python": "3.12.14 (main, Aug 25 2026, 14:00:49) [Clang 22.1.3 ]",
+        "packages": {
+          "docker": "7.2.0",
+          "scikit-learn": "1.9.1",
+          "fastapi": "0.158.0",
+          "sqlalchemy": "2.1.6",
+          "pytest": "9.1.1",
+          "flake8": "7.4.1"
+        },
+        "node": "v24.19.0",
+        "npm": "11.9.0",
+        "passed": true
+      },
+      "counts": {
+        "python": {
+          "passed": 917,
+          "subtests": 86,
+          "seconds": 35.61
+        },
+        "frontend": {
+          "passed": 165,
+          "files": 34
+        },
+        "types": {
+          "files": 79,
+          "status": "PASS",
+          "untyped_bodies_checked": true,
+          "persistent_cache": false,
+          "limitations": "Missing stubs allowed; dynamic values/imported dependencies/tests/root manual diagnostics outside guarantee"
+        },
+        "root_collection": {
+          "passed": 917,
+          "subtests": 86,
+          "seconds": 35.14,
+          "command": "python -m pytest -q",
+          "log": "state/evaluation/audit-final/root-tests.log",
+          "environment": "Retained installed-package PYTHONPATH; AUTO_ISOLATION_ENABLED=false",
+          "status": "PASS"
+        }
+      }
+    },
+    {
+      "checkpoint": "batch24",
+      "release": {
+        "started_at": "2026-10-22T18:54:34.132220+00:00",
+        "checks": [
+          {
+            "name": "python-tests",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T185434Z/python-tests.log"
+          },
+          {
+            "name": "lint",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T185434Z/lint.log"
+          },
+          {
+            "name": "types",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T185434Z/types.log"
+          },
+          {
+            "name": "frontend-tests",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T185434Z/frontend-tests.log"
+          },
+          {
+            "name": "frontend-build",
+            "returncode": 0,
+            "passed": true,
+            "log": "state/evaluation/final-checks-20261022T185434Z/frontend-build.log"
+          }
+        ],
+        "source_commit": "18c40d228de66ce3b75c03b23a569b69e28a1b45",
+        "source_status": "M .env.example\n M .gitignore\n M CHANGELOG.md\n M README.md\n M ROADMAP.md\n M TODO.md\n M ai-analysis/attack_timeline_builder.py\n M ai-analysis/root_cause_summarizer.py\n M backend-api/database.py\n M backend-api/main.py\n M backend-api/models/db_models.py\n M backend-api/routes/audit.py\n M backend-api/routes/containers.py\n M backend-api/routes/deployments.py\n M backend-api/routes/incidents.py\n M backend-api/routes/monitor.py\n M backend-api/routes/rules.py\n M behavioral-engine/anomaly_model.py\n M behavioral-engine/baseline_collector.py\n M behavioral-engine/collect_baseline.py\n M behavioral-engine/feature_extractor.py\n M behavioral-engine/validate_live.py\n M correlation-engine/event_router.py\n M correlation-engine/risk_scorer.py\n M correlation-engine/validate_pipeline.py\n M database/schema.sql\n M deployment-gate/deployment_gate.py\n M deployment-gate/deployment_outbox.py\n M docs/academic_study.md\n M docs/deployment_gate.md\n M docs/falco_rule_matching.md\n M docs/interfaces.md\n M docs/known_limitations.md\n M docs/monitor_operations.md\n M docs/phase1_image_scanner.md\n M docs/phase2_deployment_policy_checker.md\n M docs/phase3_falco_integration.md\n M docs/phase3_tracking_updates.md\n M docs/phase4_behavioral_engine.md\n M docs/phase5_correlation_engine.md\n M docs/phase6_rule_synthesis.md\n M docs/zero_duplication_rule_guard.md\n M evaluation/capture_academic_case.py\n M evaluation/clock_guard.py\n M evaluation/compare_saved_layers.py\n M evaluation/coverage_probe.py\n M evaluation/export_final_review.py\n M evaluation/export_layer_evidence.py\n M evaluation/fingerprint.py\n M evaluation/run_full_trial.py\n M evaluation/run_schedule.py\n M evaluation/run_svm_benign.py\n M evaluation/verify_no_baseline.py\n M evaluation/verify_postgres_recovery.py\n M evaluation/verify_protected_container.py\n M frontend-dashboard/scripts/capture-dashboard.test.js\n M frontend-dashboard/src/api.js\n M frontend-dashboard/src/api.test.js\n M frontend-dashboard/src/components/HealthBanner.jsx\n M frontend-dashboard/src/components/HealthBanner.test.jsx\n M frontend-dashboard/src/components/status.js\n M frontend-dashboard/src/components/status.test.js\n M frontend-dashboard/src/pages/Containers.jsx\n M frontend-dashboard/src/pages/Monitor.jsx\n M frontend-dashboard/src/pages/Operations.test.jsx\n M frontend-dashboard/src/pages/RuleReviewQueue.jsx\n M frontend-dashboard/src/utils/operations.js\n M frontend-dashboard/src/utils/operations.test.js\n M frontend-dashboard/src/utils/ruleView.js\n M frontend-dashboard/src/utils/ruleView.test.js\n M image-scanner/trivy_wrapper.py\n M monitor-service/audit_client.py\n M monitor-service/behavior_pipeline.py\n M monitor-service/container_watcher.py\n M monitor-service/control_worker.py\n M monitor-service/docker_events.py\n M monitor-service/falco_ingest.py\n M monitor-service/monitor_service.py\n M monitor-service/monitor_status.py\n M response-engine/auto_isolate.py\n M rule-synthesis-engine/confirmation_manager.py\n M rule-synthesis-engine/rule_deduplicator.py\n M rule-synthesis-engine/rule_lifecycle_manager.py\n M scripts/verify_completion_backtest_guard.py\n M scripts/verify_final_checks.py\n M test_manual_check.py\n M test_timeline_check.py\n M tests/test_academic_case_capture.py\n M tests/test_anomaly_model.py\n M tests/test_anomaly_model_candidate.py\n M tests/test_audit_client.py\n M tests/test_auto_isolate.py\n M tests/test_backend_audit.py\n M tests/test_backend_containers.py\n M tests/test_backend_deployments.py\n M tests/test_backend_monitor.py\n M tests/test_backend_rules.py\n M tests/test_behavior_pipeline.py\n M tests/test_container_watcher.py\n M tests/test_deployment_gate.py\n M tests/test_docker_events.py\n M tests/test_evaluation_clock_guard.py\n M tests/test_evaluation_coverage_probe.py\n M tests/test_evaluation_run_schedule.py\n M tests/test_event_router.py\n M tests/test_falco_ingest.py\n M tests/test_falco_integration.py\n M tests/test_final_completion.py\n M tests/test_incident_pipeline.py\n M tests/test_live_restart_acceptance.py\n M tests/test_monitor_reliability.py\n M tests/test_monitor_service.py\n M tests/test_risk_scorer.py\n M tests/test_rule_deployer.py\n M tests/test_rule_lifecycle_manager.py\n M tests/test_trivy_wrapper.py\n?? alembic.ini\n?? database/migrations/\n?? docs/repository-audit/\n?? evaluation/safety.py\n?? requirements.lock\n?? scripts/verify_schema.py\n?? scripts/verify_types.py\n?? tests/test_ai_import_safety.py\n?? tests/test_audit_resilience.py\n?? tests/test_backend_database.py\n?? tests/test_control_worker.py\n?? tests/test_deployment_outbox.py\n?? tests/test_docker_inspector.py\n?? tests/test_manual_windows.py\n?? tests/test_monitor_shutdown.py\n?? tests/test_rule_review_lock.py\n?? tests/test_schema_migrations.py",
+        "python": "3.12.14 (main, Aug 25 2026, 14:00:49) [Clang 22.1.3 ]",
+        "packages": {
+          "docker": "7.2.0",
+          "scikit-learn": "1.9.1",
+          "fastapi": "0.158.0",
+          "sqlalchemy": "2.1.6",
+          "pytest": "9.1.1",
+          "flake8": "7.4.1"
+        },
+        "node": "v24.19.0",
+        "npm": "11.9.0",
+        "passed": true
+      },
+      "counts": {
+        "python": {
+          "passed": 931,
+          "subtests": 86,
+          "seconds": 45.19
+        },
+        "frontend": {
+          "passed": 165,
+          "files": 34
+        },
+        "types": {
+          "files": 79,
+          "status": "PASS",
+          "untyped_bodies_checked": true,
+          "persistent_cache": false,
+          "limitations": "Missing stubs allowed; dynamic values/imported dependencies/tests/root manual diagnostics outside guarantee"
+        },
+        "root_collection": {
+          "passed": 931,
+          "subtests": 86,
+          "seconds": 57.33,
+          "command": "python -m pytest -q",
+          "log": "state/evaluation/audit-batch24/root-tests.log",
+          "environment": "Retained installed-package PYTHONPATH; AUTO_ISOLATION_ENABLED=false",
+          "status": "PASS"
+        }
+      }
+    }
+  ],
+  "batch6": {
+    "queues": "1000 entries each; pending event retained; not durable or byte bounded",
+    "model_jobs": "at most two; persisted baselines deferred",
+    "runtime_configuration": "monitor-owned; backend settings reported separately; unknown refuses evaluation",
+    "deletions": [],
+    "native_isolation": "NOT VERIFIED; not performed",
+    "source_review_count": 191,
+    "static_checks": {
+      "files": 325,
+      "python_parsed": 137,
+      "json_parsed": 6,
+      "secret_pattern_candidates": [],
+      "broken_local_markdown_links": [],
+      "native_tools": {
+        "docker": null,
+        "falco": null,
+        "trivy": null,
+        "psql": null,
+        "postgres": null,
+        "chromium": null,
+        "google-chrome": null
+      }
+    }
+  },
+  "batch7": {
+    "static_checks": {
+      "files": 326,
+      "python_parsed": 138,
+      "json_parsed": 6,
+      "broken_local_markdown_links": [],
+      "secret_pattern_candidates": [],
+      "native_tools": {
+        "docker": null,
+        "falco": null,
+        "trivy": null,
+        "psql": null,
+        "postgres": null,
+        "chromium": null,
+        "google-chrome": null
+      }
+    },
+    "review_scope": "Every original file inspected; review depth records source, historical, structured data and visual boundaries; no independent native reproduction",
+    "scanner": "Fail-closed report structure and immutable metadata identity; native Trivy NOT VERIFIED",
+    "manual_windows": "11 synthetic regression cases; no live collection",
+    "final_commands": [
+      "PYTHONPATH=\"$PWD/.venv/lib/python3.12/site-packages\" AUTO_ISOLATION_ENABLED=false python scripts/verify_final_checks.py",
+      "PYTHONPATH=\"$PWD/.venv/lib/python3.12/site-packages\" AUTO_ISOLATION_ENABLED=false python -m pytest -q",
+      "PYTHONPATH=\"$PWD/.venv/lib/python3.12/site-packages\" python -m flake8 . --exclude=.git,.venv,venv,node_modules,state,dist,build --max-line-length=100"
+    ],
+    "deletions": []
+  },
+  "supply_chain_followup": {
+    "python_locked_packages": 70,
+    "npm_locked_package_entries": 149,
+    "total_package_entries": 219,
+    "inputs_sha256": {
+      "requirements.lock": "8ede3b2416b7d711e28cde05cd0472df6f610017dda964f79bcf6feee4dee7ce",
+      "frontend-dashboard/package-lock.json": "723abf8c6f8af3b88674358f3133fb76a0ee3164cacea9dcfe3d43787b1396cd"
+    },
+    "validation": "JSON parse, unique SPDX identifiers, nonempty versions and one DESCRIBES relationship per package; official schema NOT VERIFIED"
+  },
+  "batch8": {
+    "schema_equivalence": "PASS: before/after typed mapping metadata matches; schema-equivalence.txt",
+    "migration_tests": {
+      "passed": 4,
+      "database": "disposable SQLite",
+      "native_postgresql": "NOT VERIFIED"
+    },
+    "postgresql_offline_sql": "PASS compilation only; no connection",
+    "focused_checks": {
+      "backend_and_prior_runtime": 111,
+      "expanded_dedup_evaluation_migration": 116,
+      "final_backend_schema_ai": 30
+    },
+    "static_checks": {
+      "files": 333,
+      "python_parsed": 143,
+      "json_parsed": 6,
+      "broken_local_markdown_links": [],
+      "secret_pattern_candidates": []
+    },
+    "commands": [
+      "PYTHONPATH=\"$PWD/.venv/lib/python3.12/site-packages\" AUTO_ISOLATION_ENABLED=false python scripts/verify_final_checks.py",
+      "PYTHONPATH=\"$PWD/.venv/lib/python3.12/site-packages\" AUTO_ISOLATION_ENABLED=false python -m pytest -q",
+      "DATABASE_URL=postgresql+psycopg2://offline_only@127.0.0.1:1/not_connected PYTHONPATH=\"$PWD/.venv/lib/python3.12/site-packages\" python -m alembic -c alembic.ini upgrade head --sql"
+    ],
+    "real_database_changed": false,
+    "real_isolation_executed": false
+  },
+  "batch9": {
+    "focused": {
+      "passed": 54,
+      "subtests": 7
+    },
+    "pre_batch_fault_reproductions": {
+      "scope": "Preserved pre-batch source loaded in isolation with temporary files; no native services",
+      "confirmed_prior_faults": {
+        "corrupt_checkpoint_skips_history": true,
+        "write_failure_advances_position_without_checkpoint": true,
+        "oversized_line_fragment_delivered": true,
+        "oversized_lines_seen": [
+          "IJKLM",
+          "ok"
+        ],
+        "rotation_at_open_skips_new_file_prefix": true,
+        "rotation_lines_seen": [
+          "t",
+          "second"
+        ]
+      }
+    },
+    "static_checks": {
+      "files": 333,
+      "python_parsed": 143,
+      "json_parsed": 6,
+      "broken_local_markdown_links": [],
+      "secret_pattern_candidates": []
+    },
+    "native_services": "NOT VERIFIED; not operated",
+    "real_isolation": false,
+    "deletions": []
+  },
+  "batch10": {
+    "before_monitor_api": {
+      "failed": 18,
+      "passed": 18
+    },
+    "initial_focused_after": {
+      "passed": 36
+    },
+    "expanded_focused": {
+      "passed": 61,
+      "subtests": 25
+    },
+    "sql_lock_contract": "PostgreSQL SQL compiled from ORM calls; actual execution uses SQLite; native PostgreSQL contention NOT VERIFIED",
+    "native_operations": false,
+    "static_checks": {
+      "files": 333,
+      "python_parsed": 143,
+      "json_parsed": 6,
+      "broken_local_markdown_links": [],
+      "secret_pattern_candidates": []
+    },
+    "commands": [
+      "PYTHONPATH=\"$PWD/.venv/lib/python3.12/site-packages\" AUTO_ISOLATION_ENABLED=false python scripts/verify_final_checks.py",
+      "PYTHONPATH=\"$PWD/.venv/lib/python3.12/site-packages\" AUTO_ISOLATION_ENABLED=false python -m pytest -q"
+    ],
+    "deletions": []
+  },
+  "batch11": {
+    "initial_focused": {
+      "passed": 102,
+      "subtests": 23
+    },
+    "prior_faults": {
+      "scope": "Preserved prior-package source, temporary SQLite and simulated HTTP; no live deployment",
+      "confirmed_faults": {
+        "changed_key_payload_silently_ignored": true,
+        "unvalidated_201_deletes_journal": true,
+        "rejected_head_blocks_later_work": true,
+        "different_deployment_payload_returns_previous_id": true
+      }
+    },
+    "journal_concurrency": "Two real threads, temporary SQLite: one conflicting request retained and the other refused; not PostgreSQL/native-service concurrency",
+    "integration": "Real journal/ORM/TestClient with simulated HTTP transport; no Docker/backend daemon",
+    "attribution": "Upstream Alembic notice retained; template renders identical Python and parses; initial probe argument mistake recorded",
+    "static_checks": {
+      "files": 335,
+      "python_parsed": 144,
+      "json_parsed": 6,
+      "broken_local_markdown_links": [],
+      "secret_pattern_candidates": []
+    },
+    "native_operations": false,
+    "deletions": []
+  },
+  "batch12": {
+    "focused": {
+      "passed": 65,
+      "subtests": 2
+    },
+    "prior_faults": {
+      "prior_source": "Preserved batch11 gate with current journal; fake Docker/scanner/delivery",
+      "intents_seen_at_start": [
+        0
+      ],
+      "failed_rm_reported_decision": "blocked"
+    },
+    "journal": "Real disposable SQLite; intent before fake Docker; outcome/enqueue rollback and retained history; no automatic action replay",
+    "schema": "Additive local SQLite deployment_actions table; no production database operated",
+    "initial_failures": [
+      "Full release reached 725+73 then failed three test formatting lint findings; corrected before final release",
+      "Initial prior-source probe omitted installed-package PYTHONPATH and could not import requests; rerun passed"
+    ],
+    "static_checks": {
+      "files": 335,
+      "python_parsed": 144,
+      "json_parsed": 6,
+      "broken_local_markdown_links": [],
+      "secret_pattern_candidates": []
+    },
+    "native_operations": false,
+    "deletions": []
+  },
+  "batch13": {
+    "focused": {
+      "passed": 58,
+      "subtests": 6
+    },
+    "prior_fault": {
+      "fault": "Gate Docker subprocess has no deadline",
+      "observed_kwargs": {
+        "capture_output": true,
+        "text": true,
+        "check": false
+      },
+      "scope": "Mocked subprocess; source inspection, no native Docker"
+    },
+    "timeout_test": "Real sleeping Python CLI substitute killed/reaped at 0.5 second timeout; fake Docker/scanner/HTTP for gate semantics; no native daemon",
+    "initial_failure": "Focused lint found one 101-character test line; corrected before full release",
+    "static_checks": {
+      "files": 335,
+      "python_parsed": 144,
+      "json_parsed": 6,
+      "broken_local_markdown_links": [],
+      "secret_pattern_candidates": []
+    },
+    "native_operations": false,
+    "deletions": []
+  },
+  "batch14": {
+    "focused_initial": {
+      "passed": 54,
+      "subtests": 13
+    },
+    "focused_transport_api": {
+      "passed": 57,
+      "subtests": 15
+    },
+    "focused_concurrency": {
+      "passed": 58,
+      "subtests": 17
+    },
+    "prior_faults": {
+      "scope": "Fake Docker; disposable durable recovery records; no native action",
+      "faults": [
+        {
+          "phase": "disconnect",
+          "exception": "ReadTimeout",
+          "container_status": "running",
+          "record_state": "isolating"
+        },
+        {
+          "phase": "reconnect",
+          "exception": "ReadTimeout",
+          "container_status": "running",
+          "record_state": "resuming"
+        }
+      ]
+    },
+    "concurrency": "Real local Linux flock between two threads, shared name/full ID, first action succeeds or fails; fake Docker and temporary real JSON; not cross-process/native daemon",
+    "transport": "Injected requests ReadTimeout/ConnectionError and Docker APIError; API TestClient with real SQLite/audit persistence; no real Docker mutation",
+    "initial_failure": "Concurrency test introduced one 101-character line; focused lint failed; corrected before final full release",
+    "static_checks": {
+      "files": 335,
+      "python_parsed": 144,
+      "json_parsed": 6,
+      "broken_local_markdown_links": [],
+      "secret_pattern_candidates": []
+    },
+    "native_operations": false,
+    "deletions": []
+  },
+  "batch15": {
+    "focused": {
+      "passed": 84,
+      "subtests": 11
+    },
+    "prior_faults": [
+      {
+        "fault": "No creation intent after lost create response",
+        "creation_table_present": false,
+        "reported_action_health": {
+          "outcome_not_recorded": 0,
+          "command_failed": 0
+        }
+      },
+      {
+        "create_stdout": "",
+        "prior_result": "IndexError"
+      },
+      {
+        "create_stdout": "not-a-container-id",
+        "prior_result": "not-a-container-id"
+      }
+    ],
+    "creation": "Real disposable SQLite; intent before fake Docker, full ID persisted before inspect, unknown outcomes retained without replay/registration",
+    "concurrency": "Two real threads complete one creation key with conflicting IDs; only one succeeds; not native daemon contention",
+    "compatibility": "Additive creation table preserves previous decision body; no destructive schema adoption or native database operation",
+    "initial_failures": [
+      "Focused lint E128 corrected before release",
+      "Initial full release passed Python/lint but mypy crashed loading a corrupt generated SQLite plugin snapshot",
+      "Trace retained; verify_types now uses os.devnull cache dir; existing damaged generated cache retained; standalone and final full type checks passed"
+    ],
+    "static_checks": {
+      "files": 335,
+      "python_parsed": 144,
+      "json_parsed": 6,
+      "broken_local_markdown_links": [],
+      "secret_pattern_candidates": [],
+      "symbol_inventory": "Top-level Python symbols mechanically refreshed for current source; manual review depth unchanged"
+    },
+    "native_operations": false,
+    "deletions": []
+  },
+  "batch16": {
+    "focused_python": {
+      "passed": 102,
+      "subtests": 2
+    },
+    "frontend_initial_focused": {
+      "passed": 24,
+      "files": 3,
+      "scope": "Before adding two banner regressions; final full suite includes them"
+    },
+    "prior_faults": [
+      {
+        "components": {
+          "docker": {
+            "state": "unavailable"
+          },
+          "database": {
+            "state": "ok"
+          }
+        },
+        "result": {
+          "healthy": true
+        }
+      },
+      {
+        "components": null,
+        "result": {
+          "exception": "TypeError"
+        }
+      }
+    ],
+    "prior_frontend": "Null component caused TypeError; preserved Node reproduction log",
+    "contract": "healthy tightened from documented heartbeat-only meaning to aggregate reported health; heartbeat_fresh additive; running nullable when status unavailable; coordinated backend/frontend update required",
+    "integration": "Real temporary JSON, HTTP TestClient/SQLite; database outage is injected SQLAlchemyError, not a real disconnection; React helper/SSR/DOM, no browser/live monitor",
+    "initial_failures": [
+      "First reproduction import lacked DATABASE_URL and was refused before execution; corrected with disposable sqlite://",
+      "Focused lint found two 101-character lines; corrected before full release",
+      "One edit command used frontend working directory for root-relative paths and changed nothing; corrected before full release"
+    ],
+    "static_checks": {
+      "files": 335,
+      "python_parsed": 144,
+      "json_parsed": 6,
+      "broken_local_markdown_links": [],
+      "secret_pattern_candidates": []
+    },
+    "native_operations": false,
+    "deletions": []
+  },
+  "batch17": {
+    "focused": {
+      "passed": 120
+    },
+    "prior_faults": {
+      "scope": "Mocked query; temporary diagnostic JSON; no native monitor",
+      "stale_control_reported_healthy": true,
+      "future_snapshot_cli_exit": 0
+    },
+    "progress": "Real local thread blocked in fake pipeline; separate actual status board write refreshed main heartbeat without completion marker; completion appears after release",
+    "integration": "Real temporary JSON/TestClient/SQLite and CLI; fake pipeline/Docker/backend and injected failures; no native daemon/watchdog action",
+    "contract": "control_updated_at now completed iteration; API/CLI share describe_status; 30-second observation horizon is advisory and not a latency SLA; updated monitor restart required on integration",
+    "initial_failures": [
+      "Focused lint: unused import/blank-line/long-line findings, corrected",
+      "First full release Python passed; lint exposed nested-definition blank line and another long test line, corrected",
+      "Next release reached types; numeric narrowing Any|None failed, corrected with isinstance excluding bool; standalone types and final full release passed"
+    ],
+    "static_checks": {
+      "files": 335,
+      "python_parsed": 144,
+      "json_parsed": 6,
+      "broken_local_markdown_links": [],
+      "secret_pattern_candidates": []
+    },
+    "native_operations": false,
+    "deletions": []
+  },
+  "batch18": {
+    "focused": {
+      "passed": 15,
+      "seconds": 7.98,
+      "scope": "11 new engine tests and four disposable SQLite migration checks"
+    },
+    "prior_fault": {
+      "scope": "Engine construction only; no connection attempt",
+      "default_driver": "psycopg",
+      "exception": "ModuleNotFoundError",
+      "missing_module": "psycopg"
+    },
+    "timeout_observations": {
+      "default_seconds": 5,
+      "observed_seconds": 5.01,
+      "override_seconds": 2,
+      "override_observed_seconds": 2.0,
+      "scope": "Real psycopg2/libpq against owned silent loopback TCP peer; not PostgreSQL or a benchmark"
+    },
+    "limits": "SQL, lock waits, established-socket failure, DNS/multi-host/global-request time, actual native pool pressure/restart/restore remain unverified or unbounded",
+    "initial_failures": [
+      "Focused lint needed one blank line before the new engine factory; corrected before release",
+      "Initial root log has no completion summary and is not counted; fresh root-final.log completed successfully"
+    ],
+    "followup": "Silent peer moved into a fixture to release listener even on engine construction failure; final full release includes this cleanup",
+    "static_checks": {
+      "files": 336,
+      "python_parsed": 145,
+      "json_parsed": 6,
+      "broken_local_markdown_links": [],
+      "secret_pattern_candidates": []
+    },
+    "native_operations": false,
+    "deletions": []
+  },
+  "batch19": {
+    "prior_fault": {
+      "scope": "Actual app and SQLite with injected SQLAlchemy operational error; not PostgreSQL outage",
+      "status": 500,
+      "body": "Internal Server Error"
+    },
+    "focused": {
+      "passed": 33,
+      "seconds": 10.19
+    },
+    "database_final": {
+      "passed": 18,
+      "seconds": 8.22
+    },
+    "commit_trace": {
+      "scope": "Actual app; disposable in-memory SQLite driver trace; real commit followed by injected error",
+      "status": 503,
+      "committed_rows": 1,
+      "transaction_trace": [
+        "BEGIN ",
+        "COMMIT",
+        "SIMULATED_ACK_LOSS_AFTER_COMMIT"
+      ],
+      "limit": "No PostgreSQL, disk durability or real network acknowledgement loss tested"
+    },
+    "experiment_notes": "Initial focused test incorrectly assumed a commit-event fault guaranteed rollback: 1 failed, 31 passed. A later exploratory trace assertion based on a guessed explanation also failed and is not used as evidence. Final tests inject failure before INSERT or explicitly after real DBAPI commit. Only the final successful driver trace establishes COMMIT preceded the injected error; no disk durability or native PostgreSQL/network claim.\n",
+    "scope": "Actual backend TestClient, disposable SQLite transactions and exhausted QueuePool, injected SQLAlchemy failures; auth/CORS/pool cleanup and recovery tested",
+    "limits": "Not native PostgreSQL outage, real lost acknowledgement, disk durability, full SQL/request deadline or blanket mutation idempotency",
+    "static_checks": {
+      "files": 336,
+      "python_parsed": 145,
+      "json_parsed": 6,
+      "broken_local_markdown_links": [],
+      "secret_pattern_candidates": []
+    },
+    "native_operations": false,
+    "deletions": []
+  },
+  "batch20": {
+    "focused_final": {
+      "passed": 87,
+      "subtests": 11,
+      "seconds": 2.34
+    },
+    "actual_cli_process": {
+      "scope": "Separate actual CLI process against disposable SQLite, no Docker/backend; not native reconciliation",
+      "command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "/workspace/scratch/6ed87f3438dc/selfsentry/deployment-gate/deployment_gate.py",
+        "--inspect-journal",
+        "--limit",
+        "1"
+      ],
+      "returncode": 0,
+      "output": {
+        "outcome_counts": {
+          "outcome_not_recorded": 2
+        },
+        "pending_decisions": 0,
+        "retained_rejections": 0,
+        "limit": 1,
+        "offset": 0,
+        "has_more": true,
+        "attempts": [
+          {
+            "kind": "creation",
+            "key": "d45ef7e7d0114a86b90067656245d697",
+            "container_id": null,
+            "action": "create",
+            "outcome": "outcome_not_recorded",
+            "created_at": "2026-10-22T18:00:42.311765+00:00",
+            "completed_at": null
+          }
+        ]
+      },
+      "main_db_hash_unchanged": true,
+      "limitations": "Does not assert WAL sidecar immutability or native container outcomes"
+    },
+    "scope": "Real disposable SQLite, mode=ro/query_only, authorizer denies writes/DDL, concurrent WAL writer between reads verifies one snapshot; actual CLI subprocess; mocked forbidden HTTP/gate actions",
+    "limits": "Metadata evidence only, not outcome reconciliation, stable multi-page export, forensic acquisition, retention or native crash verification; SQLite sidecars may be used",
+    "initial_failures": [
+      "First focused run: 1 failed, 82 passed + 11 subtests; new fixture supplied an already-keyed decision to begin_action; corrected fixture to use existing new-event contract",
+      "A long parametrization line caused a focused E501 finding after metadata edge tests were added; wrapped before final release"
+    ],
+    "superseded_release": "final-checks-20261022T180019Z passed before final bounds/metadata refinements; use final release above",
+    "static_checks": {
+      "files": 336,
+      "python_parsed": 145,
+      "json_parsed": 6,
+      "broken_local_markdown_links": [],
+      "secret_pattern_candidates": []
+    },
+    "native_operations": false,
+    "deletions": []
+  },
+  "batch21": {
+    "prior_fault": {
+      "scope": "Disposable SQLite, buffered fake HTTP response and tracked connections; no remote service",
+      "ambiguous_200_body": {},
+      "reported_sent": 1,
+      "pending_after_flush": 0,
+      "explicitly_unclosed_handles": 5
+    },
+    "corrected_probe": {
+      "scope": "Disposable SQLite, buffered fake HTTP response and retained tracked connection references; no remote service",
+      "ambiguous_200_body": {},
+      "reported_sent": 0,
+      "pending_after_flush": 1,
+      "explicitly_unclosed_handles": 0,
+      "tracked_handles": 4,
+      "limits": "Deterministic ownership test, not measurement of production descriptors or memory"
+    },
+    "focused_final": {
+      "passed": 102,
+      "subtests": 8,
+      "seconds": 6.0
+    },
+    "scope": "Real disposable SQLite, tracked connection subclasses retained by tests, actual audit route/TestClient with controlled lost response; HTTP otherwise mocked",
+    "initial_failures": [
+      "First focused run: 2 failed, 100 passed + 8 subtests; new test used an unimported Mock name, corrected to existing MagicMock",
+      "One 101-character test line triggered E501, wrapped before release"
+    ],
+    "limits": "No production leak benchmark, native PostgreSQL/network or power-loss verification. Reply has no event-key binding; API dedup is key-based, not content-compared; legacy keyless events lack replay dedup guarantee. Backlog retention/full-request deadlines remain unresolved",
+    "static_checks": {
+      "files": 336,
+      "python_parsed": 145,
+      "json_parsed": 6,
+      "broken_local_markdown_links": [],
+      "secret_pattern_candidates": []
+    },
+    "native_operations": false,
+    "deletions": []
+  },
+  "batch22": {
+    "prior_fault": {
+      "scope": "Three spool_size reads against disposable malformed JSONL; no HTTP",
+      "reported_sizes": [
+        0,
+        0,
+        0
+      ],
+      "dead_letter_lines_created": 3,
+      "original_spool_unchanged": true
+    },
+    "corrected_probe": {
+      "scope": "Three spool_size reads against disposable malformed JSONL; no HTTP",
+      "errors": [
+        "Invalid audit spool record at line 1; retained for review",
+        "Invalid audit spool record at line 1; retained for review",
+        "Invalid audit spool record at line 1; retained for review"
+      ],
+      "dead_letter_lines_created": 0,
+      "original_spool_unchanged": true,
+      "limits": "Controlled corruption, not native storage failure or automatic repair"
+    },
+    "focused_initial": {
+      "passed": 126,
+      "seconds": 3.88
+    },
+    "focused_final": {
+      "passed": 144,
+      "seconds": 3.9
+    },
+    "initial_findings": [
+      "Focused lint found two E128 test continuation indents; corrected before final focused/full checks"
+    ],
+    "scope": "Real disposable JSONL and SQLite corruption; repeated file reads retain evidence; selected SQLite batch preflight blocks HTTP; actual tailer/checkpoint/status persistence with fake collaborators; simulated explicit operator repair preserves backup",
+    "limits": "Not automatic quarantine/repair, full request schema validation, native disk/power-loss recovery or cross-process repair. Invalid input blocks affected replay and can delay later control delivery stages; SQLite count alone does not validate payloads. Whole-file memory and retention remain open",
+    "static_checks": {
+      "files": 336,
+      "python_parsed": 145,
+      "json_parsed": 6,
+      "broken_local_markdown_links": [],
+      "secret_pattern_candidates": []
+    },
+    "native_operations": false,
+    "deletions": []
+  },
+  "batch23": {
+    "prior_fault": {
+      "scope": "Actual audit route/TestClient and disposable SQLite; controlled lost response, not real network",
+      "first_delivered_return": false,
+      "replayed_count": 1,
+      "posted_keys": [
+        null,
+        null
+      ],
+      "stored_backend_rows": 2
+    },
+    "corrected_probe": {
+      "scope": "Actual audit route/TestClient and disposable SQLite; controlled lost response, not real network",
+      "first_delivered_return": false,
+      "replayed_count": 1,
+      "posted_keys": [
+        "6c939f5f14c04a2b8aa8ddefa553bd94",
+        "6c939f5f14c04a2b8aa8ddefa553bd94"
+      ],
+      "stored_backend_rows": 1,
+      "limits": "Queue replay only; no guarantee across separate emit calls, unpersisted crash gaps or historical keyless data"
+    },
+    "focused": {
+      "passed": 144,
+      "subtests": 8,
+      "seconds": 8.04
+    },
+    "initial_findings": [
+      "Focused tests passed; one 101-character test signature triggered E501 and was wrapped before full release"
+    ],
+    "scope": "Actual audit route/TestClient and disposable SQLite; controlled lost reply followed by newly constructed legacy/durable client. Other HTTP mocked; invalid key tests occur before transport/insertion",
+    "limits": "Not exactly-once across emit calls, historical keyless/direct API requests, unpersisted legacy crash gaps, uncertain local commits, content-bound dedup or native PostgreSQL/network/power-loss recovery",
+    "static_checks": {
+      "files": 336,
+      "python_parsed": 145,
+      "json_parsed": 6,
+      "broken_local_markdown_links": [],
+      "secret_pattern_candidates": []
+    },
+    "native_operations": false,
+    "deletions": []
+  },
+  "final_handoff": {
+    "status": "AUDIT_HANDOFF_FINALIZED; FULL_PROJECT_ACCEPTANCE_INCOMPLETE",
+    "date_client": "2026-10-23",
+    "timezone_client": "Asia/Kolkata",
+    "environment": {
+      "tools": {
+        "docker": null,
+        "falco": null,
+        "trivy": null,
+        "psql": null,
+        "postgres": null,
+        "chromium": null,
+        "google-chrome": null
+      },
+      "branch": "audit/repository-review-20261021",
+      "base": "18c40d228de66ce3b75c03b23a569b69e28a1b45",
+      "original_tracked_files": 312,
+      "original_removed": [],
+      "scope": "Executable availability and repository state; no service connections, production actions or secrets inspection"
+    },
+    "root_validation": {
+      "passed": 939,
+      "subtests": 104,
+      "seconds": 34.27
+    },
+    "implementation_batches": 25,
+    "acceptance": [
+      {
+        "criterion": 1,
+        "result": "PASS"
+      },
+      {
+        "criterion": 2,
+        "result": "PASS"
+      },
+      {
+        "criterion": 3,
+        "result": "NOT VERIFIED"
+      },
+      {
+        "criterion": 4,
+        "result": "PASS"
+      },
+      {
+        "criterion": 5,
+        "result": "PASS"
+      },
+      {
+        "criterion": 6,
+        "result": "PASS"
+      },
+      {
+        "criterion": 7,
+        "result": "NOT VERIFIED"
+      },
+      {
+        "criterion": 8,
+        "result": "PASS"
+      },
+      {
+        "criterion": 9,
+        "result": "PASS"
+      },
+      {
+        "criterion": 10,
+        "result": "PASS"
+      }
+    ],
+    "qualification": "PASS results are scoped to evidence in report, not production readiness; unresolved engineering decisions and native acceptance remain open",
+    "native_operations": false,
+    "deletions": [],
+    "static_checks": {
+      "files": 336,
+      "python_parsed": 145,
+      "json_parsed": 6,
+      "broken_local_markdown_links": [],
+      "secret_pattern_candidates": []
+    }
+  },
+  "batch24": {
+    "prior_fault": {
+      "scope": "Actual disposable SQLite enqueue; no HTTP",
+      "changed_enqueue_return": false,
+      "changed_enqueue_raised": false,
+      "stored_rows": 1,
+      "stored_event_type": "FIRST"
+    },
+    "corrected_probe": {
+      "scope": "Actual disposable SQLite enqueue; no HTTP",
+      "changed_enqueue_raised": true,
+      "exception_type": "AuditEventConflict",
+      "stored_rows": 1,
+      "stored_event_type": "FIRST",
+      "limits": "Pending durable records only; not content binding after local acknowledgement deletion or native multi-process/crash verification"
+    },
+    "focused": {
+      "passed": 213,
+      "seconds": 10.33
+    },
+    "initial_findings": [
+      "All focused tests passed; one E128 test parametrization indent was corrected before full release"
+    ],
+    "scope": "Real disposable SQLite with atomic enqueue/read comparison; two simultaneous threads retain one winner and report one conflict; fake HTTP for replay checks",
+    "limits": "Pending durable rows only. Local acknowledgement deletion removes comparison history; legacy JSONL and backend key-only dedup unchanged. No native process/crash/power-loss claim; omitted event time preserves first timestamp, explicit changed time conflicts",
+    "static_checks": {
+      "files": 336,
+      "python_parsed": 145,
+      "json_parsed": 6,
+      "broken_local_markdown_links": [],
+      "secret_pattern_candidates": []
+    },
+    "native_operations": false,
+    "deletions": []
+  },
+  "batch25": {
+    "prior_fault": {
+      "scope": "Actual audit route and disposable SQLite; no native service",
+      "first_status": 201,
+      "changed_status": 200,
+      "changed_reply": {
+        "id": 1,
+        "duplicate": true
+      },
+      "stored_event_types": [
+        "FIRST"
+      ]
+    },
+    "corrected_probe": {
+      "scope": "Actual audit route and disposable SQLite; no native service",
+      "first_status": 201,
+      "changed_status": 409,
+      "changed_reply": {
+        "detail": "Audit event key identifies different data"
+      },
+      "stored_event_types": [
+        "FIRST"
+      ]
+    },
+    "focused": {
+      "passed": 184,
+      "subtests": 26,
+      "seconds": 17.63
+    },
+    "initial_findings": [],
+    "scope": "Actual FastAPI audit router/ORM and disposable SQLite; controlled competing unique insert, changed data and finite validation; both clients routed through TestClient after local acknowledgement deletion",
+    "contract": "409 on changed event_type/severity/source/container_id/container_name/image_name/detail; sorted finite JSON comparison distinguishes booleans from integers; null historical detail maps to default empty object. occurred_at/created_at stay first-write metadata outside backend identity",
+    "limits": "No native PostgreSQL concurrency/network/crash verification, cryptographic response binding, keyless replay dedup or automatic conflict resolution. Pending durable explicit-time comparison remains stricter; ordered conflict backlog requires review",
+    "static_checks": {
+      "files": 336,
+      "python_parsed": 145,
+      "json_parsed": 6,
+      "broken_local_markdown_links": [],
+      "secret_pattern_candidates": []
+    },
+    "native_operations": false,
+    "deletions": []
+  },
+  "closure_review": {
+    "user_date": "2026-10-23",
+    "status": "INCOMPLETE_NATIVE_ACCEPTANCE_AND_ENGINEERING",
+    "application_source_changed": false,
+    "tests_rerun": false,
+    "test_evidence": "batch25",
+    "environment": {
+      "checked_at_utc": "2026-10-22T19:38:05.740634+00:00",
+      "tools": {
+        "docker": null,
+        "falco": null,
+        "trivy": null,
+        "psql": null,
+        "postgres": null,
+        "chromium": null,
+        "google-chrome": null
+      },
+      "native_operations": false,
+      "scope": "Executable availability only; no service or remote-host probe"
+    },
+    "report": "Ordered closure workflow in report.md; previous acceptance statuses retained",
+    "commit_push_deployment": false
+  }
+}

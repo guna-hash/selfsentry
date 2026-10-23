@@ -2,20 +2,19 @@
 
 import importlib.util
 import sys
-import json
 from pathlib import Path
 from unittest.mock import patch, Mock
-from types import SimpleNamespace
 
 import pytest
 import requests
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "monitor-service"))
-from audit_client import AuditClient
-from tests.test_behavior_pipeline import setup, event, START, CID, outbox
-from tests.test_backend_monitor import client  # noqa: F401 - pytest fixture
-from tests.test_auto_isolate import AutoIsolateTestCase, FULL_ID
-import auto_isolate
+from audit_client import AuditClient  # noqa: E402
+from tests.test_behavior_pipeline import setup, event, CID, outbox  # noqa: E402
+from tests.test_backend_monitor import client as backend_client  # noqa: F401,E402 - fixture
+client = backend_client
+from tests.test_auto_isolate import AutoIsolateTestCase, FULL_ID  # noqa: E402
+import auto_isolate  # noqa: E402
 
 
 def test_audit_disk_failure_is_not_silently_accepted(tmp_path):

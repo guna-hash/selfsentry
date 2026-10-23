@@ -6,6 +6,7 @@ import hashlib
 import json
 from pathlib import Path
 import sys
+from typing import Any
 
 root = Path.cwd()
 sys.path.insert(0, str(root / "behavioral-engine"))
@@ -61,12 +62,12 @@ for trial in trials:
     end = datetime.fromtimestamp(bucket + trial["window_seconds"], timezone.utc)
     stored = events.get(bucket, [])
     alerts = [row["event"] for row in stored if row["kind"] == "alert"]
-    raw = [
+    parsed_events = [
         parse_baseline_event(row["event"]["raw_line"])
         for row in stored
         if row["kind"] == "baseline"
     ]
-    raw = [event for event in raw if event is not None]
+    raw = [event for event in parsed_events if event is not None]
     if any(event.container_id != cid for event in raw):
         raise SystemExit("Telemetry contains another container; replay stopped.")
     unique = {
@@ -122,7 +123,7 @@ for trial in trials:
 if mismatches:
     print(json.dumps({"assessment_mismatches": mismatches, "checked": checks}, indent=2))
     raise SystemExit("Replay does not match saved assessments; no validated comparison written.")
-summary = {
+summary: dict[str, Any] = {
     "comparison_type": (
         "retrospective observations/replay from the same full-pipeline run; "
         "not independent live variant runs"

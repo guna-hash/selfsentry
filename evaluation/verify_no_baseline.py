@@ -12,6 +12,7 @@ import subprocess
 import time
 import uuid
 import requests
+from safety import require_isolation_disabled
 
 
 def docker(*args):
@@ -30,6 +31,7 @@ def main():
         return r.json()
 
     before = get("/monitor/status")
+    require_isolation_disabled(before)
     if before.get("healthy") is not True:
         raise SystemExit("Healthy monitor required; no container created.")
     name = "selfsentry-no-baseline-" + uuid.uuid4().hex[:8]

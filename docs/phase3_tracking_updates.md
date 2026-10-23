@@ -1,5 +1,11 @@
 # Phase 3 — Tracking File Updates
 
+> Historical phase record. Retained commands, test counts and implementation claims
+> describe that development stage. For current installation and safety behavior use
+> [README](../README.md), [operations](monitor_operations.md) and the
+> [repository audit](repository-audit/report.md). Do not rerun old direct-deployer or
+> database workarounds as the current human-approved workflow.
+
 Your `TODO.md` / `CHANGELOG.md` / `ROADMAP.md` have presumably been updated
 since Phase 2 in ways this session can't see, so rather than overwrite them,
 here's exactly what to change in each — find the matching section and

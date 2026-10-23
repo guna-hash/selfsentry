@@ -29,7 +29,10 @@ sudo cp /etc/falco/falco.yaml /etc/falco/falco.yaml.bak
 sudo sed -i 's/^rule_matching: first$/rule_matching: all/' /etc/falco/falco.yaml
 grep -n "^rule_matching" /etc/falco/falco.yaml     # expect: rule_matching: all
 sudo systemctl restart falco-modern-bpf
-sudo chmod 644 /var/log/falco/alerts.json           # perms reset to 600 on restart
+# Grant read access only to the monitor operator group; review the chosen group first.
+# Configure the same owner/group/mode in your Falco/log-rotation setup for restarts.
+sudo chgrp "$(id -gn)" /var/log/falco/alerts.json
+sudo chmod 640 /var/log/falco/alerts.json
 ```
 
 ## Trade-off

@@ -1,11 +1,18 @@
 export function monitorState(status, error) {
   if (error) return { label: 'Unavailable', tone: 'critical' }
   if (!status) return { label: 'Connecting', tone: 'neutral' }
+  if (status.status_available === false || typeof status.running !== 'boolean') {
+    return { label: 'Unavailable', tone: 'critical' }
+  }
   if (!status.running) return { label: 'Stopped', tone: 'critical' }
-  const degraded = Object.values(status.components || {}).some(
-    (item) => !['ok', 'connected', 'disabled'].includes(item.state),
+  const components = status.components
+  const invalidComponents = components !== undefined && (
+    components === null || typeof components !== 'object' || Array.isArray(components)
   )
-  if (!status.healthy || degraded) return { label: 'Degraded', tone: 'medium' }
+  const degraded = invalidComponents || Object.values(components || {}).some(
+    (item) => !item || typeof item !== 'object' || !['ok', 'connected', 'disabled'].includes(item.state),
+  )
+  if (status.healthy !== true || degraded) return { label: 'Degraded', tone: 'medium' }
   return { label: 'Running', tone: 'low' }
 }
 export function eventAge(timestamp, now = Date.now()) {

@@ -25,4 +25,15 @@ describe('global health notices', () => {
   it('escapes backend reasons', () => {
     expect(render({ running: false, reason: '<script>bad()</script>' })).toContain('&lt;script&gt;')
   })
+  it('reports missing status as unavailable and displays the aggregate health reason', () => {
+    expect(render({status_available:false,running:null,healthy:false,reason:'Process state unknown'}))
+      .toContain('Monitor unavailable')
+    const html = render({running:true,healthy:false,health_reason:'Components require attention: docker'})
+    expect(html).toContain('Components require attention: docker')
+  })
+  it('escapes aggregate health reasons as text', () => {
+    expect(render({running:true,healthy:false,health_reason:'<script>bad()</script>'}))
+      .toContain('&lt;script&gt;')
+  })
+
 })

@@ -109,7 +109,8 @@ class Records(unittest.TestCase):
     def test_invalid_reasons_are_kept_and_excluded(self):
         record = rs.build_record(entry(invalid_reasons=["workload command failed"]), [], CFG)
         self.assertFalse(record["valid"])
-        self.assertEqual(mr.aggregate([record])["excluded_trials"][0]["reason"], "workload command failed")
+        reason = mr.aggregate([record])["excluded_trials"][0]["reason"]
+        self.assertEqual(reason, "workload command failed")
 
     def test_skipped_window_has_no_creation_interval(self):
         skipped = {"index": 1, "scenario": "quiet", "boundary_epoch": BOUNDARY,

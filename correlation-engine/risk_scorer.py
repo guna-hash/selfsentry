@@ -51,6 +51,7 @@ FALCO_PRIORITY_SCORES: dict[str, int] = {
     "ERROR": 70,
     "WARNING": 50,
     "NOTICE": 20,
+    "INFO": 10,  # Normalized output from parse_falco_alert.
     "INFORMATIONAL": 10,
     "DEBUG": 5,
 }

@@ -11,7 +11,7 @@ windows should score low; a deliberately-triggered anomalous window
 (docker exec -it <container> sh) should score clearly higher.
 
 Usage:
-    python3 validate_live.py <container_id> --minutes 3 --window-seconds 30
+    python3 validate_live.py <container_id> --minutes 3 --window-seconds 60
 
 Let the first window or two run quiet (normal baseline-like behavior),
 then trigger the anomalous action partway through the run.
@@ -20,6 +20,8 @@ then trigger the anomalous action partway through the run.
 from __future__ import annotations
 
 import argparse
+import math
+from pathlib import Path
 import sys
 import time
 from datetime import datetime, timedelta, timezone
@@ -38,8 +40,14 @@ def run_validation(
     storage_dir: str,
     poll_interval_seconds: float = 0.5,
 ) -> None:
+    if not all(math.isfinite(v) and v > 0 for v in
+               (duration_minutes, window_seconds, poll_interval_seconds)):
+        raise ValueError("duration, window and polling interval must be finite and positive")
     store = BaselineStore(storage_dir=storage_dir)
     dataset = store.load(container_id)
+    if any(not math.isclose((v.window_end - v.window_start).total_seconds(), window_seconds)
+           for v in dataset.feature_vectors):
+        raise ValueError("live window length must match every stored baseline window")
     print(f"Loaded baseline: {dataset.sample_count} sample(s) for {container_id!r}")
 
     model = AnomalyModel(container_id=container_id)
@@ -60,7 +68,11 @@ def run_validation(
     with open(log_path, "r") as f:
         f.seek(0, 2)  # only see events from now on
         while time.monotonic() < end_time:
+            position = f.tell()
             line = f.readline()
+            if line and not line.endswith("\n"):
+                f.seek(position)
+                line = ""
             if line:
                 try:
                     event = parse_baseline_event(line)
@@ -73,9 +85,12 @@ def run_validation(
                 time.sleep(poll_interval_seconds)
 
             now = datetime.now(timezone.utc)
-            if now >= window_end:
+            while now >= window_end:
                 window_num += 1
-                fv = extract_features(buffer, container_id, window_start, window_end)
+                fv = extract_features(
+                    [event for event in buffer if event.timestamp < window_end],
+                    container_id, window_start, window_end,
+                )
                 result = model.score_event(fv)
                 flag = "  <-- ANOMALY" if result.is_anomaly else ""
                 print(
@@ -85,7 +100,7 @@ def run_validation(
                     f"shell={fv.shell_spawned_count} syscall={fv.sensitive_syscall_count} "
                     f"-> anomaly_score={result.anomaly_score:.4f}{flag}"
                 )
-                buffer = []
+                buffer = [event for event in buffer if event.timestamp >= window_end]
                 window_start = window_end
                 window_end = window_start + timedelta(seconds=window_seconds)
 
@@ -99,8 +114,8 @@ if __name__ == "__main__":
     parser.add_argument("container_id")
     parser.add_argument("--log-path", default="/var/log/falco/alerts.json")
     parser.add_argument("--minutes", type=float, default=3.0)
-    parser.add_argument("--window-seconds", type=float, default=30.0)
-    parser.add_argument("--storage-dir", default="baselines")
+    parser.add_argument("--window-seconds", type=float, default=60.0)
+    parser.add_argument("--storage-dir", default=str(Path(__file__).resolve().parent / "baselines"))
     args = parser.parse_args()
 
     try:
@@ -112,6 +127,9 @@ if __name__ == "__main__":
             args.storage_dir,
         )
     except FileNotFoundError as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        sys.exit(2)
+    except ValueError as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         sys.exit(2)
     except KeyboardInterrupt:

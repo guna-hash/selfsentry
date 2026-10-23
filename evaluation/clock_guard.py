@@ -158,7 +158,10 @@ def require_recent_preflight(path, container_id, max_age_seconds=DEFAULT_MAX_AGE
     return record
 
 
-def run_preflight(container, alerts_path, state_path, max_skew=DEFAULT_MAX_SKEW, wait_seconds=15):
+def run_preflight(container, alerts_path, state_path, max_skew=DEFAULT_MAX_SKEW,
+                  wait_seconds=15, backend="http://127.0.0.1:8000"):
+    from safety import check_monitor
+    check_monitor(backend)
     info = json.loads(subprocess.check_output(["docker", "inspect", container]))[0]
     target = info["Id"][:12]
     tail = AlertTail(alerts_path)
@@ -166,7 +169,8 @@ def run_preflight(container, alerts_path, state_path, max_skew=DEFAULT_MAX_SKEW,
     initial_clock = clock_snapshot()
     before = initial_clock["realtime"]
     subprocess.run(["docker", "exec", container, "/bin/true"], check=True, capture_output=True)
-    events, deadline = [], time.monotonic() + wait_seconds
+    events: list[dict] = []
+    deadline = time.monotonic() + wait_seconds
     while not events and time.monotonic() < deadline:
         time.sleep(0.5)
         events = tail.new_events(target)

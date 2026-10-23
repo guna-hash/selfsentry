@@ -1,5 +1,7 @@
 # SelfSentry release checklist
 
+> Engineering review: [22 October repository audit](docs/repository-audit/report.md). Historical checked items below apply only to their recorded source/configuration; they are not acceptance of the audit patch.
+
 > Current status: [21 October academic handoff](docs/academic_handoff_20261021.md). It records the latest rule workflow, benign false positive and clock recurrence. Historical entries below retain their original scope.
 
 

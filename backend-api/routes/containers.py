@@ -2,6 +2,7 @@ import os
 import sys
 
 import docker
+import requests
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
@@ -41,8 +42,12 @@ def _latest_incident(db: Session, container):
 
 
 def _describe(container, db: Session, monitor_status=None) -> dict:
-    record = auto_isolate.get_isolation_record(container.id)
-    isolated = bool(record) and record.get("state") in (
+    record_error = None
+    try:
+        record = auto_isolate.get_isolation_record(container.id)
+    except auto_isolate.IsolationRecordError as exc:
+        record, record_error = None, str(exc)
+    isolated = None if record_error else record is not None and record.get("state") in (
         "isolated",
         "isolating",
         "isolation_failed",
@@ -57,8 +62,12 @@ def _describe(container, db: Session, monitor_status=None) -> dict:
         "full_id": container.id,
         "protected": auto_isolate.is_protected(container),
         "monitoring": monitoring_health(container, monitor_status),
-        "containment_state": record.get("state") if record else None,
+        "containment_state": "record_unavailable" if record_error else (
+            record.get("state") if record else None
+        ),
         "containment_label": (
+            "Recovery record unavailable — containment unverified; operator repair required"
+            if record_error else
             "Isolated – Paused + Network Disconnected"
             if verified
             else (
@@ -67,7 +76,7 @@ def _describe(container, db: Session, monitor_status=None) -> dict:
                 else container.status
             )
         ),
-        "isolation_error": record.get("error") if record else None,
+        "isolation_error": record_error or (record.get("error") if record else None),
         "risk_explanation": (
             explain_incident(
                 {
@@ -85,8 +94,8 @@ def _describe(container, db: Session, monitor_status=None) -> dict:
         "image": (container.attrs.get("Config") or {}).get("Image"),
         "status": container.status,
         "isolated": isolated,
-        "isolation_reason": record.get("reason") if isolated else None,
-        "isolated_at": record.get("isolated_at") if isolated else None,
+        "isolation_reason": record.get("reason") if record and isolated else None,
+        "isolated_at": record.get("isolated_at") if record and isolated else None,
         "latest_risk_score": incident.risk_score if incident else None,
         "latest_incident_id": incident.id if incident else None,
         "latest_incident_at": incident.created_at if incident else None,
@@ -115,7 +124,7 @@ def list_containers(db: Session = Depends(get_db)):
             containers = client.containers.list(all=True)
         finally:
             client.close()
-    except docker.errors.DockerException as exc:
+    except (docker.errors.DockerException, requests.RequestException) as exc:
         raise _docker_unavailable(exc) from exc
     monitor_status = read_status(load_config().state_dir / "status.json")
     return sorted(
@@ -162,7 +171,7 @@ def resume_container(
     except auto_isolate.ResumeError as exc:
         _audit(db, "CONTAINER_RESUME_FAILED", container_id, {"reason": str(exc)})
         raise HTTPException(status_code=409, detail=str(exc)) from exc
-    except docker.errors.DockerException as exc:
+    except (docker.errors.DockerException, requests.RequestException) as exc:
         _audit(db, "CONTAINER_RESUME_FAILED", container_id, {"reason": str(exc)})
         raise _docker_unavailable(exc) from exc
 
@@ -188,7 +197,7 @@ def isolate_container(
     except auto_isolate.IsolationError as exc:
         _audit(db, "CONTAINER_ISOLATION_FAILED", container_id, {"reason": str(exc)})
         raise HTTPException(status_code=409, detail=str(exc)) from exc
-    except docker.errors.DockerException as exc:
+    except (docker.errors.DockerException, requests.RequestException) as exc:
         _audit(db, "CONTAINER_ISOLATION_FAILED", container_id, {"reason": str(exc)})
         raise _docker_unavailable(exc) from exc
     _audit(db, "CONTAINER_ISOLATED", container_id, {"isolated_by": isolated_by, "reason": reason})

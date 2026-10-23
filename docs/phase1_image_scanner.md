@@ -1,5 +1,11 @@
 # Phase 1 — Image Scanner
 
+> Historical phase record. Retained commands, test counts and implementation claims
+> describe that development stage. For current installation and safety behavior use
+> [README](../README.md), [operations](monitor_operations.md) and the
+> [repository audit](repository-audit/report.md). Do not rerun old direct-deployer or
+> database workarounds as the current human-approved workflow.
+
 ## What this phase delivers
 A Python wrapper (`image-scanner/trivy_wrapper.py`) around the Trivy CLI that:
 - Scans a container image for vulnerabilities (CVEs), embedded secrets, and misconfigurations

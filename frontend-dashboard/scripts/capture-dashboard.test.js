@@ -1,3 +1,4 @@
+import {readFileSync} from 'node:fs'
 import {expect,it} from 'vitest'
 import {captureOrigin,scenes,withGallery} from './capture-dashboard.mjs'
 it('restricts capture to local origins and synthetic routes',()=>{
@@ -15,4 +16,11 @@ it('adds an idempotent labelled gallery while retaining historical VM images',()
 })
 it('refuses to silently rewrite an unexpected README',()=>{
   expect(()=>withGallery('# Unrelated content')).toThrow('screenshot section is missing')
+})
+
+it('supports the current repository README capture anchor',()=>{
+  const readme=readFileSync(new URL('../../README.md',import.meta.url),'utf8')
+  const next=withGallery(readme)
+  expect(next).toContain('synthetic Sample data')
+  expect(withGallery(next)).toBe(next)
 })

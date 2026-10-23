@@ -8,10 +8,10 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path[:0] = [str(ROOT / "behavioral-engine"), str(ROOT / "monitor-service")]
-from anomaly_model import AnomalyModel
-from baseline_builder import BaselineDataset
-from feature_extractor import FEATURE_NAMES, FeatureVector
-from monitor_config import load_config, ConfigError
+from anomaly_model import AnomalyModel  # noqa: E402
+from baseline_builder import BaselineDataset  # noqa: E402
+from feature_extractor import FEATURE_NAMES, FeatureVector  # noqa: E402
+from monitor_config import load_config, ConfigError  # noqa: E402
 
 # Counts only: no production container identity, timestamps or baseline JSON in Git.
 PATTERNS = [

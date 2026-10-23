@@ -1,9 +1,11 @@
 from datetime import datetime, timezone
+import json
 from typing import Literal
 
-from fastapi import APIRouter, Depends, Query, Response
-from pydantic import BaseModel
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 
 from database import get_db
 from models.db_models import AuditEvent
@@ -12,14 +14,14 @@ router = APIRouter(prefix="/audit", tags=["audit"])
 
 
 class AuditEventIn(BaseModel):
-    event_type: str
+    event_type: str = Field(min_length=1, max_length=64)
     severity: Literal["info", "warning", "critical"] = "info"
-    source: str = "monitor"
-    event_key: str | None = None
-    container_id: str | None = None
-    container_name: str | None = None
-    image_name: str | None = None
-    detail: dict = {}
+    source: str = Field(default="monitor", min_length=1, max_length=64)
+    event_key: str | None = Field(default=None, min_length=1, max_length=128)
+    container_id: str | None = Field(default=None, min_length=1, max_length=128)
+    container_name: str | None = Field(default=None, min_length=1, max_length=256)
+    image_name: str | None = Field(default=None, min_length=1, max_length=256)
+    detail: dict = Field(default_factory=dict)
     occurred_at: datetime | None = None
 
 
@@ -49,18 +51,40 @@ def _serialize(event: AuditEvent) -> dict:
     }
 
 
+def _acknowledge_duplicate(existing: AuditEvent, body: AuditEventIn, response: Response):
+    fields = ("event_type", "severity", "source", "container_id", "container_name", "image_name")
+    matches = all(getattr(existing, field) == getattr(body, field) for field in fields)
+    try:
+        matches = matches and json.dumps(
+            existing.detail if existing.detail is not None else {},
+            sort_keys=True, allow_nan=False,
+        ) == json.dumps(body.detail, sort_keys=True, allow_nan=False)
+    except (ValueError, TypeError):
+        matches = False  # Invalid historical data must not produce a duplicate success.
+    if not matches:
+        raise HTTPException(status_code=409, detail="Audit event key identifies different data")
+    # Event time is first-write metadata, not identity: retries may regenerate it.
+    response.status_code = 200
+    return {"id": existing.id, "duplicate": True}
+
+
 @router.post("/", status_code=201)
 def record_audit_event(
     body: AuditEventIn, response: Response, db: Session = Depends(get_db)
 ):
-    """Append an audit event. A repeated event_key is acknowledged without a second row."""
+    """Append an event or acknowledge a matching key/content replay; retain the first time."""
+    try:
+        json.dumps(body.detail, sort_keys=True, allow_nan=False)
+    except (ValueError, TypeError):
+        raise HTTPException(
+            status_code=422, detail="Audit detail must contain finite JSON values"
+        ) from None
     if body.event_key:
         existing = (
             db.query(AuditEvent).filter(AuditEvent.event_key == body.event_key).first()
         )
         if existing:
-            response.status_code = 200
-            return {"id": existing.id, "duplicate": True}
+            return _acknowledge_duplicate(existing, body, response)
 
     event = AuditEvent(
         event_key=body.event_key,
@@ -74,7 +98,20 @@ def record_audit_event(
         occurred_at=_to_naive_utc(body.occurred_at),
     )
     db.add(event)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        # Another delivery can commit the same key after our initial lookup.
+        # Roll back before querying and comparing the winning row.
+        db.rollback()
+        existing = (
+            db.query(AuditEvent).filter(AuditEvent.event_key == body.event_key).first()
+            if body.event_key
+            else None
+        )
+        if existing is None:
+            raise
+        return _acknowledge_duplicate(existing, body, response)
     db.refresh(event)
     return {"id": event.id, "duplicate": False}
 

@@ -31,13 +31,13 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from risk_scorer import compute_risk_score
-from event_router import route_incident, dispatch_incident
+from risk_scorer import compute_risk_score  # noqa: E402
+from event_router import route_incident, dispatch_incident  # noqa: E402
 
-import argparse
-import json
-import urllib.request
-import urllib.error
+import argparse  # noqa: E402
+import json  # noqa: E402
+import urllib.request  # noqa: E402
+import urllib.error  # noqa: E402
 
 BACKEND_INCIDENTS_URL = "http://127.0.0.1:8000/incidents/"
 

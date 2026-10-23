@@ -1,5 +1,37 @@
 # Changelog
 
+### Uncommitted repository audit — 21–23 October 2026
+- Validate immutable scan identity and report structure before deployment policy decisions.
+- Preserve rule approval ownership, audit idempotency and isolation-state integrity.
+- Bound monitoring queues/model work; retain instance ownership during worker shutdown.
+- Report monitor-owned safety settings and reject unsafe evaluation preflights.
+- Correct standalone window/partial-record handling and expand meaningful regressions.
+- Add a dependency resolution, complete inventory, evidence-qualified audit and ownership guide.
+- Add an opt-in frozen migration baseline, read-only schema comparison and full-body scoped type checks.
+- Reject empty AI responses, invalid workflow explanations and unrecognized journal baselines explicitly.
+- Keep corrupt checkpoints visible; durably checkpoint replay state and detect rotation from opened files.
+- Preserve oversized-line discard boundaries across restarts.
+- Serialize workflow/dismissal/confirmation writes; retain unrelated committed fields and audit dismissals.
+- Validate confirmation actors, event keys, scan counts and stored string/finding shapes before persistence.
+- Validate deployment acknowledgements and bind replay keys to request identity.
+- Retain rejected journal evidence without blocking valid deliveries; publish delivery health.
+- Journal deployment action intent before start/removal; persist outcomes and queue successful decisions atomically.
+- Retain uncertain/failed actions for operator review, publish health counts and never auto-replay Docker actions.
+- Bound gate Docker CLI waits; retain timeout uncertainty without automatic action replay or start cleanup.
+- Handle Docker SDK transport failures during containment/recovery, retain failed outcomes and attempt verified re-pause.
+- Audit pre-action transport failures as service unavailable; verify shared response locks with real local thread contention.
+- Persist creation intent before Docker, retain full returned IDs before inspection and expose unfinished creation health.
+- Refuse malformed/short/multiple create identities without guessed cleanup or automatic replay.
+- Separate API heartbeat freshness from aggregate reported health; expose missing/failed components and unknown process state.
+- Handle malformed snapshot/component shapes without server/status-helper crashes and display aggregate reasons.
+- Publish control progress only after completed work; share API/CLI health rules and expose stale cycle age.
+- Reject nonfinite status JSON and future CLI snapshots without automatic watchdog actions.
+- Select the declared psycopg2 driver for plain PostgreSQL URLs under SQLAlchemy 2.1.
+- Bound psycopg2 connect and pool checkout waits, preserve URL options and verify real silent-peer handshake timeouts.
+- Return sanitized request-time database operational/pool errors with explicit unknown-write guidance and no automatic retries.
+- Verify actual-app auth/CORS, pool recovery, pre-insert failure and committed-write deduplication after injected acknowledgement loss.
+- Preserve original academic evidence; no deployment, commit, push or real isolation.
+
 ### 2026-10-20 — Research documentation reconciliation
 - Distinguish the Falco-backed 15 October study from the implemented literal-witness
   anomaly-only extension, whose new live chain still awaits acceptance.
@@ -244,3 +276,33 @@ validated; use TODO.md for current release work.
 - Require authenticated backend writes; retain human-only rule deployment and audit outcomes.
 - Wire existing synthesis/backtest and advisory AI, add monitor status UI and operations/evaluation docs.
 - Live Docker/Falco/PostgreSQL evaluation remains pending; no performance/detection claim is added.
+
+- Add bounded read-only deployment journal inspection with individual attempt metadata and
+  single-snapshot counts; preserve uncertain outcomes without replaying Docker or HTTP actions.
+- Cover journal read-only behavior, concurrent WAL snapshot consistency, pagination, invalid and
+  missing journals, redacted payloads and CLI routing with disposable SQLite regressions.
+
+- Validate audit insert/dedup acknowledgements before removing queued events; retain authentication,
+  throttling and ambiguous failures for retry while preserving explicit payload rejection evidence.
+- Close durable audit SQLite handles deterministically on normal and error paths; sanitize transport
+  exception logs and cover controlled lost replies through the actual audit route.
+
+- Make legacy audit spool reads free of quarantine writes; report sanitized corruption errors and
+  unknown depth while preserving input, dead letters, ingestion and status persistence.
+- Validate finite object payloads and SQLite key/body association before sending a selected audit
+  batch; retain invalid batches for reviewed repair, with disposable corruption/recovery tests.
+
+- Generate a retained audit event key for each new keyless emit in both clients, preserving replay
+  identity after a lost reply/restart; validate explicit keys before delivery or insertion.
+- Preserve historical keyless records and API compatibility; cover generated-key replay through
+  the actual audit route plus distinct events, explicit keys and invalid inputs.
+
+- Refuse changed payloads under pending durable audit keys without replacing the original;
+  preserve omitted-time retries and report corrupt originals separately.
+- Validate finite new durable payloads before insertion; cover atomic conflicting writers,
+  canonical mapping order and original timestamp preservation with disposable SQLite tests.
+
+- Compare backend audit event fields/detail before duplicate acknowledgement, including the
+  competing-insert rollback path; refuse changed content with 409 and preserve original rows.
+- Reject nonfinite detail with sanitized 422; retain first-write timestamps and keyless API
+  compatibility; verify client conflict retention after local delivery using actual SQLite routes.

@@ -65,7 +65,10 @@ are disabled for terminal statuses.
 
 A host file lock spans inventory/check/write. PostgreSQL advisory transaction locks
 also serialize API candidate creation across workers; checks are not scoped only
-to the source incident. Inventory is revalidated after backtesting and immediately
+to the source incident. Human review additionally holds a per-rule session advisory
+lock on a pinned PostgreSQL connection across approval commit and deployment. SQLite
+review tests use a per-rule host file lock. Native PostgreSQL concurrency still needs
+separate acceptance after these audit corrections. Inventory is revalidated after backtesting and immediately
 before appending. The deployment lock covers append, durable registry write and
 reload. Byte-identical owner-bound receipts permit reload-only recovery after a
 failed reload. A name-only match never authorizes a retry, and a newly observed

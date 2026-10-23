@@ -55,7 +55,7 @@ export default function RuleReviewQueue(){
     </section>}
     <div className="rule-queue-controls">
       <label htmlFor="rule-status">Status<select id="rule-status" value={status} onChange={event=>setStatus(event.target.value)}>
-        <option value="actionable">Needs action</option><option value="all">All available history</option><option value="pending_review">Pending review</option><option value="approved">Approved · retry deployment</option><option value="deployed">Deployed</option><option value="rejected">Rejected</option><option value="rejected_duplicate">Rejected – Duplicate</option><option value="retired">Retired (disabled)</option><option value="disabled">Disabled</option>
+        <option value="actionable">Needs action</option><option value="all">All available history</option><option value="pending_review">Pending review</option><option value="approved">Approved · retry deployment</option><option value="deployed">Deployed</option><option value="rejected">Rejected</option><option value="rejected_duplicate">Rejected – Duplicate</option><option value="retired">Retired · native state unverified</option><option value="disabled">Disabled</option>
       </select></label>
       <label htmlFor="rule-period">Creation period<select id="rule-period" value={period} onChange={event=>setPeriod(event.target.value)}><option value="all">All recorded time</option><option value="24h">Last 24 hours</option><option value="7d">Last 7 days</option></select></label>
     </div>

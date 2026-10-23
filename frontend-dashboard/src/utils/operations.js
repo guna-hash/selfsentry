@@ -36,6 +36,7 @@ export function modelLabel(state) {
 }
 export async function containerAction(container, action, actor, reason, request, requireToken) {
   if (!actor.trim() || (action === 'isolate' && !reason.trim())) throw new Error('Record an operator and an isolation reason.')
+  if (container.containment_state === 'record_unavailable') throw new Error('Isolation recovery record is unavailable. Operator repair is required before another action.')
   if (action === 'isolate' && container.protected !== false) throw new Error('Isolation requires a confirmed unprotected container.')
   if (action === 'resume' && !container.isolated) throw new Error('Resume requires an active isolation record.')
   if (!['isolate', 'resume'].includes(action)) throw new Error('Unknown action.')

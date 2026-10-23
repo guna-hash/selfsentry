@@ -110,7 +110,7 @@ class AnomalyModel:
         self,
         container_id: str,
         n_estimators: int = 100,
-        contamination: float = "auto",
+        contamination: float | str = "auto",
         random_state: int = 42,
         algorithm: str = "isolation_forest",
     ):

@@ -47,6 +47,8 @@ SUFFIXES = {
     ".toml",
     ".ini",
     ".cfg",
+    ".csv",
+    ".lock",
 }
 KEY = re.compile(rb"(?:gsk_[A-Za-z0-9]{20,}|sk-(?:proj-)?[A-Za-z0-9_-]{24,})")
 
@@ -63,7 +65,7 @@ def main():
             return
         if p.name.startswith(".env") and p.name != ".env.example":
             return
-        if p.suffix.lower() not in SUFFIXES and p.name not in (
+        if rel.parts[0] != "bin" and p.suffix.lower() not in SUFFIXES and p.name not in (
             "requirements.txt",
             "Dockerfile",
             "Makefile",

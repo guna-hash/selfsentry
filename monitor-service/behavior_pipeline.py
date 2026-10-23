@@ -29,8 +29,10 @@ from risk_scorer import compute_risk_score  # noqa: E402
 from event_router import route_incident  # noqa: E402
 from audit_client import make_event_key  # noqa: E402
 from observed_timeline import build_observed_timeline  # noqa: E402
+from baseline_review import overlaps_training  # noqa: E402
 
 logger = logging.getLogger(__name__)
+MAX_TRAINING_JOBS = 2
 STATES = (
     "NO_BASELINE",
     "LEARNING",
@@ -66,7 +68,9 @@ class BehaviorPipeline:
         )
         from concurrent.futures import ThreadPoolExecutor
 
-        self.training_pool = ThreadPoolExecutor(max_workers=2) if async_training else None
+        self.training_pool = (
+            ThreadPoolExecutor(max_workers=MAX_TRAINING_JOBS) if async_training else None
+        )
         self.training_jobs = {}
         self.models = {}
         self.lifecycle = {}
@@ -199,6 +203,9 @@ class BehaviorPipeline:
             self._transition(cid, "MODEL_UNAVAILABLE", "baseline has no feature variation")
             return
         self._transition(cid, "BASELINE_READY")
+        if self.training_pool and len(self.training_jobs) >= MAX_TRAINING_JOBS:
+            self._transition(cid, "BASELINE_READY", "waiting for model training capacity")
+            return
         self._transition(cid, "MODEL_TRAINING")
         if self.training_pool:
             self.training_jobs[cid] = self.training_pool.submit(self._fit_model, cid, dataset)
@@ -236,9 +243,11 @@ class BehaviorPipeline:
                 self._transition(cid, "MODEL_UNAVAILABLE", str(exc))
 
     def close(self):
-        if self.training_pool:
-            self.training_pool.shutdown(wait=False, cancel_futures=True)
-        self.db.close()
+        try:
+            if self.training_pool:
+                self.training_pool.shutdown(wait=True, cancel_futures=True)
+        finally:
+            self.db.close()
 
     def _enqueue(self, payload, key):
         self.db.execute(
@@ -294,12 +303,31 @@ class BehaviorPipeline:
                 late_payload["event_key"] = key
                 self._enqueue(late_payload, key)
         if closed:
+            detail = {"kind": kind, "event_key": key, "event_timestamp": normalized["timestamp"]}
             if kind == "alert":
-                # Cannot safely keep a model trained on a window now known to be suspicious.
-                self.models.pop(cid, None)
-                self.lifecycle[cid]["requires_review"] = True
-                self._transition(cid, "MODEL_UNAVAILABLE", "late security alert; review baseline")
-            self._audit("LATE_EVENT", cid, {"kind": kind, "event_key": key}, key)
+                # A late event invalidates training only when its window could
+                # have contributed a sample. Keep post-training incidents live.
+                try:
+                    dataset = self.store.load(cid, allow_missing=True)
+                    self._validate(dataset)
+                    if not dataset.sample_count and (
+                        cid in self.models or self.lifecycle[cid].get("samples", 0)
+                    ):
+                        raise ValueError("previous baseline samples are missing")
+                    start = datetime.fromtimestamp(bucket, timezone.utc)
+                    end = start + timedelta(seconds=self.config.window_seconds)
+                    overlap = overlaps_training(dataset, start, end)
+                    detail["training_overlap"] = overlap
+                except (OSError, ValueError, KeyError, TypeError) as exc:
+                    overlap = True  # Unknown exposure remains fail-closed.
+                    detail.update(training_overlap=None, baseline_check_error=str(exc))
+                if overlap:
+                    self.models.pop(cid, None)
+                    self.lifecycle[cid]["requires_review"] = True
+                    self._transition(
+                        cid, "MODEL_UNAVAILABLE", "late security alert; review baseline"
+                    )
+            self._audit("LATE_EVENT", cid, detail, key)
         self.status.incr("alerts_seen" if kind == "alert" else "baseline_events_seen")
 
     def handle_alert(self, event):
@@ -365,6 +393,15 @@ class BehaviorPipeline:
 
     def tick(self):
         self._finish_training()
+        if self.training_pool:
+            for cid, item in self.lifecycle.items():
+                if len(self.training_jobs) >= MAX_TRAINING_JOBS:
+                    break
+                if item["state"] == "BASELINE_READY" and not item.get("requires_review"):
+                    try:
+                        self._train(cid, self.store.load(cid))
+                    except Exception as exc:
+                        self._transition(cid, "MODEL_UNAVAILABLE", str(exc))
         cutoff = self.clock() - self.config.lateness_seconds - self.config.window_seconds
         rows = list(
             self.db.execute(
@@ -407,9 +444,13 @@ class BehaviorPipeline:
             )
         ]
         alerts = [event for kind, event in events if kind == "alert"]
-        raw = [
-            parse_baseline_event(event["raw_line"]) for kind, event in events if kind == "baseline"
-        ]
+        raw = []
+        for kind, event in events:
+            if kind == "baseline":
+                parsed = parse_baseline_event(event["raw_line"])
+                if parsed is None:
+                    raise ValueError("Stored baseline record is not a recognized baseline event")
+                raw.append(parsed)
         for alert in alerts:
             converted = security_alert_to_raw_event(alert)
             if converted is None:

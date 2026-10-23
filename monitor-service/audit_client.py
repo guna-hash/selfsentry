@@ -1,22 +1,25 @@
 """
 audit_client.py
 -----------------
-Delivers audit events to the backend (POST /audit/) without ever silently losing one.
+Delivers audit events to the backend (POST /audit/) with local retry journals.
 
-  - Delivered (HTTP 200/201): done. The backend ignores a repeated event_key, so a retry
+  - Valid acknowledgement (HTTP 200/201 with positive ID and duplicate flag): done.
+    The backend ignores a repeated event_key, so a retry
     after a lost response cannot create a duplicate.
   - Backend unreachable or HTTP 5xx: the event is appended to an on-disk spool
     (audit_spool.jsonl) and retried later, in order.
-  - HTTP 4xx (the backend rejected the payload): retrying cannot help, so the event is
-    moved to audit_rejected.jsonl for inspection and an error is logged.
+  - HTTP 400/422: retain rejected payloads in audit_rejected.jsonl for inspection.
+  - Authentication, throttling and ambiguous responses remain queued for later retry.
 """
 
 from __future__ import annotations
 
+from contextlib import closing
 import hashlib
 import json
 import logging
 import os
+import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -24,6 +27,30 @@ import requests
 from backend_auth import backend_headers
 
 logger = logging.getLogger(__name__)
+
+
+class AuditJournalError(ValueError):
+    """Persisted audit input is invalid; leave it untouched for operator review."""
+
+
+class AuditEventConflict(ValueError):
+    """A pending event key already identifies different data; preserve the original."""
+
+
+def _decode_payload(raw):
+    payload = json.loads(raw)
+    if not isinstance(payload, dict):
+        raise ValueError("Audit payload must be a JSON object")
+    json.dumps(payload, allow_nan=False)
+    return payload
+
+
+def _event_key(value):
+    if value is None:
+        return uuid.uuid4().hex
+    if not isinstance(value, str) or not 1 <= len(value) <= 128:
+        raise ValueError("Audit event_key must contain 1–128 characters")
+    return value
 
 
 def make_event_key(*parts) -> str:
@@ -59,7 +86,7 @@ class AuditClient:
             "event_type": event_type,
             "severity": severity,
             "source": "monitor",
-            "event_key": event_key,
+            "event_key": _event_key(event_key),
             "container_id": container_id,
             "container_name": container_name,
             "image_name": image_name,
@@ -109,13 +136,26 @@ class AuditClient:
                 headers=backend_headers(),
             )
         except requests.RequestException as exc:
-            logger.warning("audit backend unreachable: %s", exc)
+            logger.warning("audit backend unreachable (%s)", type(exc).__name__)
             self.last_outcome = "retry"
             return "retry"
         if response.status_code in (200, 201):
-            self.last_outcome = "ok"
-            return "ok"
-        if 400 <= response.status_code < 500:
+            try:
+                body = response.json()
+            except (ValueError, TypeError):
+                body = None
+            if (
+                isinstance(body, dict)
+                and type(body.get("id")) is int and body["id"] > 0
+                and type(body.get("duplicate")) is bool
+                and body["duplicate"] == (response.status_code == 200)
+            ):
+                self.last_outcome = "ok"
+                return "ok"
+            logger.warning("audit backend acknowledgement invalid: HTTP %s", response.status_code)
+            self.last_outcome = "retry"
+            return "retry"
+        if response.status_code in (400, 422):
             logger.error(
                 "audit backend rejected %s: HTTP %s",
                 payload.get("event_type"),
@@ -132,18 +172,21 @@ class AuditClient:
             raw_lines = self._spool_path.read_text().splitlines()
         except FileNotFoundError:
             return []
+        except UnicodeError:
+            raise AuditJournalError("Audit spool is not valid text; retained for review") from None
         except OSError as exc:
             logger.error("cannot read audit spool %s: %s", self._spool_path, exc)
             raise
         events = []
-        for raw in raw_lines:
+        for line_number, raw in enumerate(raw_lines, start=1):
             if not raw.strip():
                 continue
             try:
-                events.append(json.loads(raw))
-            except ValueError:
-                logger.error("unreadable audit spool line moved to dead letters")
-                self._append_line(self._rejected_path, raw)
+                events.append(_decode_payload(raw))
+            except (ValueError, TypeError):
+                raise AuditJournalError(
+                    f"Invalid audit spool record at line {line_number}; retained for review"
+                ) from None
         return events
 
     def _append_line(self, path: Path, line: str) -> None:
@@ -188,7 +231,7 @@ class DurableAuditClient(AuditClient):
 
         self._journal = self._spool_path.with_name("audit.sqlite")
         self._journal.parent.mkdir(parents=True, exist_ok=True)
-        with sqlite3.connect(self._journal) as db:
+        with closing(sqlite3.connect(self._journal)) as db, db:
             db.execute("PRAGMA journal_mode=WAL")
             db.execute("CREATE TABLE IF NOT EXISTS audit_outbox (key TEXT PRIMARY KEY, body TEXT)")
 
@@ -204,9 +247,8 @@ class DurableAuditClient(AuditClient):
         occurred_at=None,
     ):
         import sqlite3
-        import uuid
 
-        key = event_key or uuid.uuid4().hex
+        key = _event_key(event_key)
         payload = dict(
             event_type=event_type,
             severity=severity,
@@ -218,17 +260,35 @@ class DurableAuditClient(AuditClient):
             event_key=key,
             occurred_at=occurred_at or _utc_now(),
         )
-        with sqlite3.connect(self._journal, timeout=1) as db:
+        encoded = json.dumps(payload, sort_keys=True, allow_nan=False)
+        with closing(sqlite3.connect(self._journal, timeout=1)) as db, db:
             db.execute("PRAGMA synchronous=FULL")
-            db.execute(
-                "INSERT OR IGNORE INTO audit_outbox VALUES (?,?)", (key, json.dumps(payload))
-            )
+            db.execute("INSERT OR IGNORE INTO audit_outbox VALUES (?,?)", (key, encoded))
+            stored_raw = db.execute(
+                "SELECT body FROM audit_outbox WHERE key=?", (key,)
+            ).fetchone()[0]
+            try:
+                stored = _decode_payload(stored_raw)
+                if stored.get("event_key") != key:
+                    raise ValueError("Audit journal key mismatch")
+            except (ValueError, TypeError):
+                raise AuditJournalError(
+                    "Invalid existing audit SQLite record; retained for review"
+                ) from None
+            comparison = dict(payload)
+            if occurred_at is None or occurred_at == "":
+                # A retry without an explicit time keeps the original event timestamp.
+                comparison["occurred_at"] = stored.get("occurred_at")
+            if json.dumps(stored, sort_keys=True, allow_nan=False) != json.dumps(
+                comparison, sort_keys=True, allow_nan=False
+            ):
+                raise AuditEventConflict("Pending audit event key identifies different data")
         return False
 
     def spool_size(self):
         import sqlite3
 
-        with sqlite3.connect(self._journal, timeout=1) as db:
+        with closing(sqlite3.connect(self._journal, timeout=1)) as db, db:
             count = db.execute("SELECT count(*) FROM audit_outbox").fetchone()[0]
         return count + len(self._read_spool())
 
@@ -238,13 +298,27 @@ class DurableAuditClient(AuditClient):
         sent = super().flush_spool()
         if self._read_spool():
             return sent
-        with sqlite3.connect(self._journal, timeout=1) as db:
+        with closing(sqlite3.connect(self._journal, timeout=1)) as db, db:
             rows = db.execute(
                 "SELECT key,body FROM audit_outbox ORDER BY rowid LIMIT 50"
             ).fetchall()
-        # No database transaction or lock is held across network I/O.
+        # Validate the selected batch before sending any of its records.
+        pending = []
         for key, body in rows:
-            payload = json.loads(body)
+            try:
+                payload = _decode_payload(body)
+                if (
+                    not isinstance(key, str) or not 1 <= len(key) <= 128
+                    or payload.get("event_key") != key
+                ):
+                    raise ValueError("Audit journal key mismatch")
+            except (ValueError, TypeError):
+                raise AuditJournalError(
+                    "Invalid audit SQLite record or event key; retained for review"
+                ) from None
+            pending.append((key, payload))
+        # No database transaction or lock is held across network I/O.
+        for key, payload in pending:
             outcome = self._post(payload)
             if outcome == "retry":
                 break
@@ -252,6 +326,6 @@ class DurableAuditClient(AuditClient):
                 self._dead_letter(payload)
             else:
                 sent += 1
-            with sqlite3.connect(self._journal, timeout=1) as db:
+            with closing(sqlite3.connect(self._journal, timeout=1)) as db, db:
                 db.execute("DELETE FROM audit_outbox WHERE key=?", (key,))
         return sent

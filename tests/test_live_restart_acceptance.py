@@ -101,6 +101,7 @@ class FaultRecovery(unittest.TestCase):
         (root / "falco-rules").mkdir()
         (root / "falco-rules/auto-generated-rules.yaml").write_text("unchanged\n")
         before = {"pid": 101, "healthy": True, "running": True,
+                  "configuration": {"auto_isolation_enabled": False},
                   "components": {"database": {"state": "ok"}}}
         item = {"key": "one", "stage": "pending", "attempts": 1, "body": {
             "container_id": "a" * 12, "monitor_evidence": {

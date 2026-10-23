@@ -7,13 +7,12 @@ from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "monitor-service"))
-from behavior_pipeline import BehaviorPipeline
-from monitor_config import MonitorConfig, load_config, ConfigError
-from monitor_status import StatusBoard
-from event_classifier import classify_line
-from baseline_builder import BaselineStore
-from feature_extractor import FeatureVector
-import pytest
+from behavior_pipeline import BehaviorPipeline  # noqa: E402
+from monitor_config import MonitorConfig, load_config, ConfigError  # noqa: E402
+from monitor_status import StatusBoard  # noqa: E402
+from event_classifier import classify_line  # noqa: E402
+from feature_extractor import FeatureVector  # noqa: E402
+import pytest  # noqa: E402
 
 CID = "a" * 12
 START = 1791532800  # aligned fixed windows
@@ -84,6 +83,28 @@ def test_window_closes_when_quiet_and_replay_does_not_duplicate(tmp_path):
     restarted.handle_baseline_event(event())
     restarted.tick()
     assert restarted.store.load(CID).sample_count == 1
+
+
+def test_unrecognized_journal_baseline_is_retained_without_learning(tmp_path):
+    pipe, clock, _ = setup(tmp_path)
+    try:
+        pipe.handle_baseline_event(event())
+        invalid = event(security=True)
+        pipe.db.execute(
+            "UPDATE events SET body=? WHERE container=?", (json.dumps(invalid), CID)
+        )
+        pipe.db.commit()
+        clock[0] += 80
+        pipe.tick()
+        assert pipe.status.snapshot()["counters"]["window_errors"] == 1
+        assert "not a recognized baseline" in pipe.status.snapshot()["components"]["behavior"][
+            "detail"
+        ]
+        assert pipe.store.load(CID, allow_missing=True).sample_count == 0
+        assert pipe.db.execute("SELECT count(*) FROM events").fetchone()[0] == 1
+        assert pipe.db.execute("SELECT count(*) FROM windows").fetchone()[0] == 0
+    finally:
+        pipe.db.close()
 
 
 def test_replacement_and_unrelated_container_cannot_share_baselines(tmp_path):
@@ -206,10 +227,10 @@ def test_bad_model_output_marks_failed_without_losing_falco(tmp_path):
 def test_review_required_baseline_stays_unavailable_after_restart(tmp_path):
     pipe, clock, _ = setup(tmp_path)
     seed_baseline(pipe)
-    pipe.handle_baseline_event(event())
-    clock[0] += 80
-    pipe.tick()
-    pipe.handle_alert(event(key="late", security=True))
+    pipe.discover(CID)
+    with pipe.db:
+        pipe.db.execute("INSERT INTO windows VALUES (?, ?)", (CID, START - 1800))
+    pipe.handle_alert(event(second=-1799, key="late", security=True))
     pipe.db.close()
     restarted = BehaviorPipeline(pipe.config, pipe.status, pipe.audit, clock=lambda: clock[0])
     restarted.discover(CID)

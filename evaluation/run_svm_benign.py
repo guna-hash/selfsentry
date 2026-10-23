@@ -1,5 +1,7 @@
 """Separate, observation-only live benign validation; never retrains the model."""
 
+from contextlib import closing
+
 import argparse
 import hashlib
 import json
@@ -21,8 +23,16 @@ from clock_guard import AlertTail, judge_events, run_preflight  # noqa: E402
 from monitor_config import load_config  # noqa: E402
 from scenarios import SCENARIOS  # noqa: E402
 
+
+def scenario_command(name: str) -> str:
+    command = SCENARIOS[name]["command"]
+    if not isinstance(command, str):
+        raise ValueError(f"Scenario {name} requires a string command")
+    return command
+
+
 COMMANDS = {
-    name: "set -eu; " + SCENARIOS[name]["command"]
+    name: "set -eu; " + scenario_command(name)
     for name in ("benign-admin", "benign-config-read", "benign-ls-from-shell")
 }
 COMMANDS["benign-standard-http"] = (
@@ -72,7 +82,7 @@ def checked_environment(pid):
 
 
 def pipeline_evidence(path, cid, bucket):
-    with sqlite3.connect(path.resolve().as_uri() + "?mode=ro", uri=True) as db:
+    with closing(sqlite3.connect(path.resolve().as_uri() + "?mode=ro", uri=True)) as db:
         kinds = Counter(
             row[0]
             for row in db.execute(
@@ -128,7 +138,10 @@ def main():
     check_status(status, cid)
     pid = status["pid"]
     env = checked_environment(pid)
-    config = load_config({**dotenv_values(ROOT / ".env"), **env})
+    config = load_config({
+        **{key: value for key, value in dotenv_values(ROOT / ".env").items()
+           if value is not None}, **env,
+    })
     if config.window_seconds < 35:
         raise RuntimeError("This batch requires monitor windows of at least 35 seconds")
     baseline = config.baseline_dir / f"{cid}.json"
@@ -163,7 +176,8 @@ def main():
         "scope": "24 lab benign windows by default; separate from original benchmark",
     }
     save(out / "manifest.json", manifest)
-    preflight = run_preflight(args.container, config.falco_log_path, out / "clock_check.json")
+    preflight = run_preflight(args.container, config.falco_log_path,
+                              out / "clock_check.json", backend=base)
     if not preflight["passed"]:
         raise RuntimeError(f"Clock preflight failed; evidence: {out}")
     schedule = list(COMMANDS) * args.per_scenario

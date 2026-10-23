@@ -76,10 +76,10 @@ def confirm_incident(
 
     try:
         return response.json()
-    except ValueError:
-        # Backend returned 200 but non-JSON body — still treat as success,
-        # just return an empty dict rather than crashing the caller.
-        return {}
+    except ValueError as exc:
+        raise ConfirmationError(
+            "Confirmation response was not valid JSON; outcome is unknown. Check recorded state."
+        ) from exc
 
 
 if __name__ == "__main__":

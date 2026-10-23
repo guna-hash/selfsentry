@@ -4,11 +4,13 @@ import os
 import sys
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 os.environ["DATABASE_URL"] = "sqlite://"  # keep the app's own engine away from Postgres
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "backend-api"))
 
 from fastapi import FastAPI  # noqa: E402
+from fastapi import Response  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
 from sqlalchemy import create_engine  # noqa: E402
 from sqlalchemy.orm import sessionmaker  # noqa: E402
@@ -57,6 +59,42 @@ class AuditApiTestCase(unittest.TestCase):
 
 
 class TestRecordAuditEvent(AuditApiTestCase):
+    def test_schema_lengths_and_empty_keys_are_rejected_before_insert(self):
+        for field, value in (
+            ("event_type", ""), ("event_type", "x" * 65), ("source", "x" * 65),
+            ("event_key", ""), ("event_key", "x" * 129),
+            ("container_id", "x" * 129), ("container_name", "x" * 257),
+            ("image_name", "x" * 257),
+        ):
+            with self.subTest(field=field, length=len(value)):
+                response = self.client.post("/audit/", json=payload(**{field: value}))
+                self.assertEqual(response.status_code, 422)
+        with self.Session() as db:
+            self.assertEqual(db.query(AuditEvent).count(), 0)
+
+    def test_competing_insert_is_acknowledged_after_unique_constraint_conflict(self):
+        # Both requests passed their initial lookup; the other commits first.
+        with self.Session() as db:
+            commit = db.commit
+
+            def competing_commit():
+                with self.Session() as other:
+                    other.add(AuditEvent(event_key="raced", event_type="CONTAINER_STARTED"))
+                    other.commit()
+                commit()
+
+            response = Response()
+            with patch.object(db, "commit", side_effect=competing_commit):
+                result = audit_module.record_audit_event(
+                    audit_module.AuditEventIn(
+                        event_key="raced", event_type="CONTAINER_STARTED"
+                    ), response, db,
+                )
+            self.assertEqual(response.status_code, 200)
+            self.assertTrue(result["duplicate"])
+            self.assertEqual(db.query(AuditEvent).count(), 1)
+            self.assertEqual(result["id"], db.query(AuditEvent).one().id)
+
     def test_event_is_stored_and_listed_with_an_explicit_utc_time(self):
         self.assertEqual(self.client.post("/audit/", json=payload()).status_code, 201)
         item = self.client.get("/audit/").json()[0]
@@ -154,3 +192,144 @@ class TestListAuditEvents(AuditApiTestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestAuditReplayIdentity(AuditApiTestCase):
+    def test_changed_identity_fields_conflict_without_replacing_original(self):
+        changes = {
+            'event_type': 'PRIVATE_CHANGED', 'severity': 'critical', 'source': 'operator',
+            'container_id': 'b' * 64, 'container_name': 'private-name',
+            'image_name': 'private-image', 'detail': {'private': 'changed'},
+        }
+        for field, value in changes.items():
+            with self.subTest(field=field):
+                original = payload(event_key='identity-' + field)
+                created = self.client.post('/audit/', json=original)
+                original_row = self.client.get('/audit/', params={
+                    'event_id': created.json()['id']}).json()[0]
+                response = self.client.post('/audit/', json={**original, field: value})
+                self.assertEqual(response.status_code, 409)
+                self.assertEqual(response.json(), {
+                    'detail': 'Audit event key identifies different data'})
+                stored = self.client.get('/audit/', params={
+                    'event_id': created.json()['id']}).json()[0]
+                self.assertEqual(stored, original_row)
+
+    def test_mapping_order_is_irrelevant_but_boolean_is_not_integer(self):
+        first = payload(detail={'a': 1, 'b': {'x': 2, 'y': 3}})
+        self.assertEqual(self.client.post('/audit/', json=first).status_code, 201)
+        reordered = {**first, 'detail': {'b': {'y': 3, 'x': 2}, 'a': 1}}
+        self.assertEqual(self.client.post('/audit/', json=reordered).status_code, 200)
+        changed_type = {**first, 'detail': {'a': True, 'b': {'x': 2, 'y': 3}}}
+        self.assertEqual(self.client.post('/audit/', json=changed_type).status_code, 409)
+
+    def test_timestamp_is_first_write_metadata_and_does_not_change_on_replay(self):
+        created = self.client.post('/audit/', json=payload())
+        before = self.client.get('/audit/', params={'event_id': created.json()['id']}).json()[0]
+        for stamp in (None, '2026-11-10T00:00:00Z', '2026-10-09T15:30:00+05:30'):
+            with self.subTest(stamp=stamp):
+                response = self.client.post('/audit/', json=payload(occurred_at=stamp))
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual(response.json()['id'], before['id'])
+        self.assertEqual(self.client.get('/audit/', params={
+            'event_id': before['id']}).json()[0], before)
+
+    def test_competing_changed_insert_conflicts_after_rollback(self):
+        from fastapi import HTTPException
+        with self.Session() as db:
+            commit = db.commit
+
+            def competing_commit():
+                with self.Session() as other:
+                    other.add(AuditEvent(event_key='raced-change', event_type='ORIGINAL'))
+                    other.commit()
+                commit()
+            with patch.object(db, 'commit', side_effect=competing_commit):
+                with self.assertRaises(HTTPException) as error:
+                    audit_module.record_audit_event(audit_module.AuditEventIn(
+                        event_key='raced-change', event_type='CHANGED'), Response(), db)
+            self.assertEqual(error.exception.status_code, 409)
+            self.assertEqual(db.query(AuditEvent).count(), 1)
+            self.assertEqual(db.query(AuditEvent).one().event_type, 'ORIGINAL')
+
+    def test_nonfinite_detail_is_refused_before_insert_or_duplicate_ack(self):
+        for existing in (False, True):
+            for value in ('NaN', 'Infinity', '-Infinity', '1e999'):
+                with self.subTest(existing=existing, value=value):
+                    key = 'finite-' + str(existing) + '-' + value
+                    if existing:
+                        self.client.post('/audit/', json=payload(event_key=key))
+                    raw = ('{"event_type":"TEST","event_key":"' + key
+                           + '","detail":{"nested":{"value":' + value + '}}}')
+                    response = self.client.post('/audit/', content=raw, headers={
+                        'Content-Type': 'application/json'})
+                    self.assertEqual(response.status_code, 422)
+                    self.assertEqual(response.json(), {
+                        'detail': 'Audit detail must contain finite JSON values'})
+        with self.Session() as db:
+            self.assertEqual(db.query(AuditEvent).count(), 4)
+
+    def test_nonfinite_historical_detail_cannot_be_acknowledged_as_matching(self):
+        with self.Session() as db:
+            db.add(AuditEvent(event_type='TEST', event_key='invalid-history',
+                              detail={'bad': float('nan')}))
+            db.commit()
+        response = self.client.post('/audit/', json={
+            'event_type': 'TEST', 'event_key': 'invalid-history', 'detail': {}})
+        self.assertEqual(response.status_code, 409)
+        with self.Session() as db:
+            self.assertEqual(db.query(AuditEvent).count(), 1)
+
+
+class TestWatcherRestartReplay(AuditApiTestCase):
+    def check_restart(self, registration, policy="alert"):
+        import dataclasses
+        import tempfile
+
+        from audit_client import DurableAuditClient
+        from container_watcher import ContainerWatcher
+        from monitor_config import MonitorConfig
+        from tests.test_container_watcher import FakeInspector, FakeLookup, ID_A, docker_event
+
+        lookup = FakeLookup()
+        lookup.default = registration
+        config = dataclasses.replace(
+            MonitorConfig(), registration_grace_seconds=0, unapproved_start_policy=policy,
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            spool = Path(directory) / "audit_spool.jsonl"
+
+            def post(_url, **kwargs):
+                return self.client.post("/audit/", json=kwargs["json"])
+
+            with patch("audit_client.requests.post", side_effect=post):
+                first = DurableAuditClient("http://backend", spool)
+                watcher = ContainerWatcher(config, first, lookup, FakeInspector())
+                watcher.handle_docker_event(docker_event("start", ID_A))
+                watcher.tick()
+                self.assertEqual(first.flush_spool(), 1)
+                for _ in range(2):
+                    restarted = DurableAuditClient("http://backend", spool)
+                    watcher = ContainerWatcher(config, restarted, lookup, FakeInspector())
+                    watcher.reconcile()
+                    watcher.tick()
+                    self.assertEqual(restarted.flush_spool(), 1)
+                    self.assertEqual(restarted.spool_size(), 0)
+                with self.Session() as db:
+                    rows = db.query(AuditEvent).order_by(AuditEvent.id).all()
+                    self.assertEqual(len(rows), 2)
+                    self.assertEqual(rows[0].detail["detection_method"], "docker_event")
+                    self.assertEqual(rows[1].detail["detection_method"], "startup_reconcile")
+                    self.assertNotEqual(rows[0].event_key, rows[1].event_key)
+
+    def test_unapproved_start_reconciles_without_blocking_audit_delivery(self):
+        self.check_restart(False)
+
+    def test_registered_start_reconciles_without_blocking_audit_delivery(self):
+        self.check_restart(True)
+
+    def test_unknown_registration_reconciles_without_blocking_audit_delivery(self):
+        self.check_restart(None)
+
+    def test_ignored_unapproved_start_reconciles_without_blocking_audit_delivery(self):
+        self.check_restart(False, policy="ignore")

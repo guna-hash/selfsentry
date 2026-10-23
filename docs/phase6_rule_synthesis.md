@@ -1,5 +1,11 @@
 # Phase 6 — Rule Synthesis Engine (Core Novelty)
 
+> Historical phase record. Retained commands, test counts and implementation claims
+> describe that development stage. For current installation and safety behavior use
+> [README](../README.md), [operations](monitor_operations.md) and the
+> [repository audit](repository-audit/report.md). Do not rerun old direct-deployer or
+> database workarounds as the current human-approved workflow.
+
 **16 October extension:** process/parent and process/file-write templates are supported.
 Anomaly-only proposals require a retained literal witness and a ready qualifying model.
 Backend submission and human approval both recompute backtests on the configured benign

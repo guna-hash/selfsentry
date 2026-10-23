@@ -11,44 +11,14 @@ ROOT = Path(__file__).resolve().parents[1]
 STAMP = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
 OUT = ROOT / "state/evaluation" / f"final-checks-{STAMP}"
 OUT.mkdir(parents=True, exist_ok=True)
-LINT = [
-    "rule-synthesis-engine/rule_deduplicator.py",
-    "tests/test_rule_deduplicator.py",
-    "tests/rule_guard_support.py",
-    "scripts/verify_completion_backtest_guard.py",
-    "ops",
-    "correlation-engine/risk_explanation.py",
-    "backend-api/container_health.py",
-    "backend-api/routes/containers.py",
-    "deployment-gate/deployment_outbox.py",
-    "rule-synthesis-engine/rule_deployer.py",
-    "tests/test_final_completion.py",
-    "monitor-service",
-    "backend-api/database.py",
-    "backend-api/main.py",
-    "backend-api/routes/incidents.py",
-    "backend-api/routes/monitor.py",
-    "backend-api/routes/rules.py",
-    "backend-api/routes/deployments.py",
-    "behavioral-engine/baseline_builder.py",
-    "behavioral-engine/feature_extractor.py",
-    "behavioral-engine/anomaly_model.py",
-    "evaluation/compare_anomaly_models.py",
-    "scripts/verify_live_reliability.py",
-    "response-engine/auto_isolate.py",
-    "rule-synthesis-engine/submit_candidate.py",
-    "rule-synthesis-engine/confirmation_manager.py",
-    "rule-synthesis-engine/pattern_extractor.py",
-    "rule-synthesis-engine/rule_template_generator.py",
-    "rule-synthesis-engine/rule_backtester.py",
-    "ai-analysis/root_cause_summarizer.py",
-    "deployment-gate/deployment_gate.py",
-    *[str(p.relative_to(ROOT)) for p in sorted((ROOT / "evaluation").glob("*.py"))],
-    "tests/test_ai_rate_limit_retry.py",
-]
 CHECKS = [
     ("python-tests", ROOT, [sys.executable, "-m", "pytest", "tests/", "-q"]),
-    ("lint", ROOT, [sys.executable, "-m", "flake8", *LINT, "--max-line-length=100"]),
+    (
+        "lint", ROOT,
+        [sys.executable, "-m", "flake8", ".",
+         "--exclude=.git,.venv,venv,node_modules,state,dist,build", "--max-line-length=100"],
+    ),
+    ("types", ROOT, [sys.executable, str(ROOT / "scripts/verify_types.py")]),
     (
         "frontend-tests",
         ROOT / "frontend-dashboard",
@@ -89,6 +59,7 @@ for name, cwd, command in CHECKS:
             process = subprocess.Popen(
                 command, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True
             )
+            assert process.stdout is not None  # PIPE is requested above.
             for line in process.stdout:
                 print(line, end="", flush=True)
                 stream.write(line)
@@ -105,4 +76,4 @@ for name, cwd, command in CHECKS:
     if code:
         print(f"Check failed; evidence: {OUT}")
         raise SystemExit(code)
-print(f"All four checks passed. Evidence: {OUT}")
+print(f"All {len(CHECKS)} checks passed. Evidence: {OUT}")

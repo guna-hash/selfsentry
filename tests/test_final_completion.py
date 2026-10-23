@@ -545,7 +545,9 @@ def test_gate_decision_journal_survives_lost_backend_response(tmp_path, monkeypa
     assert db.execute("SELECT count(*) FROM decisions").fetchone()[0] == 1
     db.close()
     with patch.object(
-        outbox.requests, "post", return_value=SimpleNamespace(status_code=201)
+        outbox.requests, "post", return_value=SimpleNamespace(
+            status_code=201, json=lambda: {"id": 1, "decision": "blocked"}
+        )
     ) as post:
         outbox.flush("http://localhost:8000")
     assert post.call_args.kwargs["json"]["event_key"] == original_key

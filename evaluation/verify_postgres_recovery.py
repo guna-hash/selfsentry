@@ -9,6 +9,7 @@ Falco, Docker and existing workloads stay running. This is not a crash/SIGKILL t
 Run sudo -v first. No baseline, secrets or original trial files are modified.
 """
 
+from contextlib import closing
 from pathlib import Path
 from datetime import datetime, timezone
 import argparse
@@ -21,6 +22,7 @@ import sys
 import time
 import uuid
 import requests
+from safety import require_isolation_disabled
 from dotenv import dotenv_values
 
 UNIT = "postgresql@16-main"
@@ -48,7 +50,8 @@ def get(path):
 
 
 def queued(database, cid):
-    with sqlite3.connect(database.resolve().as_uri() + "?mode=ro", uri=True, timeout=5) as db:
+    with closing(sqlite3.connect(database.resolve().as_uri() + "?mode=ro",
+                                 uri=True, timeout=5)) as db:
         rows = list(db.execute("SELECT key,body,stage,incident_id,attempts FROM outbox"))
     return [
         {
@@ -134,6 +137,7 @@ def main(argv=None):
     if not active():
         raise SystemExit(UNIT + " must already be active; no service changed.")
     before = get("/monitor/status")
+    require_isolation_disabled(before)
     if (
         not before.get("healthy")
         or before.get("components", {}).get("database", {}).get("state") != "ok"
@@ -193,6 +197,7 @@ def main(argv=None):
         created = True
         evidence["container_id"] = cid
         if args.restart_stack:
+            assert launch_env is not None  # Established by restart_setup above.
             # A live freshness pass is required before introducing the database fault.
             sys.path.insert(0, str(root / "evaluation"))
             from clock_guard import run_preflight
@@ -294,6 +299,7 @@ def main(argv=None):
             == "not_attempted",
         }
         if args.restart_stack:
+            assert launch_env is not None
             del checks["monitor_kept_running"]
             checks.update(restart_checks(before, after, item, matches))
             evidence["generated_rules_sha256_after"] = hashlib.sha256(

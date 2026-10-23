@@ -8,6 +8,8 @@ import os
 import sys
 import unittest
 import tempfile
+import threading
+from concurrent.futures import ThreadPoolExecutor
 from tests.rule_guard_support import inventory
 from pathlib import Path
 from unittest.mock import patch
@@ -147,6 +149,32 @@ class TestSubmitRule(RulesApiTestCase):
 
 
 class TestApproveRule(RulesApiTestCase):
+    def test_rejection_cannot_interrupt_approval_during_native_deployment(self):
+        rule_id = self.add_rule()
+        entered, release = threading.Event(), threading.Event()
+
+        def deployment(*args):
+            entered.set()
+            if not release.wait(5):
+                raise RuntimeError("test did not release deployment")
+
+        with patch.object(rules_module, "deploy_rule", side_effect=deployment), (
+            ThreadPoolExecutor(max_workers=1)
+        ) as pool:
+            approval = pool.submit(self.approve, rule_id)
+            try:
+                self.assertTrue(entered.wait(5))
+                rejection = self.client.post(
+                    f"/rules/{rule_id}/reject",
+                    params={"reviewed_by": "bob", "reason": "concurrent review"},
+                )
+                self.assertEqual(rejection.status_code, 409)
+                self.assertIn("in progress", rejection.json()["detail"])
+            finally:
+                release.set()
+            self.assertEqual(approval.result(timeout=5).status_code, 200)
+        self.assertEqual(self.rule_status(rule_id), "deployed")
+
     def test_approve_deploys_and_marks_deployed(self):
         rule_id = self.add_rule()
         with patch.object(rules_module, "deploy_rule") as deploy:
@@ -205,6 +233,62 @@ class TestRejectRule(RulesApiTestCase):
     def test_deployed_rule_cannot_be_rejected(self):
         rule_id = self.add_rule(status="deployed")
         self.assertEqual(self.reject(rule_id).status_code, 409)
+
+
+class TestRetireRule(RulesApiTestCase):
+    def test_native_refire_is_retained_even_after_database_retirement(self):
+        from models.db_models import AuditEvent
+
+        rule_id = self.add_rule(status="retired")
+        with self.Session() as db:
+            rules_module.record_native_refires(db, db.get(Incident, 1), {
+                "falco_alert": {"rule": "Auto_Generated_Test_1", "container_id": "c1"},
+            })
+            db.commit()
+            audit = db.query(AuditEvent).filter(AuditEvent.event_type == "RULE_NATIVE_REFIRE").one()
+            self.assertEqual(audit.detail["rule_id"], rule_id)
+            self.assertEqual(audit.detail["recorded_rule_status"], "retired")
+
+    def test_retirement_is_audited_without_claiming_native_unloading(self):
+        from models.db_models import AuditEvent
+
+        rule_id = self.add_rule(status="deployed")
+        with patch.object(rules_module, "deploy_rule") as deploy:
+            response = self.client.post(
+                f"/rules/{rule_id}/deprecate", params={"reviewed_by": "alice"}
+            )
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(response.json()["native_rule_unloaded"])
+        deploy.assert_not_called()
+        with self.Session() as db:
+            self.assertEqual(db.get(GeneratedRule, rule_id).status, "retired")
+            audit = db.query(AuditEvent).filter(AuditEvent.event_type == "RULE_RETIRED").one()
+            self.assertEqual(audit.detail["reviewed_by"], "alice")
+            self.assertFalse(audit.detail["native_rule_unloaded"])
+
+    def test_retirement_requires_an_explicit_human_reviewer(self):
+        rule_id = self.add_rule(status="deployed")
+        for actor in ("", " ", "selfsentry-auto"):
+            response = self.client.post(
+                f"/rules/{rule_id}/deprecate", params={"reviewed_by": actor}
+            )
+            self.assertEqual(response.status_code, 422)
+        self.assertEqual(self.rule_status(rule_id), "deployed")
+
+    def test_repeated_retirement_does_not_rewrite_the_first_reviewer(self):
+        from models.db_models import AuditEvent
+
+        rule_id = self.add_rule(status="deployed")
+        for actor in ("alice", "bob"):
+            response = self.client.post(
+                f"/rules/{rule_id}/deprecate", params={"reviewed_by": actor}
+            )
+            self.assertEqual(response.status_code, 200)
+        with self.Session() as db:
+            self.assertEqual(db.get(GeneratedRule, rule_id).reviewed_by, "alice")
+            self.assertEqual(
+                db.query(AuditEvent).filter(AuditEvent.event_type == "RULE_RETIRED").count(), 1
+            )
 
 
 class TestReviewQueueListing(RulesApiTestCase):

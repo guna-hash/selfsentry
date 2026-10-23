@@ -11,6 +11,16 @@ The blank table below is reusable for another run; it is not the status of the
 completed supplied subset. Recording C2 remains deferred. See [case matrix](academic_case_matrix.md),
 [evaluation interpretation](academic_evaluation.md) and [viva/report guide](academic_narrative.md).
 
+## Reusing this historical protocol
+
+The current permanent duplicate guard rejects equivalent conditions across incidents.
+The extra binary rejection-control case below can therefore be refused before review
+when its condition is already protected. Preserve that refusal as the actual outcome;
+do not change the rule name, erase history or bypass the guard to reproduce two
+historical equivalent candidates. A new study needs predeclared distinct supported
+conditions for separate approval/rejection cases. Saved 15 October results remain
+unchanged and describe the earlier implementation.
+
 ## Research questions and implementation boundary
 
 - RQ1: Can a recorded incident reach a human-confirmed, template-generated,

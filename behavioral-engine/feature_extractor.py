@@ -39,6 +39,7 @@ SENSITIVE_SYSCALLS = frozenset(
         "setgid",
         "mount",
         "umount",
+        "umount2",
         "reboot",
         "init_module",
         "delete_module",

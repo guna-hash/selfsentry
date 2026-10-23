@@ -11,7 +11,7 @@ export function HealthNotice({ status, error }) {
       {unhealthy && <section className={`health-banner tone-${state.tone}`} role="status">
         <div><strong>Monitor {state.label.toLowerCase()}</strong>
           <p>{error ? 'Live health could not be checked. Displayed data may be stale.'
-            : status?.reason || 'Continuous detection may be interrupted. Check monitor components and recent errors.'}</p>
+            : status?.health_reason || status?.reason || 'Continuous detection may be interrupted. Check monitor components and recent errors.'}</p>
         </div>
         <Link to="/monitor">View monitor health</Link>
       </section>}

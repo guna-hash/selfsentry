@@ -29,7 +29,13 @@ export async function apiFetch(url, options = {}) {
     if (options.signal?.aborted) throw new DOMException('Request aborted', 'AbortError')
     return new Response(JSON.stringify(result.body),{status:result.status,headers:{'Content-Type':'application/json'}})
   }
-  const token = sessionStorage.getItem('selfsentry-api-token')
+  let token = null
+  try {
+    token = sessionStorage.getItem('selfsentry-api-token')
+  } catch {
+    // Storage may be blocked by browser policy. Reads remain available;
+    // the backend still requires a valid bearer token for every write.
+  }
   return fetch(url, {
     ...options,
     headers: { ...options.headers, ...(token ? { Authorization: `Bearer ${token}` } : {}) },

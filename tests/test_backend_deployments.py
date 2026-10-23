@@ -3,7 +3,9 @@
 import os
 import sys
 import unittest
+import tempfile
 from pathlib import Path
+from unittest.mock import patch
 
 os.environ["DATABASE_URL"] = "sqlite://"  # keep the app's own engine away from Postgres
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "backend-api"))
@@ -15,7 +17,7 @@ from sqlalchemy.orm import sessionmaker  # noqa: E402
 from sqlalchemy.pool import StaticPool  # noqa: E402
 
 import database  # noqa: E402
-from models.db_models import ScanResult  # noqa: E402
+from models.db_models import AuditEvent, Deployment, ScanResult  # noqa: E402
 from routes import deployments as deployments_module  # noqa: E402
 
 CLEAN_SCAN = {
@@ -63,6 +65,102 @@ class DeploymentsApiTestCase(unittest.TestCase):
 
 
 class TestRecordDeployment(DeploymentsApiTestCase):
+    def test_journal_replay_conflict_retains_evidence_while_next_record_reaches_api(self):
+        root = Path(__file__).resolve().parents[1]
+        sys.path[:0] = [str(root / "deployment-gate"), str(root / "monitor-service")]
+        import deployment_outbox as outbox
+
+        original = payload(event_key="taken")
+        self.assertEqual(self.client.post("/deployments/", json=original).status_code, 201)
+        with tempfile.TemporaryDirectory() as directory:
+            with patch.dict(os.environ, {"SELFSENTRY_STATE_DIR": directory}):
+                outbox.enqueue({**original, "container_id": "changed"})
+                outbox.enqueue(payload(event_key="new", container_id="new"))
+
+                def transport(url, **kwargs):
+                    return self.client.post("/deployments/", json=kwargs["json"])
+
+                with patch.object(outbox.requests, "post", side_effect=transport):
+                    self.assertEqual(outbox.flush("http://test"), {"pending": 0, "rejected": 1})
+                db = outbox.connect()
+                try:
+                    self.assertEqual(
+                        db.execute("SELECT key FROM decisions").fetchall(), [("taken",)]
+                    )
+                finally:
+                    db.close()
+        with self.Session() as db:
+            self.assertEqual(db.query(Deployment).count(), 2)
+            self.assertEqual(db.query(AuditEvent).count(), 2)
+
+    def test_findings_without_summary_are_not_silently_discarded(self):
+        result = self.client.post("/deployments/", json=payload(
+            scan_summary={}, scan_findings=[{"id": "finding"}]
+        ))
+        self.assertEqual(result.status_code, 422)
+
+    def test_reused_key_cannot_acknowledge_another_container_or_report(self):
+        original = payload(event_key="stable")
+        first = self.client.post("/deployments/", json=original)
+        self.assertEqual(first.status_code, 201)
+        self.assertEqual(self.client.post("/deployments/", json=original).json(), first.json())
+        for change in ({"container_id": "other"}, {"decision": "blocked"},
+                       {"scan_summary": {**CLEAN_SCAN, "high": 4}},
+                       {"scan_summary": {**CLEAN_SCAN, "extra": "changed"}}):
+            with self.subTest(change=change):
+                response = self.client.post("/deployments/", json={**original, **change})
+                self.assertEqual(response.status_code, 409)
+        with self.Session() as db:
+            self.assertEqual(db.query(Deployment).count(), 1)
+            self.assertEqual(db.query(ScanResult).count(), 1)
+
+    def test_legacy_record_without_fingerprint_requires_matching_stored_fields(self):
+        original = payload(event_key="legacy")
+        first = self.client.post("/deployments/", json=original).json()
+        with self.Session() as db:
+            audit = db.query(AuditEvent).filter_by(event_key="legacy").one()
+            audit.detail = {k: v for k, v in audit.detail.items()
+                            if k not in ("request_sha256", "request_fingerprint_version")}
+            db.commit()
+        self.assertEqual(self.client.post("/deployments/", json=original).json(), first)
+        changed = {**original, "requested_by": "different"}
+        self.assertEqual(self.client.post("/deployments/", json=changed).status_code, 409)
+
+    def test_cross_operation_or_orphan_replay_is_a_conflict(self):
+        with self.Session() as db:
+            db.add(AuditEvent(event_key="cross", event_type="OTHER", source="monitor",
+                              detail={"deployment_id": 1, "decision": "allowed"}))
+            db.add(AuditEvent(event_key="orphan", event_type="DEPLOYMENT_ALLOWED", source="gate",
+                              detail={"deployment_id": 999, "decision": "allowed"}))
+            db.commit()
+        for key in ("cross", "orphan"):
+            with self.subTest(key=key):
+                result = self.client.post("/deployments/", json=payload(event_key=key))
+                self.assertEqual(result.status_code, 409)
+
+    def test_invalid_scan_counts_do_not_become_clean_history(self):
+        summaries = [{"unknown": 1}, {"critical": 0}]
+        summaries += [{**CLEAN_SCAN, "critical": value} for value in
+                      (None, True, -1, 1.5, "0", 2147483648)]
+        for summary in summaries:
+            with self.subTest(summary=summary):
+                response = self.client.post("/deployments/", json=payload(scan_summary=summary))
+                self.assertEqual(response.status_code, 422)
+        with self.Session() as db:
+            self.assertEqual(db.query(ScanResult).count(), 0)
+            self.assertEqual(db.query(Deployment).count(), 0)
+
+    def test_request_matches_persisted_string_and_finding_shapes(self):
+        for field, value in (
+            ("event_key", ""), ("container_name", ""), ("container_name", "x" * 257),
+            ("container_id", "x" * 129), ("image_name", "x" * 257),
+            ("override_reason", "x" * 513), ("requested_by", "x" * 129),
+            ("scan_findings", ["not a finding"]), ("policy_violations", ["not a violation"]),
+        ):
+            with self.subTest(field=field):
+                response = self.client.post("/deployments/", json=payload(**{field: value}))
+                self.assertEqual(response.status_code, 422)
+
     def test_allowed_deployment_is_stored_with_its_scan(self):
         response = self.client.post("/deployments/", json=payload())
         self.assertEqual(response.status_code, 201)
@@ -116,10 +214,6 @@ class TestListDeployments(DeploymentsApiTestCase):
         self.assertEqual(names, ["third", "second", "first"])
 
 
-if __name__ == "__main__":
-    unittest.main()
-
-
 class TestExactRegistration(DeploymentsApiTestCase):
     def test_gate_registration_remains_visible_outside_history_limit(self):
         self.client.post('/deployments/', json=payload())
@@ -130,5 +224,10 @@ class TestExactRegistration(DeploymentsApiTestCase):
 
     def test_name_or_blocked_decision_does_not_grant_registration(self):
         self.client.post('/deployments/', json=payload(decision='blocked'))
-        self.assertFalse(self.client.get('/deployments/registration/abc123def456').json()['registered'])
+        result = self.client.get('/deployments/registration/abc123def456').json()
+        self.assertFalse(result['registered'])
         self.assertFalse(self.client.get('/deployments/registration/web').json()['registered'])
+
+
+if __name__ == "__main__":
+    unittest.main()

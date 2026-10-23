@@ -2,11 +2,13 @@ import sys
 import os
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "ai-analysis"))
-from fastapi import APIRouter, Depends, HTTPException  # noqa: E402
+from fastapi import APIRouter, Depends, HTTPException, Query  # noqa: E402
 from sqlalchemy.orm import Session  # noqa: E402
 
 from database import get_db  # noqa: E402
 from models.db_models import Incident, ConfirmedIncident, MonitorIncident  # noqa: E402
+from models.db_models import AuditEvent  # noqa: E402
+from datetime import datetime, timezone  # noqa: E402
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "correlation-engine"))
 from risk_explanation import explain_incident  # noqa: E402
@@ -21,7 +23,7 @@ class IncidentIn(BaseModel):
     confidence: str | None = None
     falco_alert: dict | None = None
     anomaly_features: dict | None = None
-    event_key: str | None = Field(default=None, max_length=128)
+    event_key: str | None = Field(default=None, min_length=1, max_length=128)
     monitor_evidence: dict | None = None
     defer_ai: bool = False
 
@@ -66,8 +68,8 @@ def get_incident(incident_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/")
-def create_incident(incident_data: IncidentIn, db: Session = Depends(get_db)):
-    incident_data = incident_data.model_dump()
+def create_incident(body: IncidentIn, db: Session = Depends(get_db)):
+    incident_data = body.model_dump()
     key = incident_data.get("event_key")
     if key:
         existing = db.query(MonitorIncident).filter(MonitorIncident.event_key == key).first()
@@ -112,8 +114,17 @@ def create_incident(incident_data: IncidentIn, db: Session = Depends(get_db)):
 
 
 @router.post("/{incident_id}/confirm")
-def confirm_incident(incident_id: int, confirmed_by: str, db: Session = Depends(get_db)):
-    incident = db.query(Incident).filter(Incident.id == incident_id).with_for_update().first()
+def confirm_incident(
+    incident_id: int, confirmed_by: str = Query(..., max_length=128),
+    db: Session = Depends(get_db),
+):
+    confirmed_by = confirmed_by.strip()
+    if not confirmed_by:
+        raise HTTPException(422, "An explicit confirmation actor is required")
+    incident = (
+        db.query(Incident).filter(Incident.id == incident_id)
+        .populate_existing().with_for_update().first()
+    )
     if not incident:
         raise HTTPException(status_code=404, detail="Incident not found")
 
@@ -151,11 +162,31 @@ def confirm_incident(incident_id: int, confirmed_by: str, db: Session = Depends(
 
 @router.post("/{incident_id}/dismiss")
 def dismiss_incident(incident_id: int, db: Session = Depends(get_db)):
-    incident = db.query(Incident).filter(Incident.id == incident_id).first()
+    # All workflow writers acquire the same parent row before reading JSON metadata.
+    incident = (
+        db.query(Incident).filter(Incident.id == incident_id)
+        .populate_existing().with_for_update().first()
+    )
     if not incident:
         raise HTTPException(status_code=404, detail="Incident not found")
-    meta = db.query(MonitorIncident).filter(MonitorIncident.incident_id == incident_id).first()
-    if meta:
-        meta.workflow = {**(meta.workflow or {}), "disposition": {"status": "benign"}}
-        db.commit()
+    meta = (
+        db.query(MonitorIncident).filter(MonitorIncident.incident_id == incident_id)
+        .populate_existing().first()
+    )
+    if meta is None:
+        raise HTTPException(
+            409, "Legacy incident has no monitor workflow; benign disposition cannot be recorded"
+        )
+    if (meta.workflow or {}).get("disposition", {}).get("status") == "benign":
+        return {"status": "dismissed", "incident_id": incident_id}
+    meta.workflow = {
+        **(meta.workflow or {}),
+        "disposition": {"status": "benign", "dismissed_at": datetime.now(timezone.utc).isoformat()},
+    }
+    db.add(AuditEvent(
+        event_type="INCIDENT_DISMISSED", source="backend", severity="info",
+        container_id=incident.container_id,
+        detail={"incident_id": incident_id, "disposition": "benign", "actor": None},
+    ))
+    db.commit()
     return {"status": "dismissed", "incident_id": incident_id}

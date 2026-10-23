@@ -32,6 +32,7 @@ from clock_guard import (  # noqa: E402
 )
 from fingerprint import collect_fingerprint  # noqa: E402
 from scenarios import DEFAULT_PLAN, SCENARIOS  # noqa: E402
+from safety import require_isolation_disabled  # noqa: E402
 
 SCHEMA_VERSION = 2
 
@@ -181,6 +182,7 @@ def run_windows(args, root, config, target, info, log_path):
             reasons = []
             try:
                 status = http_get(base, "/monitor/status")
+                require_isolation_disabled(status)
                 baseline = status.get("baselines", {}).get(target, {})
                 entry["baseline_samples"] = baseline.get("samples")
                 if not status.get("healthy") or baseline.get("state") != "MODEL_READY":
