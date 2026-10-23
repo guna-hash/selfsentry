@@ -24,9 +24,27 @@ The cumulative audit changes and follow-up fixes were applied and verified on th
 
 ## Remaining acceptance
 
-The audit report's remaining work still applies, including native database
-backup/restore and migration testing, representative load and concurrency,
+The audit report's remaining work still applies, including database outage and concurrency testing,
+representative load measurements,
 isolation/recovery validation, and rule retirement/reconciliation work.
 Automatic isolation remains disabled. Full production acceptance is not claimed.
 
 React test warnings and the large frontend chart chunk remain follow-up cleanup.
+
+## PostgreSQL backup and migration verification
+
+PostgreSQL 16.15 acceptance passed on the VM.
+
+- Snapshot backup restored with matching public application rows and schema.
+- Adoption on the restored copy preserved application data.
+- Fresh migrations matched the ORM schema.
+- Native uniqueness, foreign keys, savepoints and rollback passed.
+- Repeating upgrade head preserved the temporary database's rows.
+- Both temporary databases were removed.
+- The active monitor remained healthy with the same PID.
+
+Evidence: `state/evaluation/postgres-acceptance-20261023T112636875366Z/results.json`.
+
+The active database was not migrated or stamped. Outage recovery, concurrent
+writers, grants/roles, sequence comparison and full-host recovery remain outside
+this check's scope. The database dump is retained privately outside Git.
