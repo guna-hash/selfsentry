@@ -98,3 +98,40 @@ HTTP evidence: `state/evaluation/api-read-concurrency-20261023T114258Z/results.j
 These results verify the exercised database races and a small local HTTP read
 workload. Full review/deployment interleaving, database outage recovery,
 sustained event load, memory bounds and shutdown deadlines remain open.
+
+## Gate command health and workload verification
+
+Gate commands now hold bounded per-attempt ownership locks. Live owned commands
+are reported as active. Failed, expired or unowned unfinished attempts continue
+to require attention; no uncertain Docker action is automatically repeated.
+Journal schema, recorded outcomes and retained evidence are unchanged.
+
+The corrected native workload passed with all sampled phases healthy:
+200 true commands plus 200 pacing sleeps completed in
+43.218 seconds. All 328 concurrent
+HTTP reads succeeded; p95 latency was 67.958 ms.
+Sampled delivery and event queues stayed empty. Cleanup succeeded, and the
+existing ready-model status was preserved.
+
+| Application process tree | Peak RSS MiB | CPU p95, 100% = one core |
+| --- | ---: | ---: |
+| backend | 110.969 | 60.728 |
+| monitor | 170.750 | 24.685 |
+| frontend | 20.191 | 0.000 |
+
+RSS may double-count shared pages; these totals exclude external services and
+the container. Global Falco and baseline counters each increased by 1,222,
+with no additional unusable events. This does not establish zero event loss.
+
+Successful evidence: `state/evaluation/workload-check-20261023T132729374158Z/results.json`.
+Both earlier failed runs remain retained:
+`workload-check-20261023T120741646497Z` and
+`workload-check-20261023T125503160340Z`.
+
+Final VM release checks passed: Python, lint, types, frontend tests and build.
+Evidence: `state/evaluation/final-checks-20261023T133247Z/results.json`.
+Post-release health verification also passed, including the existing model,
+incident 216 fingerprint and original audit row 1011.
+
+Sustained capacity, retention bounds, memory-leak assessment, shutdown deadlines
+and native crash/operator reconciliation remain open.

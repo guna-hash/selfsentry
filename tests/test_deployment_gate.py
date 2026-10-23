@@ -233,6 +233,9 @@ class TestActionDurability(GateTestCase):
         def docker(*args):
             if args[0] == "start":
                 self.assertEqual(self.journal(), [(CONTAINER_ID, "start", "outcome_not_recorded")])
+                import deployment_outbox
+                self.assertEqual(deployment_outbox.action_health(),
+                                 {"active": 1, "outcome_not_recorded": 0, "command_failed": 0})
             return fake(*args)
 
         with patch.object(deployment_gate, "_docker", side_effect=docker):
@@ -336,7 +339,7 @@ class TestGateTimeouts(GateTestCase):
                 deployment_gate.run_gate(["alpine"])
         self.assertEqual(fake.commands, ["create", "inspect", "rm"])
         self.assertEqual(deployment_outbox.action_health(),
-                         {"outcome_not_recorded": 1, "command_failed": 0})
+                         {"active": 0, "outcome_not_recorded": 1, "command_failed": 0})
         self.post_mock.assert_not_called()
 
     def test_create_timeout_returns_error_without_unknown_container_cleanup(self):
@@ -393,6 +396,9 @@ class TestCreationDurability(GateTestCase):
         def docker(*args):
             if args[0] == "create":
                 self.assertEqual(self.creations(), [(None, "outcome_not_recorded")])
+                import deployment_outbox
+                self.assertEqual(deployment_outbox.action_health(),
+                                 {"active": 1, "outcome_not_recorded": 0, "command_failed": 0})
             if args[0] == "inspect":
                 self.assertEqual(self.creations(), [(CONTAINER_ID, "command_succeeded")])
             return fake(*args)

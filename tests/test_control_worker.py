@@ -140,6 +140,9 @@ def test_stop_during_pipeline_does_not_start_delivery(control):
     ({"outcome_not_recorded": 1, "command_failed": 0}, "degraded"),
     ({"outcome_not_recorded": 0, "command_failed": 2}, "degraded"),
     ({"outcome_not_recorded": 0, "command_failed": 0}, "ok"),
+    ({"active": 1, "outcome_not_recorded": 0, "command_failed": 0}, "ok"),
+    ({"active": 1, "outcome_not_recorded": 1, "command_failed": 0}, "degraded"),
+    ({"active": 1, "outcome_not_recorded": 0, "command_failed": 1}, "degraded"),
 ])
 def test_action_health_uses_durable_counts(control, monkeypatch, counts, state):
     worker, *_ = control

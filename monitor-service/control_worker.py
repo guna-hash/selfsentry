@@ -147,12 +147,13 @@ class ControlWorker:
                     self.status.set_value("deployment_outbox", delivery)
                     actions = action_health()
                     self.status.set_value("deployment_actions", actions)
-                    attention = any(actions.values())
+                    attention = actions["outcome_not_recorded"] > 0 or actions["command_failed"] > 0
                     self.status.set_component(
                         "deployment_actions", "degraded" if attention else "ok",
                         f"{actions['outcome_not_recorded']} without recorded outcome; "
                         f"{actions['command_failed']} failed commands; operator review required"
-                        if attention else None,
+                        if attention else (f"{actions['active']} active gate commands"
+                                           if actions.get("active") else None),
                     )
                     if delivery is not None:
                         unavailable = delivery["pending"] > 0 or delivery["rejected"] > 0

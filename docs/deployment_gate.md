@@ -65,6 +65,25 @@ Docker arguments or credentials. Creation success does not prove scan/policy com
 registration or startup. Unfinished/failed creation counts join the monitor's existing
 `deployment_actions` health counts. No restart executor or automatic orphan removal is added.
 
+Gate create/start/removal commands hold a per-attempt file lock before their intent is
+committed. Health reports these bounded, live attempts as `active`, without marking
+the monitor degraded. The lock must still be held, its metadata must be valid, and its
+monotonic deadline must not have expired. That deadline is the command timeout plus
+five seconds for intent/outcome persistence. Trivy scanning does not hold an action lock.
+
+An owner exit releases the lock. An exception, timeout, missing/corrupt ownership file,
+expired deadline or legacy unfinished intent remains `outcome_not_recorded` and requires
+attention. `command_failed` also remains degraded, even while other commands are active.
+No intent is automatically repeated, acknowledged, repaired or removed. A successful
+completion is rechecked if it races a health read, so releasing its lock cannot create
+a false orphan report.
+
+Ownership files contain only attempt keys and monotonic deadlines, under
+`state/deployment-action-locks/` (or the configured state directory). Gate and monitor
+must use the same local state directory and Unix account. Normal completion/exception
+cleans up the file; a hard kill can leave an unlocked file, which is not treated as active.
+The SQLite schema, journal keys, payloads, timestamps and outcomes are unchanged.
+
 ### Read-only journal inspection
 
 From the repository root, with its Python dependencies installed:

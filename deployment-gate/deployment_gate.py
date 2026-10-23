@@ -42,7 +42,7 @@ sys.path.insert(0, os.path.join(_REPO_ROOT, "monitor-service"))
 from backend_auth import backend_headers  # noqa: E402
 from deployment_outbox import (  # noqa: E402
     enqueue, acknowledge, valid_acknowledgement, begin_action, finish_action,
-    begin_creation, finish_creation, inspect_actions,
+    begin_creation, finish_creation, inspect_actions, operation_lease,
 )
 
 sys.path.insert(0, os.path.join(_REPO_ROOT, "image-scanner"))
@@ -240,17 +240,19 @@ def record_decision(record: dict, backend_url: str) -> bool:
 
 
 def perform_action(container_id, action, record=None):
-    key = begin_action(container_id, action, record)
-    try:
-        if action == "start":
-            _docker_ok("start", container_id)
-        else:
-            _docker_ok("rm", "-f", container_id)
-    except DockerCommandError:
-        finish_action(key, False)
-        raise
-    # An exception or interruption here leaves explicit uncertainty, never a replayable action.
-    finish_action(key, True)
+    command = "start" if action == "start" else "rm"
+    with operation_lease(DOCKER_TIMEOUT_SECONDS[command]) as ownership_key:
+        key = begin_action(container_id, action, record, key=ownership_key)
+        try:
+            if action == "start":
+                _docker_ok("start", container_id)
+            else:
+                _docker_ok("rm", "-f", container_id)
+        except DockerCommandError:
+            finish_action(key, False)
+            raise
+        # Uncertainty is retained after an exception, interruption or failed outcome write.
+        finish_action(key, True)
 
 
 def run_gate(
@@ -258,18 +260,19 @@ def run_gate(
     override_reason: str | None = None,
     backend_url: str = DEFAULT_BACKEND_URL,
 ) -> dict:
-    creation_key = begin_creation()
-    try:
-        container_id = create_container(docker_args)
-    except DockerCommandError:
-        finish_creation(creation_key)
-        raise
-    try:
-        finish_creation(creation_key, container_id)
-    except (OSError, sqlite3.Error):
-        print(f"WARNING: created container {container_id}; creation outcome not durably saved; "
-              "inspect before retrying", file=sys.stderr)
-        raise
+    with operation_lease(DOCKER_TIMEOUT_SECONDS["create"]) as ownership_key:
+        creation_key = begin_creation(key=ownership_key)
+        try:
+            container_id = create_container(docker_args)
+        except DockerCommandError:
+            finish_creation(creation_key)
+            raise
+        try:
+            finish_creation(creation_key, container_id)
+        except (OSError, sqlite3.Error):
+            print(f"WARNING: created container {container_id}; creation outcome not durably saved; "
+                  "inspect before retrying", file=sys.stderr)
+            raise
     try:
         spec = inspect_container(container_id)
         image, scan, scan_error, policy = evaluate(spec)

@@ -3,6 +3,12 @@
 import json
 import logging
 import os
+import fcntl
+import math
+import re
+import stat
+import time
+from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 import sqlite3
@@ -13,10 +19,94 @@ from backend_auth import backend_headers
 
 ROOT = Path(__file__).resolve().parents[1]
 logger = logging.getLogger(__name__)
+MAX_COMMAND_SECONDS = 300
+OUTCOME_WRITE_GRACE_SECONDS = 5
 
 
 class OutboxConflict(ValueError):
     """A stable event key cannot identify two different journal payloads."""
+
+
+def _attempt_key(key=None):
+    if key is None:
+        return uuid.uuid4().hex
+    if not isinstance(key, str) or re.fullmatch(r"[0-9a-f]{32}", key) is None:
+        raise ValueError("Attempt ownership requires a UUID hexadecimal key")
+    return key
+
+
+def _ownership_path(key):
+    return (Path(os.environ.get("SELFSENTRY_STATE_DIR", ROOT / "state"))
+            / "deployment-action-locks" / (key + ".lock"))
+
+
+@contextmanager
+def operation_lease(timeout_seconds):
+    """Own one bounded command before its durable intent becomes visible.
+
+    A process exit releases flock, including an exit between Docker and outcome
+    persistence. A hung/suspended owner cannot hide an unfinished attempt beyond
+    its command deadline plus the small outcome-write allowance.
+    """
+    if type(timeout_seconds) is not int or not 1 <= timeout_seconds <= MAX_COMMAND_SECONDS:
+        raise ValueError("Invalid operation ownership timeout")
+    key = _attempt_key()
+    path = _ownership_path(key)
+    path.parent.mkdir(parents=True, mode=0o700, exist_ok=True)
+    fd = os.open(path, os.O_CREAT | os.O_EXCL | os.O_RDWR | os.O_NOFOLLOW, 0o600)
+    try:
+        fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        started = time.monotonic()
+        metadata = json.dumps({"key": key, "started_monotonic": started,
+                               "deadline_monotonic": started + timeout_seconds
+                               + OUTCOME_WRITE_GRACE_SECONDS}).encode()
+        with os.fdopen(os.dup(fd), "wb") as stream:
+            stream.write(metadata)
+            stream.flush()
+            os.fsync(stream.fileno())
+        yield key
+    finally:
+        try:
+            path.unlink(missing_ok=True)
+        except OSError:
+            logger.warning("Completed operation ownership file could not be removed")
+        finally:
+            os.close(fd)  # Releases ownership even if metadata cleanup failed.
+
+
+def _operation_active(key):
+    """Check ownership without creating, deleting or repairing any file."""
+    if not isinstance(key, str) or re.fullmatch(r"[0-9a-f]{32}", key) is None:
+        return False
+    try:
+        fd = os.open(_ownership_path(key), os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+    except OSError:
+        return False
+    try:
+        info = os.fstat(fd)
+        if not stat.S_ISREG(info.st_mode) or info.st_uid != os.getuid():
+            return False
+        try:
+            fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            raw = os.read(fd, 4097)
+            if len(raw) > 4096:
+                return False
+            metadata = json.loads(raw)
+            started = metadata["started_monotonic"]
+            deadline = metadata["deadline_monotonic"]
+            if any(type(value) not in (int, float) or not math.isfinite(value)
+                   for value in (started, deadline)):
+                return False
+            return (metadata["key"] == key and 0 <= started <= time.monotonic() < deadline
+                    and started < deadline
+                    <= started + MAX_COMMAND_SECONDS + OUTCOME_WRITE_GRACE_SECONDS)
+        else:
+            return False  # A leftover file alone is never evidence of a live operation.
+    except (OSError, ValueError, TypeError, KeyError, OverflowError):
+        return False
+    finally:
+        os.close(fd)
 
 
 def connect():
@@ -111,9 +201,9 @@ def enqueue(record):
         db.close()
 
 
-def begin_creation():
+def begin_creation(*, key=None):
     """Record a create attempt without storing Docker arguments or guessing identity."""
-    key = uuid.uuid4().hex
+    key = _attempt_key(key)
     db = connect()
     try:
         with db:
@@ -146,11 +236,11 @@ def finish_creation(key, container_id=None):
         db.close()
 
 
-def begin_action(container_id, action, record=None):
+def begin_action(container_id, action, record=None, *, key=None):
     """Commit intent before Docker; unfinished intents are never automatically executed."""
     if action not in ("start", "remove") or not container_id:
         raise ValueError("Invalid deployment action")
-    key = uuid.uuid4().hex
+    key = _attempt_key(key)
     if record is not None:
         if record.get("event_key") is not None:
             raise ValueError("Action requires a new deployment event")
@@ -186,15 +276,34 @@ def finish_action(key, succeeded):
 
 
 def action_health():
-    """Unfinished can also mean currently running; it does not prove a process crashed."""
+    """Distinguish bounded, owned commands from unfinished work requiring review."""
     db = connect()
     try:
-        rows = db.execute("""SELECT outcome,count(*) FROM (
-            SELECT outcome FROM deployment_actions UNION ALL
-            SELECT outcome FROM creation_attempts) GROUP BY outcome""")
-        counts = dict(rows.fetchall())
-        return {"outcome_not_recorded": counts.get("outcome_not_recorded", 0),
-                "command_failed": counts.get("command_failed", 0)}
+        failed_query = """SELECT
+            (SELECT count(*) FROM deployment_actions WHERE outcome='command_failed') +
+            (SELECT count(*) FROM creation_attempts WHERE outcome='command_failed')"""
+        failed = db.execute(failed_query).fetchone()[0]
+        rows = db.execute("""SELECT 'deployment_actions',key FROM deployment_actions
+            WHERE outcome='outcome_not_recorded' UNION ALL
+            SELECT 'creation_attempts',key FROM creation_attempts
+            WHERE outcome='outcome_not_recorded'""").fetchall()
+        result = {"active": 0, "outcome_not_recorded": 0, "command_failed": failed}
+        for table, key in rows:
+            if not isinstance(key, str) or re.fullmatch(r"[0-9a-f]{32}", key) is None:
+                result["outcome_not_recorded"] += 1
+                continue  # Corrupt/legacy identities cannot prove liveness or a unique completion.
+            if _operation_active(key):
+                result["active"] += 1
+            else:
+                # Completion may have committed after the first read and released
+                # its ownership file. Re-read so that race cannot report an orphan.
+                current = db.execute("SELECT outcome FROM " + table + " WHERE key=?",
+                                     (key,)).fetchone()
+                if current and current[0] == "outcome_not_recorded":
+                    result["outcome_not_recorded"] += 1
+                elif current and current[0] == "command_failed":
+                    result["command_failed"] += 1
+        return result
     finally:
         db.close()
 

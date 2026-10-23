@@ -180,12 +180,12 @@ def test_completed_action_is_deliverable_once_and_keeps_history():
         assert db.execute("SELECT outcome FROM deployment_actions").fetchone() == (
             "command_succeeded",
         )
-    assert outbox.action_health() == {"outcome_not_recorded": 0, "command_failed": 0}
+    assert outbox.action_health() == {"active": 0, "outcome_not_recorded": 0, "command_failed": 0}
 
 
 def test_creation_completion_keeps_history_and_refuses_identity_replacement():
     key = outbox.begin_creation()
-    assert outbox.action_health() == {"outcome_not_recorded": 1, "command_failed": 0}
+    assert outbox.action_health() == {"active": 0, "outcome_not_recorded": 1, "command_failed": 0}
     outbox.finish_creation(key, "a" * 64)
     with pytest.raises(outbox.OutboxConflict):
         outbox.finish_creation(key, "b" * 64)
@@ -196,7 +196,7 @@ def test_creation_completion_keeps_history_and_refuses_identity_replacement():
             ("a" * 64, "command_succeeded"),
         ]
     assert rows() == []  # Creation success is not a policy or registration decision.
-    assert outbox.action_health() == {"outcome_not_recorded": 0, "command_failed": 0}
+    assert outbox.action_health() == {"active": 0, "outcome_not_recorded": 0, "command_failed": 0}
 
 
 @pytest.mark.parametrize("invalid", ["", "short", "g" * 64, 42])
