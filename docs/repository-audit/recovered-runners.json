@@ -1,0 +1,123 @@
+[
+  {
+    "archive": "selfsentry-postgres-check.zip",
+    "archive_sha256": "cdf8a129b76b048db48938035e3a371b50cb1eb68673506f125c83ae12ba5e15",
+    "source": "selfsentry-postgres-check/verify_postgres.py",
+    "source_sha256": "f797cffcfeccb3c18d68d0956d97b3693865d65d48450f96d06ec66f4684087a",
+    "destination": "evaluation/verify_postgres_acceptance.py",
+    "adaptation": "Tracked repository import/fixture paths, bounded source gates, report type annotations and lint; no historical result recreated"
+  },
+  {
+    "archive": "selfsentry-postgres-check.zip",
+    "archive_sha256": "cdf8a129b76b048db48938035e3a371b50cb1eb68673506f125c83ae12ba5e15",
+    "source": "selfsentry-postgres-check/test_verify_postgres.py",
+    "source_sha256": "009951c44cd63887145e78c88d86bf42a7fd88534ee0576df5d0b50f89d36bb6",
+    "destination": "tests/test_native_postgres_acceptance_runner.py",
+    "adaptation": "Tracked repository import/fixture paths, bounded source gates, report type annotations and lint; no historical result recreated"
+  },
+  {
+    "archive": "selfsentry-postgres-check.zip",
+    "source": "selfsentry-postgres-check/source-hashes.json",
+    "source_sha256": "82e8482e863b214d04d53fb1241b7c0e99fd4cd9698a6962b6899670b5cb9628",
+    "historical_manifest": {
+      "verify_postgres.py": "f797cffcfeccb3c18d68d0956d97b3693865d65d48450f96d06ec66f4684087a",
+      "test_verify_postgres.py": "009951c44cd63887145e78c88d86bf42a7fd88534ee0576df5d0b50f89d36bb6"
+    }
+  },
+  {
+    "archive": "selfsentry-postgres-concurrency.zip",
+    "archive_sha256": "8fd6e9e405849cc314e40ec48fd0de331013163b16effb1013d85f03922a40b3",
+    "source": "selfsentry-postgres-concurrency/verify_concurrency.py",
+    "source_sha256": "c7c33b7b03dfd0defedf3fb5864a65acb5ef7e1d8509dab72d2db950eea0e74b",
+    "destination": "evaluation/verify_postgres_concurrency.py",
+    "adaptation": "Tracked repository import/fixture paths, bounded source gates, report type annotations and lint; no historical result recreated"
+  },
+  {
+    "archive": "selfsentry-postgres-concurrency.zip",
+    "archive_sha256": "8fd6e9e405849cc314e40ec48fd0de331013163b16effb1013d85f03922a40b3",
+    "source": "selfsentry-postgres-concurrency/postgres_support.py",
+    "source_sha256": "098d8c1f7aeed681aa67b2bbbe02b632a54cb583e098bbd8ec777ae9f51d4fa3",
+    "destination": "evaluation/postgres_support.py",
+    "adaptation": "Tracked repository import/fixture paths, bounded source gates, report type annotations and lint; no historical result recreated"
+  },
+  {
+    "archive": "selfsentry-postgres-concurrency.zip",
+    "archive_sha256": "8fd6e9e405849cc314e40ec48fd0de331013163b16effb1013d85f03922a40b3",
+    "source": "selfsentry-postgres-concurrency/test_verify_concurrency.py",
+    "source_sha256": "5099e9ced8318f08fb7f4fe1d9c0d4b0c35432cada025aaf32bf99f7c854ded4",
+    "destination": "tests/test_native_postgres_concurrency_runner.py",
+    "adaptation": "Tracked repository import/fixture paths, bounded source gates, report type annotations and lint; no historical result recreated"
+  },
+  {
+    "archive": "selfsentry-postgres-concurrency.zip",
+    "source": "selfsentry-postgres-concurrency/source-hashes.json",
+    "source_sha256": "3df95e149fe25dc8c39b508a57a78dae18ea67615501ccd309556a006f0c78f6",
+    "historical_manifest": {
+      "backend-api/database.py": "5821cd18a3408413bc33c6229da59f31d0241bd15df366de9f49320253366bc0",
+      "backend-api/models/db_models.py": "ce0d0e20e7a4b6f2ec713e717a6037bb8aaa363d622114e029feea06d7c05be0",
+      "backend-api/routes/audit.py": "c4e05ff6cac3c261aff46edcced58a684806a0178b34db4333bf12a3a8b94e36",
+      "backend-api/routes/rules.py": "1435edbc7ebcb200d36d374d468f6d6fcdc2cd1f671c285f20f8ee1bd2e5a98f",
+      "rule-synthesis-engine/rule_lifecycle_manager.py": "c175c35a1db12ba9cbfd7007825a5c705152842d2491b89cab241dfabcec43f6",
+      "alembic.ini": "90cfe61d9c761502de311e432bc2e213949f391078f6c125268fba77e22f6f6e",
+      "database/migrations/env.py": "059aec97b502e44446d05ac583fae566757f377ea9052f07a06c79a865a80dcb",
+      "database/migrations/versions/20261022_0001_initial.py": "a435791f3e412b60d2aea6e2f10710022245fabc8042c24284765af91d60eb38",
+      "database/migrations/versions/20261023_0002_rule_performance_unique.py": "016e09b8f997a302cb00838f8e64c18a67a15b0817eb47099d37383b91c2714a"
+    }
+  },
+  {
+    "archive": "selfsentry-workload-check-v2.zip",
+    "archive_sha256": "f5a1aee7b6b6efff1936a6d5247a075899fbbf0223b65a46ab519da7e588cf7d",
+    "source": "selfsentry-workload-check-v2/measure_workload.py",
+    "source_sha256": "d2cb4bd59b4a5a1c423ec22fdba850433f974b0f32a0e72ec53ea9f57ba245a4",
+    "destination": "evaluation/measure_workload.py",
+    "adaptation": "Tracked repository import/fixture paths, bounded source gates, report type annotations and lint; no historical result recreated"
+  },
+  {
+    "archive": "selfsentry-workload-check-v2.zip",
+    "archive_sha256": "f5a1aee7b6b6efff1936a6d5247a075899fbbf0223b65a46ab519da7e588cf7d",
+    "source": "selfsentry-workload-check-v2/test_measure_workload.py",
+    "source_sha256": "ae19e8802c8b5990aa90505b5fd5b556f4f38dba587eef49473793d6752d6ae9",
+    "destination": "tests/test_native_workload_runner.py",
+    "adaptation": "Tracked repository import/fixture paths, bounded source gates, report type annotations and lint; no historical result recreated"
+  },
+  {
+    "archive": "selfsentry-workload-check-v2.zip",
+    "source": "selfsentry-workload-check-v2/source-hashes.json",
+    "source_sha256": "fdcac663d999efe246fcd34c5077ac2d98d3f88d27007fa0f7fecd2c1f611444",
+    "historical_manifest": {
+      "deployment-gate/deployment_gate.py": "06ab1d05954fb92f1e9221dbd02457c6c9f3c8760d5d69fc691c8aaaa39f039b",
+      "deployment-gate/deployment_outbox.py": "4dcb6a57b78f47ac8d8a7011f91ea70ec91856ad602d1e3f407833f8691956fc",
+      "monitor-service/backend_auth.py": "e6dd2e7d295b319b1018dae0ddbc266badedc887cb9e19782f66c7227cb943f8",
+      "image-scanner/trivy_wrapper.py": "7a392fe9dfff0c1257450b329d0e36e654b2213ce8a0e18f33a472f01cb573f4",
+      "policy-checker/deploy_policy_validator.py": "10d55620a1e08e6a52e62c767d7f10060b16d6431b392c30c3d513646432214d"
+    }
+  },
+  {
+    "archive": "selfsentry-journal-retention.zip",
+    "archive_sha256": "e58188de230f509f357e370686381a653ea9f6bec1433cffaa374fd7a11829be",
+    "source": "selfsentry-journal-retention/verify_copy.py",
+    "source_sha256": "35002736d46a292891955032f9ed672e017c7893e2a6ef561f6718e0d3f5c7cd",
+    "destination": "evaluation/verify_archive_copy.py",
+    "adaptation": "Tracked repository import/fixture paths, bounded source gates, report type annotations and lint; no historical result recreated"
+  },
+  {
+    "archive": "selfsentry-journal-retention.zip",
+    "archive_sha256": "e58188de230f509f357e370686381a653ea9f6bec1433cffaa374fd7a11829be",
+    "source": "selfsentry-journal-retention/test_verify_copy.py",
+    "source_sha256": "58bbfd25265c6c92a297dfafafc1ce0db333ba7735c8766b933c6e6a6ead5bef",
+    "destination": "tests/test_archive_copy_runner.py",
+    "adaptation": "Tracked repository import/fixture paths, bounded source gates, report type annotations and lint; no historical result recreated"
+  },
+  {
+    "archive": "selfsentry-journal-export.zip",
+    "archive_sha256": "749ff6ed9069972e110f76439cfd49881b562398ba8e1893754fcdd2fae9f865",
+    "integration": "Archive-aware exporter supersedes the original pre-archive exporter; original package preserved",
+    "native_evidence": "Committed VM record only; no private results inspected"
+  },
+  {
+    "archive": "selfsentry-journal-retention.zip",
+    "archive_sha256": "e58188de230f509f357e370686381a653ea9f6bec1433cffaa374fd7a11829be",
+    "integration": "Archive-aware exporter supersedes the original pre-archive exporter; original package preserved",
+    "native_evidence": "Committed VM record only; no private results inspected"
+  }
+]

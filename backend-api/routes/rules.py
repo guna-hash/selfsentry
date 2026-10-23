@@ -3,7 +3,10 @@ import sys
 import hashlib
 import fcntl
 import logging
-from contextlib import contextmanager
+import json
+import sqlite3
+from contextlib import contextmanager, closing
+from typing import Literal
 from sqlalchemy import text
 from pathlib import Path
 from datetime import datetime, timezone
@@ -26,12 +29,14 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "monitor-service"))
 from monitor_config import load_config  # noqa: E402
 from submit_candidate import _load_benign_events  # noqa: E402
 from fastapi.encoders import jsonable_encoder  # noqa: E402
+import native_retirement  # noqa: E402
+import rule_deployer  # noqa: E402
 
 router = APIRouter(prefix="/rules", tags=["rules"])
 logger = logging.getLogger(__name__)
 
 # A confirmed incident may only have one rule in any of these states at a time.
-ACTIVE_STATUSES = ("pending_review", "approved", "deployed")
+ACTIVE_STATUSES = ("pending_review", "approved", "deployed", "retirement_pending")
 
 
 @contextmanager
@@ -105,7 +110,7 @@ def _audit_rule(db, event_type, rule, detail):
             event_type=event_type,
             source="backend",
             severity="warning" if event_type == "RULE_DUPLICATE_REJECTED" else "info",
-            detail={"rule_id": rule.id, **detail},
+            detail={**detail, "rule_id": rule.id},
             occurred_at=datetime.now(timezone.utc).replace(tzinfo=None),
         )
     )
@@ -194,7 +199,7 @@ def list_pending_rules(db: Session = Depends(get_db)):
     (a failed deployment leaves a rule approved so it can be retried from the queue)."""
     return (
         db.query(GeneratedRule)
-        .filter(GeneratedRule.status.in_(("pending_review", "approved")))
+        .filter(GeneratedRule.status.in_(("pending_review", "approved", "retirement_pending")))
         .order_by(GeneratedRule.id)
         .all()
     )
@@ -447,6 +452,8 @@ def deprecate_rule(rule_id: int, reviewed_by: str, db: Session = Depends(get_db)
         raise HTTPException(422, "An explicit human reviewer identity is required")
     with _review_session(db, rule_id) as db:
         rule = _get_rule_or_404(db, rule_id)
+        if rule.status == "retirement_pending":
+            raise HTTPException(409, "Native retirement requires explicit reconciliation")
         if rule.status == "retired":
             return {"status": "retired", "rule_id": rule_id, "native_rule_unloaded": False}
         rule.status = "retired"
@@ -461,6 +468,115 @@ def deprecate_rule(rule_id: int, reviewed_by: str, db: Session = Depends(get_db)
         return {"status": "retired", "rule_id": rule_id, "native_rule_unloaded": False}
 
 
+class NativeRetirementIn(BaseModel):
+    reviewed_by: str = Field(min_length=1, max_length=128)
+    reason: str = Field(min_length=1, max_length=2000)
+    expected_file_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
+    expected_rule_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
+    confirm_native_unload: bool = Field(strict=True)
+    action: Literal["retire", "rollback"] = "retire"
+
+
+def _retirement_journal():
+    folder = Path(os.environ.get(
+        "RULE_GUARD_STATE_DIR", str(Path(__file__).resolve().parents[2] / "state/rule-guard")))
+    return native_retirement.RetirementJournal(folder / "retirements")
+
+
+@router.get("/{rule_id}/native-retirement-plan")
+def native_retirement_plan(rule_id: int, db: Session = Depends(get_db)):
+    rule = _get_rule_or_404(db, rule_id)
+    if rule.status not in ("deployed", "retired", "retirement_pending"):
+        raise HTTPException(409, "Only previously deployed/retired rules can be unloaded")
+    path = Path(rule_deployer.AUTO_GENERATED_RULES_PATH)
+    try:
+        original = path.read_bytes()
+        # Read existing receipt without initializing a journal on this GET.
+        folder = Path(os.environ.get(
+            "RULE_GUARD_STATE_DIR", str(Path(__file__).resolve().parents[2] / "state/rule-guard")))
+        journal_path = folder / "retirements/retirements.sqlite"
+        receipt = None
+        if journal_path.is_file():
+            with closing(sqlite3.connect(journal_path.resolve().as_uri() + "?mode=ro",
+                                         uri=True, timeout=1)) as local:
+                row = local.execute("SELECT body FROM retirements WHERE rule_id=?",
+                                    (str(rule_id),)).fetchone()
+            receipt = json.loads(row[0]) if row else None
+        plan = None if receipt else native_retirement.prepare(
+            rule.rule_yaml, path, rule_deployer.FALCO_CONFIG_PATH)
+        return {"rule_id": rule_id, "database_status": rule.status,
+                "current_file_sha256": native_retirement.digest(original),
+                "rule_sha256": native_retirement.digest(rule.rule_yaml.encode()),
+                "candidate_sha256": plan["candidate_sha256"] if plan else None,
+                "receipt": receipt, "native_state_verified": False,
+                "enabled": os.environ.get("SELFSENTRY_NATIVE_RETIREMENT_ENABLED") == "true"}
+    except (native_retirement.RetirementError, InventoryError, OSError, ValueError,
+            sqlite3.Error) as exc:
+        raise HTTPException(
+            503, "Native retirement plan unavailable; inspect local evidence") from exc
+
+
+@router.post("/{rule_id}/retire-native")
+def retire_native_rule(rule_id: int, body: NativeRetirementIn, db: Session = Depends(get_db)):
+    if os.environ.get("SELFSENTRY_NATIVE_RETIREMENT_ENABLED") != "true":
+        raise HTTPException(
+            409, "Native retirement is disabled; explicit host configuration required")
+    if not body.confirm_native_unload:
+        raise HTTPException(422, "Explicit native mutation confirmation is required")
+    if not body.reviewed_by.strip() or body.reviewed_by.strip().lower() == "selfsentry-auto":
+        raise HTTPException(422, "An explicit human reviewer identity is required")
+    if not body.reason.strip():
+        raise HTTPException(422, "A native retirement reason is required")
+    with _review_session(db, rule_id) as db:
+        rule = _get_rule_or_404(db, rule_id)
+        if rule.status not in ("deployed", "retired", "retirement_pending"):
+            raise HTTPException(409, "Rule has no eligible native retirement state")
+        if native_retirement.digest(rule.rule_yaml.encode()) != body.expected_rule_sha256:
+            raise HTTPException(409, "Rule changed since operator review")
+        deployed = db.query(AuditEvent).filter(AuditEvent.event_type == "RULE_DEPLOYED").all()
+        if not any((item.detail or {}).get("rule_id") == rule_id for item in deployed):
+            raise HTTPException(409, "A retained native deployment audit is required")
+
+        def intent(record):
+            rule.status = "retirement_pending"
+            event = ("RULE_NATIVE_RETIREMENT_RECOVERY_REQUESTED"
+                     if record.get("requested_action") == "rollback"
+                     else "RULE_NATIVE_RETIREMENT_REQUESTED")
+            _audit_rule(db, event, rule, record.copy())
+            db.commit()
+
+        def complete(record, unloaded):
+            rule.status = "retired" if unloaded else record.get("previous_db_status", "deployed")
+            event = "RULE_NATIVE_RETIRED" if unloaded else "RULE_NATIVE_RETIREMENT_ROLLED_BACK"
+            existing = db.query(AuditEvent).filter(AuditEvent.event_type == event).all()
+            if not any((item.detail or {}).get("operation_id") == record["operation_id"]
+                       for item in existing):
+                rule.reviewed_by = (record["reviewed_by"] if unloaded
+                                    else record.get("recovery_reviewed_by", record["reviewed_by"]))
+                rule.reviewed_at = datetime.now(timezone.utc)
+                _audit_rule(db, event, rule, {**record, "native_rule_unloaded": unloaded})
+            db.commit()
+
+        try:
+            journal = _retirement_journal()
+            result = native_retirement.execute(
+                rule_id, rule.rule_yaml, body.expected_file_sha256, body.reviewed_by, body.reason,
+                journal, native_retirement.ReloadClient(os.environ.get(
+                    "FALCO_RELOAD_SOCKET", "/run/falco/control.sock")),
+                rule_deployer.AUTO_GENERATED_RULES_PATH, rule_deployer.FALCO_CONFIG_PATH,
+                intent, complete, rollback=body.action == "rollback", previous_status=rule.status)
+        except native_retirement.RetirementError as exc:
+            _audit_rule(db, "RULE_NATIVE_RETIREMENT_BLOCKED", rule, {
+                "reviewed_by": body.reviewed_by.strip(), "action": body.action,
+                "native_rule_unloaded": None, "reason": str(exc)})
+            db.commit()
+            raise HTTPException(
+                409, "Retirement incomplete; inspect retained receipt before retry") from exc
+        return {"rule_id": rule_id, "status": rule.status,
+                "native_rule_unloaded": result["phase"] == "applied",
+                "operation_id": result["operation_id"], "phase": result["phase"]}
+
+
 def record_native_refires(db, incident, payload):
     """Observed native matches are evidence, not automatically labeled true positives."""
     alerts = list((payload.get("monitor_evidence") or {}).get("falco_alerts") or [])
@@ -470,7 +586,7 @@ def record_native_refires(db, incident, payload):
     if not any(str(name).startswith("Auto_Generated_") for name in names):
         return
     for rule in db.query(GeneratedRule).filter(
-        GeneratedRule.status.in_(("deployed", "retired"))
+        GeneratedRule.status.in_(("deployed", "retired", "retirement_pending"))
     ).all():
         definitions = yaml.safe_load(rule.rule_yaml) or []
         for definition in definitions:

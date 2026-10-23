@@ -1,5 +1,20 @@
 # Changelog
 
+### Uncommitted native retirement continuation — 23 October 2026
+- Add explicit opt-in human-reviewed native unload/recovery with prevalidation, durable originals/intent, generation receipts and no blind uncertain retries.
+- Preserve pending/native refire evidence, serialize reviews and retain integer audit links and first-result metadata.
+- Label recorded unloads and unresolved outcomes accurately; leave native execution and real isolation disabled.
+- Exercise API/file/journal round trips, hard-kill recovery and controlled protocol/failure tests; retain blocked AF_UNIX acceptance separately.
+
+
+### Uncommitted remaining-work follow-up — 23 October 2026
+- Recover and integrate original PostgreSQL acceptance/concurrency, workload and journal/archive runners with provenance and safety regressions.
+- Add manual baseline archives with retained replay identities and archive-aware historical readers/exports; live archival remains unapplied.
+- Add full-ID, hash-bound operator observations in an immutable local reconciliation ledger; never repeat uncertain Docker actions or infer past success.
+- Add separated holdout evaluation with missing/unscored denominators and unchanged default Isolation Forest.
+- Reconcile all current inventory paths, proposed-removal evidence, declared-lock SBOM and current versus historical acceptance records.
+
+
 ### Uncommitted repository audit — 21–23 October 2026
 - Validate immutable scan identity and report structure before deployment policy decisions.
 - Preserve rule approval ownership, audit idempotency and isolation-state integrity.

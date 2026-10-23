@@ -1,3 +1,214 @@
+# Current follow-up assessment — 23 October 2026
+
+**Source follow-up implemented and locally checked; the full 24-phase prompt remains open.**
+This checkout is `followup/remaining-work-20261023`, from integration commit
+`a25fca0cc22974cda692a4dd8410de99b06fc37e`. Remote refs were checked before editing:
+integration matched that commit and main matched `18c40d228de66ce3b75c03b23a569b69e28a1b45`.
+No commit, push, main merge, deployment, live pruning, service restart or real isolation
+was performed by this agent. A final remote recheck found main at
+`16ac05bdf145b5b31914b281a9589949374a5d9c`: PR #6 has merged the original audit branch.
+Its source tree exactly matches integration `a25fca0`, so that original release-integration
+step is now credited as complete. This new follow-up is still uncommitted and unmerged. Default Isolation Forest, human rule approval and response safety gates remain.
+
+## Current changes and evidence hierarchy
+
+- Recovered the original PostgreSQL backup/migration, PostgreSQL concurrency, bounded workload
+  and journal export/archive packages. `recovered-runners.json` preserves package/source hashes
+  and historical source manifests. Repository imports, JSON report typing and source manifest
+  locations were adapted; source pins now identify this reviewed checkout, not a historical run.
+- Integrated manual closed-baseline archival and archive-aware replay/telemetry/export from the
+  recovered retention patch. Publication/readback precedes the SQLite transaction's removal of
+  live payloads. Replay keys, alerts, rejected evidence, workflow/action history and closed-window
+  markers remain. Disk/publication/commit/restore faults are tested on disposable SQLite.
+  No live cutoff was chosen and no live payload was moved. This is relocation with retained
+  identity, not deletion of evidence, a total storage bound or whole-application recovery.
+- Added an explicit local operator reconciliation ledger. A full known container ID and original
+  attempt hash bind the review. Successful Docker inventory/inspection supplies current evidence;
+  transport errors never prove absence. A real ownership lock blocks review even after its
+  deadline expires. Concurrent reviews retain one original decision. The original command outcome,
+  deployment registration and degraded-health counts are unchanged. This does not guess the
+  outcome of an unknown create, retry Docker, or promise a global Docker/SQLite transaction.
+- Added offline holdout evaluation using the unchanged default Isolation Forest and fixed 0.5
+  model flag. Frozen training must precede nonoverlapping validation windows. Corpus hashes,
+  class-specific scored denominators, missing/unscored windows and invalid runs remain explicit.
+  This evaluates the model flag, not the monitor's entire confirmation/response policy. Test
+  fixtures verify accounting only; no representative detection measurements were manufactured.
+- Reconciled the ten missing inventory paths, including the legitimate unique-performance
+  migration, late-alert recovery and regressions. Proposed removal of `-c` and the three backup
+  files is recorded in `deletion-manifest.json`, with exact recoverable Git blobs. None was removed.
+- Refreshed declared-lock SPDX inventory (219 entries), scanner evidence and documentation without
+  changing either dependency lock or claiming installed-artifact/OS/license provenance.
+
+Evidence levels are deliberately separate:
+
+| Evidence | Current assessment |
+| --- | --- |
+| Source and local disposable tests/build | Independently executed in this checkout; final results in validation.json |
+| Original runner packages | Source recovered and reviewed; local safety/orchestration tests executed |
+| VM gate, incident 216, ready 20-sample model, PostgreSQL restore/migrations/concurrency, workload, journal export | **Recorded in committed VM note; raw evidence not inspected** |
+| Prior browser smoke, reboot and operator-reported suspend/resume | Retained bounded historical evidence; not reset to failures or promoted to permanent correctness |
+| Current native failure/isolation/browser/fresh-host/detection acceptance | NOT VERIFIED here; original VM/private data not accessible |
+| Public production readiness | Not established; host-local/shared-token academic boundary retained |
+
+The unmodified integration branch independently passed 1,013 Python tests + 104 subtests,
+165 frontend tests, lint, types (81 source files) and build. It is a new local checkpoint,
+not a replacement for the older committed VM count. Final follow-up counts/commands/failures
+are in `validation.json`. Raw local logs are preserved in the handoff, separate from private
+VM exports. No meaningful React warnings appeared in this run; none were suppressed.
+The chart chunk remains 512.67 kB / 151.77 kB gzip. Loading impact was not measured, so it was
+not optimized based only on the warning.
+
+## Prior follow-up validation — before the native retirement continuation
+
+| Check | Result | Scope |
+| --- | --- | --- |
+| Full release verifier | PASS, all five checks | `final-checks-20261023T144655Z`: 1,120 Python tests + 104 subtests in 31.81 s; 165 frontend tests; lint; types; build |
+| Root `python -m pytest -q` without provider keys, isolation false | PASS | 1,120 tests + 104 subtests in 30.72 s; actual SQLite/locks/processes/model tests and mocks, no native services |
+| Types | PASS | 93 source files, untyped bodies checked; no type-check suppression added |
+| Dependency checks | PASS within declared scope | Locked clean installs, pip check, npm/pip-audit results; no lock changes |
+| Static/current metadata | PASS within declared scope | Current-path inventory/tree, AST/JSON parsing, limited no-value secret scan, diff whitespace and package byte checks |
+
+The initial follow-up release failed lint after Python passed. Recovered runner JSON reports
+needed explicit dynamic typing; no checks were disabled. A direct CLI launch exposed a missing
+import path masked by test setup; a subprocess regression now covers the documented command.
+An intermediate duplicate copy of recovered exporter tests was omitted from final source;
+all original repository tests and historical evidence remain. Earlier failed logs and
+successful checkpoints are retained. That checkpoint received subsequent static/hash/package verification. The native-retirement
+continuation below introduces additional source changes and its own fresh verification.
+
+## Current security review
+
+Time-specific `npm audit --json` and `pip-audit -r requirements.lock --no-deps --disable-pip`
+reported zero known advisories in the declared lock entries. `pip check` passed. The Python
+scanner warned that locks lack distribution hashes; lock reproducibility is not artifact
+integrity. Security tools ran in a separate ignored environment and changed neither app lock.
+Bandit scanned backend/monitor/gate/response/rule/evaluation/scripts and reported 115 findings after the retirement continuation:
+102 low, 10 medium, three high. The nine additional low flags arise from the expanded
+source/subprocess scope; new subprocess argv remains fixed or taken from the verified service. This broader scope is not comparable to the old 24-finding scan.
+
+The three high flags remain the two persisted SHA-1 identity/checkpoint uses and Jinja YAML
+without HTML autoescaping. These are compatibility identifiers, not authentication, and literal
+YAML output has its own escaping/validation. Replacing them blindly would break replay or rules.
+Medium SQL flags use fixed whitelisted table identifiers or quoted introspected identifiers
+with bound values; no arbitrary table selector is accepted by reconciliation. The YAML loader
+is the existing SafeLoader subclass. Native acceptance runners' `/tmp` use is a working
+directory for explicit administrator commands, not a predictable output file. Subprocess flags
+remain relevant to trusted PATH, local Docker privileges and review of argv; commands use argument
+lists, and the new observer performs read-only Docker operations with ten-second deadlines.
+No blanket suppression, dependency upgrade or security certification was introduced.
+Shared-token actor labels remain unverified identities, and local ledger files are not signed
+or tamper-proof against their owner. Private dumps/corpora are not included in this handoff.
+
+## Current feature and phase closure
+
+| Phases | Source/evidence now available | Remaining closure work |
+| --- | --- | --- |
+| 1–4 inventory/correctness/refactor | Complete current-path CSV/tree, original history retained, focused source changes/regressions | Maintainer review of exact apply manifest; approval before proposed removals |
+| 5–8 security/cleanup/architecture/dependencies | Current scans, triaged flags, concrete deletion proposal, unchanged locks, explicit state ownership | Native least-privilege/grant validation; owner license decision; full artifact provenance |
+| 9–11 tests/docs/UI | Release/root tests and build recorded; current docs reconciled; prior UI passes retained | Live desktop/mobile/theme/form/error/action/backend-state coverage; keyboard focus/return |
+| 12–14 feature flow/final handoff | Recovered runners and reviewable source patch; native VM records reconciled | Current full native chain, final maintainer integration into main |
+| 15–17 reality/contracts | Honest model/unavailable/sample states; no fabricated native or quality claims | Anomaly-only witness → authoritative backtest → human approval → load/refire/linked incident; process/parent and file templates |
+| 18–20 recovery/state/concurrency | Archive publication/crash/readback tests; explicit action reconciliation ledger; recovered PG runners | Native DB disconnect/established-socket/uncertain-commit and pending-work hard-kill; daemon/log restart/rotation faults; full review/deploy races; grants/sequences/whole-app restore |
+| 21–22 setup/supply chain | Clean locked Python/npm installation, 219-entry declared-lock SPDX, native setup instructions and runner provenance | Fresh supported Linux host proof with PostgreSQL/Falco/Docker/Trivy; artifact/OS provenance |
+| 23–24 performance/ownership | Recovered bounded workload driver, holdout evaluator, updated developer guide | Representative sustained/model/queue/disk/drop measurements; unknown-create/native retirement acceptance; measured shutdown bounds |
+
+## Native retirement continuation — current source change
+
+Added an explicitly enabled, human-confirmed native retirement route, full-ID/hash-bound
+source review, ordered Falco prevalidation, retained original/validation files, durable
+pending state and generation-based reload receipts. The original DB-only endpoint is
+preserved. Ambiguous outcomes block ordinary review and require reconciliation; a verified
+receipt can finish an uncertain DB result without repeating the native command. Explicit
+rollback is guarded, revalidated, audited and refuses unrelated edits. The permanent duplicate
+registry/history is retained. The dashboard distinguishes recorded unloads and unresolved
+native outcomes. New audits keep authoritative integer rule IDs.
+
+The protocol was inspected in original Falco 0.45.0 source at commit
+`05d5b3e363d5196c68c8ccea842ca57a2ef05562`; code was not copied into this project. Local tests
+cover actual API/SQLite/files/locks, a hard-killed worker with pending work and explicit
+recovery, duplicate/concurrent reviews, rejected/ambiguous reloads, publication/result-store
+failures and replay without native repetition. HTTP responses are controlled, not Falco.
+Three optional real-Unix-peer tests are skipped because this host blocks AF_UNIX creation.
+Their initial PermissionError failures are retained. Real native acceptance remains open.
+
+The flag defaults false in `.env.example`; no running configuration, service, rule file or
+container was changed by this continuation. Exact request/state/precondition details are in
+the developer guide's native retirement section. This closes the source-implementation gap
+for A11, not the native acceptance, production-readiness or full master-prompt gap.
+
+### Latest verified continuation checks
+
+| Check | Result | Scope |
+| --- | --- | --- |
+| Full release verifier | PASS, all five checks | `final-checks-20261023T162816Z`: 1,159 Python tests + 104 subtests, 3 explicit AF_UNIX skips; 168 frontend tests; lint; 94 typed source files; build |
+| Root discovery without provider keys, isolation false | PASS | 1,159 tests + 104 subtests, 3 AF_UNIX skips in 34.85 s |
+| New workflow boundaries | Locally exercised | Actual file/SQLite/lock/API/worker-kill behavior; controlled native commands and HTTP responses |
+| Native Falco | NOT VERIFIED | No native binary/service/socket/re-fire acceptance on this host |
+
+The initial socket tests failed with PermissionError because AF_UNIX creation is forbidden
+here. Three explicitly scoped fixture skips retain that boundary; they are not successful
+native tests. Controlled transport tests still exercise HTTP framing, peer validation,
+closure, rejection/instance changes/timeouts and the single-POST rule. Test harness and lint
+failures from intermediate iterations remain retained. No test, type or security warning
+was broadly suppressed, and no real native or isolation action was executed.
+
+## Current ten-criterion acceptance
+
+Each result applies to its explicit evidence, not to production approval.
+
+| Criterion | Result | Evidence and remaining boundary |
+| --- | --- | --- |
+| 1. Complete inventory | PASS | All current nonignored source paths, including ten omitted additions, reconciled; hashes except documented metadata self-reference exclusions |
+| 2. Justified removals | PASS | Four concrete proposed removals with recoverable blobs; zero actual deletions; approval still needed before removal |
+| 3. Critical feature flow traced/exercised | NOT VERIFIED | Source/local paths exercised and bounded native VM records retained; current complete native rule/detection/recovery chain still open |
+| 4. Tests executed | PASS | New baseline and final release/root/focused logs, commands and boundaries in validation.json; historical failures preserved |
+| 5. Build | PASS | Current Vite production build; chart warning retained without performance claims |
+| 6. Security findings resolved/documented | PASS | Current advisory/static results triaged above; privilege, identity, native recovery risks still documented |
+| 7. Reproducible setup | NOT VERIFIED | Locked install/build and versioned runners available; no fresh complete supported native host proof |
+| 8. Accurate current docs | PASS | Current assessment supersedes dated tables below; native records distinguished from independently inspected results |
+| 9. Reviewed final diff | PASS | Source/contract/diff/whitespace and installer applicability reviewed; uncommitted for maintainer review |
+| 10. Documented limitations | PASS | Individually scoped blockers below and known_limitations.md; no overall completion claim |
+
+## Actionable access and owner blockers
+
+1. **Disposable VM/host access and private evidence:** provide an authorized local environment or
+   run the documented tracked runners there. Inspect original raw logs before independently
+   accepting the recorded results. Existing configured-VM passes do not prove fresh installation.
+   Do not rerun disruptive historical tests just because this checkout lacks their private logs.
+2. **Native rule retirement source is now implemented, with native acceptance still NOT VERIFIED:** current deprecate is audited DB retirement.
+   Official Falco setup documents automatic file watching and reload status in 0.45; removing a
+   rule file section can trigger native changes before a manual reload. The implemented workflow now includes exact inventory/hash checks, ordered native prevalidation,
+   durable intent, generation-completion verification and reviewed rollback/recovery. These still
+   need disposable Falco acceptance; shell exit success alone is insufficient. The new route is
+   disabled by default and no real native unload was performed here.
+3. **Real response authorization:** name an isolated target environment and explicitly authorize
+   pause/disconnect/resume before testing changed current response paths. General completion does
+   not waive the prompt's restriction. Isolation remains disabled.
+4. **Native failure/full restore:** use disposable PostgreSQL, Docker/Falco/state and coordinated
+   stopped-state backups; preserve failed trials and original timelines/keys. PostgreSQL restore
+   alone excludes SQLite journals/archives, checkpoints, models, response records and rule registry.
+   Unknown create identities remain unresolved; an accepted present-state observation does not
+   prove the original command or clear the monitor's unresolved-action count.
+5. **Retention and governance:** approval of a specific live cutoff/relocation/deletion is still
+   needed before runtime archival; deletion automation remains absent. Licensing belongs to owner.
+   Keep host-local scope; per-person identity/RBAC and gateway/TLS require an actual multi-user
+   deployment request. Do not broaden deployment to make the checklist appear complete.
+6. **Study/UI/load inputs:** representative independently labeled frozen data, approved disposable
+   workloads and a live browser/backend are needed for detection, clock-lifecycle and UI/performance
+   acceptance. The default IF, experimental SVM status and failed/invalid trials stay intact.
+
+Falco reference reviewed: https://falco.org/docs/setup/tarball/ (hot reload section),
+23 October 2026. This source informs the retirement blocker; it does not verify the VM config.
+
+---
+
+# Historical audit checkpoint — preserved below
+
+The following is the original dated audit/handoff record. Its branch, counts, inventory,
+blanket assessment and remaining-work wording describe that checkpoint. The individually
+scoped current assessment above supersedes those statements; no historical pass/failure
+has been rewritten into new evidence.
+
 # Repository audit and implementation batch — 23 October 2026
 
 **Readiness: audit handoff finalized; full project acceptance remains incomplete.**

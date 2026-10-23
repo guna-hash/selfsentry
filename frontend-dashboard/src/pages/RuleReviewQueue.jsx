@@ -12,7 +12,7 @@ import './rules.css'
 const columns=[
   {key:'id',label:'Rule ID',render:value=>`#${value}`},
   {key:'incident_id',label:'Source incident',render:value=>value!=null?<Link to={`/alerts?incident=${encodeURIComponent(value)}`}>#{value}</Link>:'Not recorded'},
-  {key:'status',label:'Status',render:value=><StatusBadge tone={value==='deployed'?'low':['rejected','rejected_duplicate'].includes(value)?'critical':value==='approved'?'medium':'neutral'}>{ruleStatus(value)}</StatusBadge>},
+  {key:'status',label:'Status',render:(value,rule)=><StatusBadge tone={value==='deployed'?'low':['rejected','rejected_duplicate'].includes(value)?'critical':['approved','retirement_pending'].includes(value)?'medium':'neutral'}>{ruleStatus(value,rule)}</StatusBadge>},
   {key:'rate',label:'Backtest FP rate',accessor:rule=>backtestSummary(rule).rate,render:(value,rule)=><StatusBadge tone={backtestSummary(rule).tone}>{formatNumber(value,{style:'percent',maximumFractionDigits:2})} · {backtestSummary(rule).label}</StatusBadge>},
   {key:'rejection_reason',label:'Rejection reason'},
   {key:'reviewed_by',label:'Reviewer'},
@@ -28,10 +28,10 @@ export default function RuleReviewQueue(){
     const end=updatedAt ?? Date.now()
     return (rules || []).filter(rule=>{
       const time=utcEpoch(rule.created_at)
-      return (status==='all' || (status==='actionable'?actionableRule(rule):rule.status===status)) && (period==='all' || (time!==null && time>=end-RANGE_MS[period] && time<=end))
+      return (status==='all' || (status==='actionable'?(actionableRule(rule) || rule.status==='retirement_pending'):rule.status===status)) && (period==='all' || (time!==null && time>=end-RANGE_MS[period] && time<=end))
     })
   },[rules,status,period,updatedAt])
-  const chips=[...(status==='all'?[]:[{id:'status',label:`Status: ${status==='actionable'?'Needs action':ruleStatus(status)}`}]),...(period==='all'?[]:[{id:'period',label:`Creation period: ${period}`}])]
+  const chips=[...(status==='all'?[]:[{id:'status',label:`Status: ${status==='actionable'?'Needs action':status==='retired'?'Retired':ruleStatus(status)}`}]),...(period==='all'?[]:[{id:'period',label:`Creation period: ${period}`}])]
   function open(rule){const params=new URLSearchParams(search);params.set('rule',rule.id);setSearch(params)}
   function close(){const params=new URLSearchParams(search);params.delete('rule');setSearch(params)}
   return <div className="rule-queue-page">
@@ -42,7 +42,8 @@ export default function RuleReviewQueue(){
       </div></div>
     </div>
     <Notice notice={notice} onDismiss={()=>setNotice(null)}/>
-    <p className="rule-caption">{pending===null?'Pending queue total unavailable.':`${pending.length} rules await review or deployment retry in the current host-wide queue.`} Every deployment requires a human name and confirmation. Approval rechecks the backend benign corpus.</p>
+    <p className="rule-caption">{pending===null?'Pending queue total unavailable.':`${pending.filter(actionableRule).length} rules await review or deployment retry in the current host-wide queue.`} Every deployment requires a human name and confirmation. Approval rechecks the backend benign corpus.</p>
+    {!!pending?.some(rule=>rule.status==='retirement_pending') && <p className="rule-warning" role="status">Native retirement requires operator reconciliation. Approval and deployment retry are disabled for those rules.</p>}
     {history && history.length>=100 && <p className="rule-warning" role="note">History is limited to the latest 100 rules. All current pending rules are merged from the separate pending endpoint; older completed history may be missing.</p>}
     {Object.entries(errors).map(([source,error])=><section key={source} aria-label={`${source} rule source error`}><ErrorState error={`${source==='history'?'Rule history':'Current pending queue'}: ${error.message}`} status={error.status} onRetry={refresh} retrying={refreshing}/></section>)}
     {paused && <p role="status" className="rule-caption">Queue refresh paused. Decisions still verify current pending state before writing; monitor health and security services continue.</p>}
@@ -55,7 +56,7 @@ export default function RuleReviewQueue(){
     </section>}
     <div className="rule-queue-controls">
       <label htmlFor="rule-status">Status<select id="rule-status" value={status} onChange={event=>setStatus(event.target.value)}>
-        <option value="actionable">Needs action</option><option value="all">All available history</option><option value="pending_review">Pending review</option><option value="approved">Approved · retry deployment</option><option value="deployed">Deployed</option><option value="rejected">Rejected</option><option value="rejected_duplicate">Rejected – Duplicate</option><option value="retired">Retired · native state unverified</option><option value="disabled">Disabled</option>
+        <option value="actionable">Needs action</option><option value="all">All available history</option><option value="pending_review">Pending review</option><option value="approved">Approved · retry deployment</option><option value="deployed">Deployed</option><option value="rejected">Rejected</option><option value="rejected_duplicate">Rejected – Duplicate</option><option value="retirement_pending">Native reconciliation required</option><option value="retired">Retired</option><option value="disabled">Disabled</option>
       </select></label>
       <label htmlFor="rule-period">Creation period<select id="rule-period" value={period} onChange={event=>setPeriod(event.target.value)}><option value="all">All recorded time</option><option value="24h">Last 24 hours</option><option value="7d">Last 7 days</option></select></label>
     </div>

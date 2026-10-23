@@ -5,10 +5,14 @@ from contextlib import closing
 import json
 import sqlite3
 import tarfile
+import sys
 from pathlib import Path
 from dotenv import dotenv_values
 
 root = Path.cwd()
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "monitor-service"))
+from journal_archive import event_rows  # noqa: E402
+
 trial_path = root / "state/evaluation/full-20261011-only.jsonl"
 trials = [json.loads(line) for line in trial_path.read_text().splitlines() if line.strip()]
 if len(trials) != 200 or len({row["container_id"] for row in trials}) != 1:
@@ -27,13 +31,8 @@ if out.exists():
     raise SystemExit("Telemetry export already exists; preserve it or use another filename.")
 counts: dict[str, int] = {}
 with closing(sqlite3.connect(db_path.as_uri() + "?mode=ro", uri=True)) as db:
-    selected = list(
-        db.execute(
-            "SELECT key,bucket,kind,body FROM events "
-            "WHERE container=? AND bucket>=? AND bucket<=? ORDER BY bucket,key",
-            (cid, min(buckets), max(buckets)),
-        )
-    )
+    selected = sorted(event_rows(db, cid, min(buckets), max(buckets)),
+                      key=lambda row: (row[1], row[0]))
 with out.open("x") as stream:
     for key, bucket, kind, body in selected:
         if bucket in buckets:

@@ -1,0 +1,52 @@
+{
+  "source_commit": "a25fca0cc22974cda692a4dd8410de99b06fc37e",
+  "approved": false,
+  "deletions_performed": [],
+  "entries": [
+    {
+      "path": "-c",
+      "size_bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "git_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "recover_from_commit": "a25fca0cc22974cda692a4dd8410de99b06fc37e",
+      "reason": "Empty artifact; no application content",
+      "reference_review": "No runtime loading reference found; suffix excludes normal Python/JS discovery. Dynamic/manual use cannot be disproved.",
+      "action": "PROPOSE REMOVE; explicit approval still required",
+      "removed": false
+    },
+    {
+      "path": "evaluation/clock_guard.py.before-clock-followup",
+      "size_bytes": 6895,
+      "sha256": "745cd86b73aba34d7bb47253c83a1f0aa7d7196979c4adeeaceada38da677187",
+      "git_blob": "4af99521db3c8b4f4db74b8e9e55a1c703df7d74",
+      "recover_from_commit": "a25fca0cc22974cda692a4dd8410de99b06fc37e",
+      "reason": "Pre-follow-up source copy; current original contains the reviewed fix and tests; Git retains exact prior copy",
+      "reference_review": "No runtime loading reference found; suffix excludes normal Python/JS discovery. Dynamic/manual use cannot be disproved.",
+      "action": "PROPOSE REMOVE; explicit approval still required",
+      "removed": false
+    },
+    {
+      "path": "frontend-dashboard/src/components/RiskExplanation.jsx.before-clock-followup",
+      "size_bytes": 451,
+      "sha256": "6297e2461cec559e85271f10583d97bfa38d5f0af6b7031982c99e8979a3ec8f",
+      "git_blob": "7150be62828b15d54eb6bab5cd750bd05b880264",
+      "recover_from_commit": "a25fca0cc22974cda692a4dd8410de99b06fc37e",
+      "reason": "Pre-follow-up source copy; current original contains the reviewed fix and tests; Git retains exact prior copy",
+      "reference_review": "No runtime loading reference found; suffix excludes normal Python/JS discovery. Dynamic/manual use cannot be disproved.",
+      "action": "PROPOSE REMOVE; explicit approval still required",
+      "removed": false
+    },
+    {
+      "path": "tests/test_evaluation_clock_guard.py.before-clock-followup",
+      "size_bytes": 3716,
+      "sha256": "1d0dbcb9b5bb662ee70342881f1eb18e3e81b0ea1d39eb83ee81e243ee48f742",
+      "git_blob": "984b978d5da769c45b7e4e55e52eca18c5567b26",
+      "recover_from_commit": "a25fca0cc22974cda692a4dd8410de99b06fc37e",
+      "reason": "Pre-follow-up source copy; current original contains the reviewed fix and tests; Git retains exact prior copy",
+      "reference_review": "No runtime loading reference found; suffix excludes normal Python/JS discovery. Dynamic/manual use cannot be disproved.",
+      "action": "PROPOSE REMOVE; explicit approval still required",
+      "removed": false
+    }
+  ],
+  "recovery": "git show COMMIT:PATH recovers exact bytes; use -- for the leading-hyphen filename in filesystem/git commands"
+}

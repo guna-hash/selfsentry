@@ -1,5 +1,18 @@
 # Known limitations and evidence history
 
+> Current 23 October follow-up: [individual acceptance assessment](repository-audit/report.md).
+> PostgreSQL migration/adoption/restore/concurrency, gate/shell, workload and journal export
+> have passes recorded in the committed VM note; raw evidence not inspected here. The dated
+> audit-patch paragraphs below describe their original local-test boundary. They are superseded
+> for those recorded VM checks, without establishing native outage/full-restore acceptance.
+> Manual closed-baseline archives and archive-aware export are implemented and tested locally;
+> no live cutoff or archival was applied. The explicit reconciliation ledger retains current
+> observations and originals; unknown command outcomes and health counts remain unresolved.
+> Native retirement source now exists behind an opt-in flag; native Falco acceptance,
+> fresh-host proof, current response acceptance, representative detection,
+> live UI and sustained workload/fault acceptance remain open. Isolation stays disabled.
+
+
 > Engineering review: [22 October repository audit](repository-audit/report.md). Historical checked items below apply only to their recorded source/configuration; they are not acceptance of the audit patch.
 
 Updated 15 October 2026. M1–M4 implementation and controlled VM checks are recorded;

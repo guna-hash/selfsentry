@@ -30,7 +30,9 @@ for current review coverage, executed checks and unresolved findings.
   unreadable recovery records are preserved and block further actions for operator repair.
 - **Rule proposals:** supported process/parent and process/file-write templates require
   authoritative benign backtesting and human approval. Missing evidence blocks progression.
-  AI is optional advisory narration and cannot authorize rules or response actions.
+  AI is optional advisory narration and cannot authorize rules or response actions. Native retirement
+  has an opt-in, human-confirmed workflow with retained originals and reload receipts; it defaults
+  disabled and still requires disposable native acceptance. Database-only retirement remains distinct.
 - **Dashboard:** live inventory, incidents, audit, rule review, models and monitor health.
   `/sample/overview` is explicitly synthetic and read-only. `/evidence` shows historical
   reports, not current detection measurements.
@@ -144,9 +146,12 @@ beyond Falco. Screenshots and their synthetic/live provenance are documented in 
 [screenshot guide](docs/dashboard_screenshots.md).
 
 Current engineering limits include shared-token rather than per-person authorization,
-unverified PostgreSQL migration/adoption behavior, unbounded retained event history, a documented
+PostgreSQL migration/adoption passes recorded in the committed VM note (raw logs not inspected here),
+unbounded total retained history, a documented
 unread-log rotation loss boundary, and incomplete live failure/load validation. The audit
-also records native PostgreSQL locking and rule-retirement limits requiring follow-up. Priorities are durable
+also records bounded native PostgreSQL locking passes, with full review/deployment interleavings
+and native rule retirement still open. Manual archive/export and recorded operator observations
+are documented in [operations](docs/monitor_operations.md#tracked-follow-up-tools). Priorities are durable
 state integrity, migration/recovery coverage and representative live evaluation before
 expanding automation. Do not infer health solely from a fresh monitor heartbeat.
 

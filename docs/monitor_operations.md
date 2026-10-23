@@ -985,3 +985,38 @@ its key to the corrected reconciliation identity. Preserve the original payload/
 in a local repair report; do not delete the queued event or modify the stored backend row.
 Different conflicts, missing identity evidence or an occupied replacement key require review.
 Once repaired, restart the app and verify the queue drains and health recovers.
+
+## Tracked follow-up tools
+
+The 23 October follow-up integrates recovered acceptance/export tools and adds operator
+observations and holdout accounting. See the [tool/precondition table](repository-audit/developer-guide.md#tracked-follow-up-tools--23-october-2026)
+and [manual journal policy](journal_retention.md). Do not run every tool as a blanket
+acceptance or automatically repeat historical VM tests.
+
+The current export command is `.venv/bin/python scripts/export_monitor_journal.py --repo "$PWD"`.
+It includes referenced archive files. After archival, a copy of `pipeline.sqlite` alone is
+incomplete. Retain manifests/checksums and verify readback privately. No live pruning,
+archive relocation or restoration has been performed by the source update.
+
+Archival is disabled unless the operator explicitly applies a reviewed plan. The prompt
+requires approval before runtime deletion/relocation; this source delivery supplies no
+cutoff and does not grant it. Do not remove unreferenced partial archives automatically:
+a publication/commit failure can leave recoverable evidence for inspection. This mechanism
+reduces live payload rows only; SQLite file size, retained identities, archives, model count
+and total disk still lack a retention bound.
+
+Keep the backend bound to loopback. Use a dedicated PostgreSQL application role with only
+necessary schema/table/sequence privileges; evaluate migrations separately from normal
+runtime grants. Docker socket access is root-equivalent. Scope native reload privileges to
+the actual configured Falco service rather than granting unrestricted sudo. Protect `.env`,
+private logs, SQLite/archives, checkpoints, baselines and recovery records. The current shared
+write token authenticates possession, while reviewer names remain supplied labels. Local
+files/ledgers are not tamper-proof against their owner. Multi-user identity/RBAC, public gateway
+and TLS are outside the requested host-local deployment boundary.
+
+A consistent whole-application recovery must coordinate PostgreSQL, every SQLite journal and
+its archives, Falco offsets/log identity, baselines, rule files/registry, response records and
+source/configuration. Restore only to disposable isolated services, with response automation
+off and actions fenced, before claiming cross-store acceptance. No supplied runner restores
+an active full application, recreates grants or accepts sequence correctness. Connection/pool
+budgets still do not bound every established query, lock wait, blocked worker or shutdown.

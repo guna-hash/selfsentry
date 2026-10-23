@@ -2,7 +2,22 @@ import { finiteNumber } from './format.js'
 import { utcEpoch } from './overviewModel.js'
 
 export const actionableRule = (rule) => ['pending_review', 'approved'].includes(rule?.status)
-export const ruleStatus = (status) => ({pending_review:'Pending review',approved:'Approved · deployment pending',deployed:'Deployed',rejected:'Rejected',rejected_duplicate:'Rejected – Duplicate',retired:'Retired · native state unverified',disabled:'Disabled'})[status] || status || 'Not recorded'
+export const ruleStatus = (status, rule) => status === 'retired' && hasUnloadReceipt(rule)
+  ? 'Retired · native unload recorded'
+  : ({pending_review:'Pending review',approved:'Approved · deployment pending',deployed:'Deployed',rejected:'Rejected',rejected_duplicate:'Rejected – Duplicate',retired:'Retired · native state unverified',retirement_pending:'Native reconciliation required',disabled:'Disabled'})[status] || status || 'Not recorded'
+function hasUnloadReceipt(rule) {
+  if (!rule) return false
+  const event = latestEvent(rule, ['RULE_NATIVE_RETIRED','RULE_NATIVE_RETIREMENT_ROLLED_BACK','RULE_NATIVE_RETIREMENT_BLOCKED'])
+  const detail = event?.detail, receipt = detail?.reload_status
+  return event?.event_type === 'RULE_NATIVE_RETIRED' && detail?.rule_id === rule.id
+    && detail?.native_rule_unloaded === true && detail?.phase === 'applied'
+    && typeof receipt?.instance_id === 'string' && !!receipt.instance_id
+    && receipt?.ready === true && ['started_generation','applied_generation','rejected_generation']
+      .every(key => Number.isInteger(receipt[key]) && receipt[key] >= 0)
+    && receipt.applied_generation > receipt.rejected_generation
+    && receipt.applied_generation <= receipt.started_generation
+}
+
 export function backtestSummary(rule) {
   const gate = latestEvent(rule, ['RULE_CANDIDATE_CREATED','RULE_BACKTEST_REVALIDATED','RULE_BACKTEST_BLOCKED_DEPLOYMENT'])
   const blockedReport = gate?.event_type === 'RULE_BACKTEST_BLOCKED_DEPLOYMENT' ? gate.detail?.reason : null
@@ -31,6 +46,8 @@ function latestEvent(rule, types) {
     .sort((a,b)=>(a.time ?? -Infinity)-(b.time ?? -Infinity) || a.index-b.index).at(-1)?.event
 }
 export function deploymentSummary(rule) {
+  if (rule.status === 'retirement_pending') return {label:'Native outcome unresolved',tone:'critical',detail:'Inspect the retained retirement receipt. A command or reload may have completed; do not repeat it without reconciliation.'}
+  if (rule.status === 'retired' && hasUnloadReceipt(rule)) return {label:'Native unload recorded',tone:'low',detail:'Falco applied the removal at the recorded generation. Current host state still needs a live check.'}
   if (rule.status === 'retired') return {label:'Native state unverified',tone:'medium',detail:'Database retirement does not unload the Falco rule. Inspect the live rule set before claiming it is disabled.'}
   const last = latestEvent(rule, ['RULE_DEPLOYED','RULE_DEPLOYMENT_FAILED'])
   if (rule.status === 'deployed') return {label:'Deployed',tone:'low',detail:last?.event_type==='RULE_DEPLOYED'?'Backend recorded deployment after Falco reload. Native re-fire is separate evidence.':'Backend status is deployed; detailed reload history is not recorded.'}

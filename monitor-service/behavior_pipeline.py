@@ -30,6 +30,7 @@ from event_router import route_incident  # noqa: E402
 from audit_client import make_event_key  # noqa: E402
 from observed_timeline import build_observed_timeline  # noqa: E402
 from baseline_review import overlaps_training  # noqa: E402
+from journal_archive import SCHEMA as ARCHIVE_SCHEMA, seen_event  # noqa: E402
 
 logger = logging.getLogger(__name__)
 MAX_TRAINING_JOBS = 2
@@ -92,6 +93,7 @@ class BehaviorPipeline:
               incident_id INTEGER, attempts INTEGER DEFAULT 0,
               next_retry REAL DEFAULT 0, error TEXT);
         """)
+        self.db.executescript(ARCHIVE_SCHEMA)
         for cid, body in self.db.execute("SELECT container, body FROM lifecycle"):
             self.lifecycle[cid] = json.loads(body)
         self._restored = set()
@@ -260,7 +262,7 @@ class BehaviorPipeline:
         if stamp.timestamp() > self.clock() + 30:
             raise ValueError("event timestamp too far in the future")
         key = event.get("event_key") or make_event_key(kind, json.dumps(event, sort_keys=True))
-        if self.db.execute("SELECT 1 FROM events WHERE key=?", (key,)).fetchone():
+        if seen_event(self.db, key):
             return
         bucket = int(stamp.timestamp() // self.config.window_seconds) * self.config.window_seconds
         normalized = dict(event, container_id=cid)

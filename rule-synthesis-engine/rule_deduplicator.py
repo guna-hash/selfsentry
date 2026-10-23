@@ -406,7 +406,7 @@ def _verify_runtime(config_path):
         raise InventoryError("FALCO_CONFIG_PATH differs from the running Falco configuration")
 
 
-def load_inventory(config_path=None):
+def load_inventory(config_path=None, *, files: list[Path] | None = None):
     """Read ordered configured files, including config_files and rule directories.
 
     Every observed version is protected, including overrides and disabled rules.
@@ -477,6 +477,8 @@ def load_inventory(config_path=None):
             path = config_path.parent / path
         paths = sorted(path.glob("*.yaml")) if path.is_dir() else [path]
         for file in paths:
+            if files is not None:
+                files.append(file.resolve())
             try:
                 rows.extend(definitions(file.read_text()))
             except OSError as exc:
