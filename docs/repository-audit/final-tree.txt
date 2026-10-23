@@ -128,6 +128,7 @@ evaluation/clock_guard.py
 evaluation/clock_guard.py.before-clock-followup
 evaluation/compare_anomaly_models.py
 evaluation/compare_saved_layers.py
+evaluation/coordinated_state.py
 evaluation/coverage_probe.py
 evaluation/evaluate_holdout.py
 evaluation/export_final_review.py
@@ -144,6 +145,7 @@ evaluation/safety.py
 evaluation/scenarios.py
 evaluation/source-hashes.json
 evaluation/verify_archive_copy.py
+evaluation/verify_coordinated_restore.py
 evaluation/verify_no_baseline.py
 evaluation/verify_postgres_acceptance.py
 evaluation/verify_postgres_concurrency.py
@@ -334,6 +336,7 @@ tests/test_baseline_review.py
 tests/test_behavior_pipeline.py
 tests/test_container_watcher.py
 tests/test_control_worker.py
+tests/test_coordinated_restore.py
 tests/test_deploy_policy_validator.py
 tests/test_deployment_action_ownership.py
 tests/test_deployment_gate.py

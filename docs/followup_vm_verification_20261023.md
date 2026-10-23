@@ -57,3 +57,12 @@ This process-name test does not establish representative detection quality.
 - SHA256: `3a96aa60e8fdaf96dfefa95d241996b6682aa070d5e840b763bba10616a06f1c`
 - Earlier failed run retained: `state/evaluation/final-checks-20261023T184015Z`.
 - Test now awaits the real lazy page; sample-mode safety assertions remain.
+
+## Coordinated durable-state recovery verification
+
+- PASS: all 11 same-host disposable recovery checks.
+- Evidence: `/home/sl0thh/selfsentry-recovery-checks/coordinated-restore-20261023T194901431899Z/results.json`
+- SHA256: `f2a968d867fb35e2b0714cb293763b18b7df4538c591abc6cabd519ca5b3bfdd`
+- Original application resumed healthy; temporary database removed.
+- Private capture retained outside Git; no live restore performed.
+- Fresh-host recovery remains unverified.

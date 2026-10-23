@@ -672,3 +672,89 @@ Root Python suite: 1,185 passed + 104 subtests, 3 explicit AF_UNIX policy skips.
 Focused runner tests: 49 passed. Full lint and type checks passed (95 source files).
 Socket helper: bash syntax validated; no local service mutation/native execution.
 No frontend source changed, so prior VM build/frontend evidence remains scoped to that code.
+
+
+## Coordinated durable-state restore — next acceptance batch
+
+### Execute on the existing VM
+
+Keep the stack running initially and do not run other gate/review/baseline commands during
+capture. The source must have a healthy managed monitor, a ready baseline, no separately
+owned mutation locks, the verified local PostgreSQL cluster and adequate private disk space.
+Existing application configuration and credentials are read locally. No .env file is copied.
+Do not run this against an unreviewed remote PostgreSQL installation.
+
+The flag explicitly authorizes a brief pause of the three managed application processes.
+Docker, PostgreSQL, Falco and existing container workloads continue running. The monitor
+will catch up from its original checkpoint when resumed; inputs keep accumulating in the
+Falco log. Retirements and automatic isolation are kept disabled on resume.
+
+```bash
+cd ~/selfsentry &&
+sudo -v &&
+AUTO_ISOLATION_ENABLED=false SELFSENTRY_NATIVE_RETIREMENT_ENABLED=false \
+  .venv/bin/python evaluation/verify_coordinated_restore.py \
+  --repo "$PWD" --approve-managed-pause
+```
+
+Default private work location: ~/selfsentry-recovery-checks/coordinated-restore-TIMESTAMP.
+Failed or partial captures are retained for review and are never accepted as valid backups.
+If any step fails, inspect the report and original application status before retrying.
+A hard kill, host outage or failed original-app startup can require manual recovery;
+`bash bin/selfsentry start` is the existing operator recovery command. The runner never
+repeats an uncertain database create/restore operation automatically.
+
+## What the check verifies
+
+1. All three managed source process identities are present and the healthy monitor reports
+   automatic isolation disabled. Native PostgreSQL backup tools must match the server major
+   version, and the administrator socket must identify the same source cluster.
+2. A stopped-process check and actual lifecycle/monitor/rule-guard/operation flocks protect
+   the capture. An expired deadline is not evidence that an actual ownership lock is free.
+   Tree membership and logical/byte fingerprints must remain stable across capture. These
+   checks assume no concurrent operator writes; they are not a global distributed transaction.
+3. A single exported read-only PostgreSQL snapshot is dumped. Public application table rows
+   and sequence state are compared again before source processes resume. Source database
+   writes/restores, role changes, service stops and live schema migrations are never issued.
+4. All nonvolatile monitor/baseline/rule-guard/rule files and the deployment journal are copied.
+   SQLite backup includes committed WAL data, uses bounded typed row/schema readback and
+   checks integrity. Symlinks, hardlinks, oversized files and changing source state refuse.
+   Runtime lock files, status/PID snapshots and SQLite WAL/SHM companions are excluded from
+   recovery inputs; WAL content is merged through SQLite backup, not discarded.
+5. A bounded prefix of the actual Falco log is retained. The saved checkpoint inode and
+   offset must identify that log generation and fit within the prefix. A missing old log
+   generation or rotation mismatch fails rather than silently inventing replay coverage.
+6. The managed app resumes before disposable restore work begins. The resume attempt does
+   not depend on writable evidence storage, so a disk-full capture error cannot suppress it.
+7. PostgreSQL is restored only into a newly created, ownership-recorded ss_accept_*_restore
+   database. Application rows, schema and sequence values must match the captured source.
+   Only a confirmed owned database is eligible for automated cleanup.
+8. All copied artifact hashes are verified. The ordered copied Falco rules are validated with
+   the native binary. Restored journal/archive payloads must remain readable. A tailer is
+   reopened against the verified cloned log after explicitly mapping its clone-only inode;
+   the original checkpoint and log are never rewritten.
+9. Previously ready models are rebuilt using the real pipeline, validated copied baseline
+   JSON and unchanged default algorithm. This is model restore/readiness, not detection
+   quality. No pickle import, live API delivery or Docker action is performed by that pipeline.
+10. The original private capture remains unchanged after mutable-copy replay/model tests.
+    Final original-app health, owned-database cleanup and every named acceptance check are
+    required. The private filesystem work is retained rather than automatically deleted.
+
+The report records source commit, dirty state and runner hashes. Private dumps, models,
+checkpoint keys, raw events, rule backup files, manifests and command logs stay outside Git.
+Share only the sanitized final summary and evidence path; do not upload the private folder.
+
+## Scope boundaries
+
+This demonstrates coordinated durable-state capture and same-host disposable component
+recovery. It does not by itself establish a fresh Linux install, live failover, restored
+container/network runtime, service reattachment on another host, restoration of PostgreSQL
+roles/ACLs or secrets, or recovery with pending work when the source queues were empty.
+The restored pipeline is exercised offline without starting a second live monitor/backend.
+A full host/application takeover still needs a separately isolated destination and its own
+operator review. The active production paths/database are never restore destinations.
+
+Independent representative detection evaluation, the anomaly-only human-reviewed rule loop,
+remaining native failure cases, live browser matrix, lifecycle clock recurrence and owner
+retention/cleanup decisions retain their previous acceptance boundaries. Real isolation
+continues to require explicit approval in a named isolated test environment.
