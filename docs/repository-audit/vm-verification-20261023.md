@@ -68,3 +68,33 @@ audit and incident queues. Evidence: `post-probe-health.json` in that directory.
 
 This verifies deployment gate behavior; it does not establish image safety
 or complete the remaining production acceptance work.
+
+## Native concurrency verification
+
+PostgreSQL concurrency checks passed in one freshly migrated temporary database:
+- Eight matching audit deliveries retained one row and acknowledged the same ID.
+- Changed-content deliveries under the same key received strict conflicts.
+- Later matching replay retained the original event timestamp.
+- Eight workers recorded 80 rule outcomes without lost increments:
+  one performance row, 40 true positives and 40 false positives.
+- The review guard held its native advisory lock across commits, rejected an
+  independent contender, and released after normal completion and exceptions.
+
+The temporary database was removed. The live monitor remained healthy with the
+same PID. No active application rows, source files, services or Falco rules were
+changed by the runner.
+
+PostgreSQL evidence: `state/evaluation/postgres-concurrency-20261023T115131568870Z/results.json`.
+
+The separate HTTP read measurement completed 100 requests with four paced
+concurrent readers and no errors or unhealthy responses. Latency was
+17.818 ms median,
+33.660 ms p95 and
+154.638 ms maximum.
+The monitor PID remained unchanged and both delivery queues were empty afterward.
+
+HTTP evidence: `state/evaluation/api-read-concurrency-20261023T114258Z/results.json`.
+
+These results verify the exercised database races and a small local HTTP read
+workload. Full review/deployment interleaving, database outage recovery,
+sustained event load, memory bounds and shutdown deadlines remain open.
