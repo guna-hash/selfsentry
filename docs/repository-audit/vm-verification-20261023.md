@@ -48,3 +48,23 @@ Evidence: `state/evaluation/postgres-acceptance-20261023T112636875366Z/results.j
 The active database was not migrated or stamped. Outage recovery, concurrent
 writers, grants/roles, sequence comparison and full-host recovery remain outside
 this check's scope. The database dump is retained privately outside Git.
+
+## Native deployment gate verification
+
+The native gate acceptance run passed all three decisions:
+- Allowed Alpine deployment: backend record 7.
+- Blocked nginx deployment: backend record 8.
+- Explicit nginx override: backend record 9, with the operator reason retained.
+
+The gate scanned immutable image IDs. Backend scan counts matched the gate
+results, and registration matched each decision. The blocked container was
+removed; allowed and overridden probes were observed running before cleanup.
+Running probes used a non-root user, read-only root filesystem, no Linux
+capabilities, and no network. Cleanup reported no errors.
+
+Evidence: `state/evaluation/gate-acceptance-20261023T113851Z/results.json`.
+Post-probe monitoring was healthy, with no pending registrations and empty
+audit and incident queues. Evidence: `post-probe-health.json` in that directory.
+
+This verifies deployment gate behavior; it does not establish image safety
+or complete the remaining production acceptance work.
