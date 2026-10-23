@@ -135,3 +135,19 @@ incident 216 fingerprint and original audit row 1011.
 
 Sustained capacity, retention bounds, memory-leak assessment, shutdown deadlines
 and native crash/operator reconciliation remain open.
+
+## Verified SQLite journal export
+
+Native export and complete table readback passed on 2026-10-23.
+SQLite integrity and independent single-file readback passed.
+The monitor remained healthy with the same process.
+
+The snapshot contains 15,408 events, 358 windows, 184 outbox records,
+184 actions, 26 lifecycle records and 43 rejected events.
+Export size: 37,158,912 bytes.
+SHA-256: `53f017d94b54c49d239701ad00bc6d6d64a4185b79a48e3482027db814c99b06`.
+
+Private evidence: `~/selfsentry-journal-exports/20261023T140227781080Z-9f0b998d/manifest.json`.
+No live rows were deleted or changed. No service restart was performed.
+This verifies journal export integrity; automatic retention, pruning and
+whole-application restore acceptance remain open.
