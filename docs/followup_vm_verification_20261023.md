@@ -35,3 +35,25 @@ Before-and-after detection behavior and failure recovery remain unverified.
 - Logical events, replay keys, alerts and protected tables preserved.
 - Original snapshot unchanged; monitor healthy without restarting.
 - Live retention and whole-application restore remain unverified.
+
+## Sustained workload and native detection behavior
+
+- PASS: `state/evaluation/workload-check-20261023T182032313314Z/results.json`
+  - SHA256: `38f628440b62967dabdab3e3c1595bd26a3245853f37fea66e1853dc9c91b1c9`
+- PASS: `state/evaluation/retirement-behavior-20261023T183422715072Z/results.json`
+  - SHA256: `a095189c60d0a3e6edd6d0203defa88a538f94b537a84c54504cd976e8cc7f56`
+
+Ten-minute single-probe workload passed; broader capacity remains unverified.
+Rule 5 matched before retirement, did not match while unloaded with a baseline
+witness present, and matched after restoration. All observation clocks passed.
+Probe cleanup succeeded; retirement endpoint disabled; temporary override removed.
+This process-name test does not establish representative detection quality.
+
+## Release verification after lazy-page test correction
+
+- All five release checks passed: 1,188 Python tests plus 104 subtests,
+  168 frontend tests, lint, types across 95 files and production build.
+- Evidence: `state/evaluation/final-checks-20261023T185314Z/results.json`
+- SHA256: `3a96aa60e8fdaf96dfefa95d241996b6682aa070d5e840b763bba10616a06f1c`
+- Earlier failed run retained: `state/evaluation/final-checks-20261023T184015Z`.
+- Test now awaits the real lazy page; sample-mode safety assertions remain.

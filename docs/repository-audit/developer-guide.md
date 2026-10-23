@@ -583,3 +583,92 @@ Falco validation/socket/reload/re-fire and PostgreSQL/native review interleaving
 NOT VERIFIED until exercised on an authorized disposable host. Noncooperating external rule
 writers, remote/multiple backend hosts, filesystem/power-loss durability and a global
 request/shutdown deadline remain outside the guarantee.
+
+
+## Next acceptance runners — after VM checkpoint ed56643
+
+### Ten-minute workload
+
+Keep the existing managed services running. Isolation must remain disabled. The local
+alpine:3.20 image is scanned by immutable ID; a gate refusal is retained, never overridden.
+The runner creates and removes only its own restricted, labelled, network-none probe.
+
+```bash
+AUTO_ISOLATION_ENABLED=false .venv/bin/python evaluation/measure_workload.py --repo "$PWD" --executions 3000
+```
+
+It runs 3,000 /bin/true invocations plus 3,000 pacing sleeps at nominal five per second,
+with four concurrent HTTP readers and one-second process/RSS/queue/SQLite-WAL size samples.
+The generator deadline is 775 seconds; probe lifetime is bounded independently. Failed or
+partial output is retained and is never counted as completion. It records the same safety
+and model-status checks as the earlier bounded run. This is sustained observation of one
+paced probe, not representative fleet capacity, leak proof, complete disk accounting,
+model fit/inference timing or a zero-loss claim. No native drop counters are invented.
+
+## Before/unloaded/restored native rule behavior
+
+This explicitly exercises rule 5, whose reviewed SHA256 is
+`47216c322ce212dc121f1efd4170df764331f215a3ae2b41de4c02ae8138f25c`.
+It requires a human reviewer and the generated-file SHA already reviewed in this session.
+It refuses changed source, active/uncertain receipts, enabled isolation/auto-confirmation/
+candidate generation, missing listener and blocked deployment. No API token is printed.
+
+The helper enables only a temporary protected socket. It refuses a custom current Falco
+command or an existing override, and restores the original service if activation fails.
+It uses the directory-group correction verified on this VM. It briefly restarts Falco.
+Backend opt-in is separate and scoped to the managed processes, without editing .env.
+
+```bash
+sudo bash scripts/retirement_test_socket.sh enable sl0thh &&
+SELFSENTRY_NATIVE_RETIREMENT_ENABLED=true FALCO_RELOAD_SOCKET=/run/selfsentry-falco-control/control.sock AUTO_ISOLATION_ENABLED=false bash bin/selfsentry restart &&
+FALCO_RELOAD_SOCKET=/run/selfsentry-falco-control/control.sock .venv/bin/python evaluation/verify_retirement_behavior.py --repo "$PWD" --approve-rule-5-retire-and-restore --reviewed-by guna --expected-file-sha256 8aad4c534cb1b96bb06e9cf5a48840c0acf33034db791378f761feac723d2b65
+```
+
+The native runner creates one owned restricted Alpine probe through the gate, with an
+executable disposable /tmp tmpfs. Three 20-second windows require a baseline process
+witness matching container, process validation-true and parent sh. It expects a native
+match before retirement, no native match while unloaded, and a native match after the
+explicit restore. Kernel/container dispatch may make the renamed harmless binary exit
+nonzero; its process exit is retained and a matching native baseline witness is required.
+This is a process-name detection test, not a claim that an attack succeeded.
+
+Falco event times must agree with host times and a stable host boot/monotonic clock.
+Log rotation, truncation, partial records, missing baseline evidence and oversized logs
+invalidate the trial rather than becoming false negatives. Absence is only the observed
+window, not a permanent proof. The runner uses the existing protected client and endpoint.
+Known applied retirement is explicitly restored even if the unloaded observation fails.
+An uncertain write is never retried; native journals and runner requests are retained.
+No unapproved existing rule is touched. A hard process kill can require manual recovery;
+the owned probe name/full ID/ownership token and operation records are retained for review.
+
+If native_recovery_required is true or a request times out, stop and inspect the receipt;
+do not rerun the test, overwrite rules manually, or blindly repeat either POST.
+A failed preparation before mutation is a failed attempt, not native acceptance.
+
+After a confirmed successful restore, disable the endpoint and remove the temporary socket:
+
+```bash
+SELFSENTRY_NATIVE_RETIREMENT_ENABLED=false AUTO_ISOLATION_ENABLED=false bash bin/selfsentry restart &&
+sudo bash scripts/retirement_test_socket.sh disable sl0thh
+```
+
+The disable helper removes only an override with its expected contents. Retain all evidence.
+
+## Remaining acceptance boundaries
+
+These tools require real VM execution. Their local adapter tests are not native passes.
+The next batch does not close the independent representative benign/attack holdout study,
+anomaly-only confirmation/backtest/approval/refire loop (process-parent and file-write),
+whole-application coordinated restore, fresh supported Linux installation, remaining
+native failure/interleaving cases, live browser matrix, lifecycle clock recurrence,
+owner-approved retention cutoff/cleanup or real isolation. Real isolation stays disabled
+unless separately authorized for a named isolated environment. Fresh-host testing needs
+an actual clean supported host. Detection evaluation needs an independently labelled,
+separated corpus and declared coverage/denominators; synthetic fixtures cannot replace it.
+
+## Validation performed here
+
+Root Python suite: 1,185 passed + 104 subtests, 3 explicit AF_UNIX policy skips.
+Focused runner tests: 49 passed. Full lint and type checks passed (95 source files).
+Socket helper: bash syntax validated; no local service mutation/native execution.
+No frontend source changed, so prior VM build/frontend evidence remains scoped to that code.

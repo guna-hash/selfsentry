@@ -149,6 +149,7 @@ evaluation/verify_postgres_acceptance.py
 evaluation/verify_postgres_concurrency.py
 evaluation/verify_postgres_recovery.py
 evaluation/verify_protected_container.py
+evaluation/verify_retirement_behavior.py
 falco-rules/auto-generated-rules.yaml
 falco-rules/base-rules.yaml
 falco-rules/baseline-capture-rules.yaml
@@ -303,6 +304,7 @@ scripts/archive_journal.py
 scripts/export_monitor_journal.py
 scripts/lockfile_sbom.py
 scripts/refresh_audit_inventory.py
+scripts/retirement_test_socket.sh
 scripts/verify_completion_backtest_guard.py
 scripts/verify_final_checks.py
 scripts/verify_live_reliability.py
@@ -367,6 +369,7 @@ tests/test_native_retirement.py
 tests/test_native_retirement_api.py
 tests/test_native_workload_runner.py
 tests/test_reload_protocol.py
+tests/test_retirement_behavior_runner.py
 tests/test_risk_scorer.py
 tests/test_rule_deduplicator.py
 tests/test_rule_deployer.py

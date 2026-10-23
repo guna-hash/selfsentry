@@ -156,7 +156,7 @@ def test_generator_output_rejects_missing_duplicate_or_fabricated_progress(outpu
 
 
 @pytest.mark.parametrize("count,pause", [
-    (True, 0.2), (201, 0.2), ("1;touch /tmp/unwanted", 0.2),
+    (True, 0.2), (3001, 0.2), ("1;touch /tmp/unwanted", 0.2),
     (1, "0.2;echo unwanted"), (1, float("nan")),
 ])
 def test_generator_does_not_interpolate_untrusted_shell_values(count, pause):
@@ -174,7 +174,7 @@ def test_generator_timeout_retains_completed_steps_without_retry(monkeypatch):
 
     monkeypatch.setattr(measure.subprocess, "run", timeout)
     report = {"execs": []}
-    with pytest.raises(measure.CheckFailed, match="unchanged 75-second deadline"):
+    with pytest.raises(measure.CheckFailed, match="75-second deadline"):
         measure.execute_generator("a" * 64, report)
     assert len(calls) == 1 and calls[0][1]["timeout"] == 75
     assert len(report["execs"]) == 2 and report["truncated_progress_line"] is True
@@ -203,3 +203,38 @@ def test_one_docker_call_must_prove_all_200_steps_and_completion(monkeypatch):
     measure.execute_generator("a" * 64, report)
     assert len(calls) == 1 and calls[0][0][:3] == ["docker", "exec", "a" * 64]
     assert len(report["execs"]) == 200 and report["generator_returncode"] == 0
+
+
+@pytest.mark.parametrize("count,deadline", [(200, 75), (3000, 775)])
+def test_deadline_tracks_the_declared_paced_workload(count, deadline):
+    assert measure.execution_deadline(count) == deadline
+
+
+@pytest.mark.parametrize("count", [True, 199, 3001, "3000", None])
+def test_sustained_bounds_refuse_before_starting_native_work(count):
+    with pytest.raises(measure.CheckFailed):
+        measure.execution_deadline(count)
+
+
+def test_sustained_generator_preserves_every_declared_step_and_timeout(monkeypatch):
+    output = "".join(f"SELFSENTRY_WORKLOAD_STEP {i}\n" for i in range(1, 3001))
+    output += "SELFSENTRY_WORKLOAD_DONE 3000\n"
+    calls = []
+
+    def execute(argv, **kwargs):
+        calls.append((argv, kwargs))
+        return subprocess.CompletedProcess(argv, 0, output, "")
+
+    monkeypatch.setattr(measure.subprocess, "run", execute)
+    report = {}
+    measure.execute_generator("a" * 64, report, 3000)
+    assert len(calls) == 1 and calls[0][1]["timeout"] == 775
+    assert ' -lt 3000 ' in calls[0][0][-1]
+    assert len(report["execs"]) == 3000
+
+
+def test_storage_observations_do_not_invent_a_missing_journal(tmp_path):
+    assert measure.journal_storage(tmp_path)["pipeline.sqlite"] is None
+    (tmp_path / "pipeline.sqlite").write_bytes(b"journal")
+    sizes = measure.journal_storage(tmp_path)
+    assert sizes["pipeline.sqlite"] == 7 and sizes["pipeline.sqlite-wal"] == 0

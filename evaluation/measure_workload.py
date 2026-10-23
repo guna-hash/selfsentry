@@ -105,7 +105,7 @@ def distribution(values):
 
 
 def generator_script(count=200, pause=0.2):
-    require(type(count) is int and 1 <= count <= 200, "Invalid generator count")
+    require(type(count) is int and 1 <= count <= 3000, "Invalid generator count")
     require(type(pause) in (int, float) and math.isfinite(pause) and 0.001 <= pause <= 1,
             "Invalid generator pause")
     return (
@@ -138,18 +138,19 @@ def progress_output(raw, count=200, require_done=False):
     return [{"index": ordinal - 1, "reported_ordinal": ordinal} for ordinal in completed]
 
 
-def execute_generator(container_id, report):
+def execute_generator(container_id, report, count=200):
+    deadline = execution_deadline(count)
     started = time.monotonic()
     try:
         completed = subprocess.run(
-            ["docker", "exec", container_id, "/bin/sh", "-c", generator_script()],
-            capture_output=True, text=True, timeout=75,
+            ["docker", "exec", container_id, "/bin/sh", "-c", generator_script(count)],
+            capture_output=True, text=True, timeout=deadline,
         )
         report["workload_seconds"] = round(time.monotonic() - started, 3)
         report["generator_returncode"] = completed.returncode
-        report["execs"] = progress_output(completed.stdout)
+        report["execs"] = progress_output(completed.stdout, count=count)
         require(completed.returncode == 0, "Container process generator failed")
-        progress_output(completed.stdout, require_done=True)
+        progress_output(completed.stdout, count=count, require_done=True)
     except subprocess.TimeoutExpired as exc:
         raw = exc.stdout or ""
         if isinstance(raw, bytes):
@@ -157,9 +158,9 @@ def execute_generator(container_id, report):
         if raw and not raw.endswith("\n"):
             raw = raw[:raw.rfind("\n") + 1]
             report["truncated_progress_line"] = True
-        report["execs"] = progress_output(raw)
+        report["execs"] = progress_output(raw, count=count)
         report["workload_seconds"] = round(time.monotonic() - started, 3)
-        raise CheckFailed("Container generator exceeded the unchanged 75-second deadline") from None
+        raise CheckFailed(f"Container generator exceeded its {deadline}-second deadline") from None
 
 
 def docker(args, timeout=15, missing_ok=False):
@@ -217,7 +218,27 @@ def summarize(samples, reads):
                                      for item in samples)}
 
 
-def run(root):
+def execution_deadline(count):
+    require(type(count) is int and 200 <= count <= 3000, "Executions must be 200 through 3000")
+    return math.ceil(count * 0.25 + 25)
+
+
+def journal_storage(directory):
+    """Logical SQLite/WAL file sizes only, not whole-host or PostgreSQL storage."""
+    result = {}
+    for name in ("pipeline.sqlite", "pipeline.sqlite-wal", "pipeline.sqlite-shm"):
+        try:
+            result[name] = (directory / name).stat().st_size
+        except FileNotFoundError:
+            # WAL/SHM files can legitimately disappear at a checkpoint.
+            result[name] = 0 if name != "pipeline.sqlite" else None
+        except OSError:
+            result[name] = None
+    return result
+
+
+def run(root, executions=200):
+    deadline_seconds = execution_deadline(executions)
     os.umask(0o077)
     manifest = json.loads(Path(__file__).with_name("source-hashes.json").read_text())
     for name, expected in manifest.items():
@@ -225,6 +246,9 @@ def run(root):
         require(path.is_file() and hashlib.sha256(path.read_bytes()).hexdigest() == expected,
                 "Source differs from the reviewed version: " + name)
     load_dotenv(root / ".env")
+    sys.path.insert(0, str(root / "monitor-service"))
+    from monitor_config import load_config
+    journal_directory = load_config().state_dir
     roots = json.loads((root / "state/run/processes.json").read_text())
     require(set(roots) == {"backend", "monitor", "frontend"},
             "All three services must be managed before measurement")
@@ -252,14 +276,18 @@ def run(root):
     folder = root / "state/evaluation" / ("workload-check-" + stamp)
     folder.mkdir(parents=True, mode=0o700)
     report: dict[str, Any] = {
-        "passed": False, "runner_version": 2, "image_id": image, "container_name": name,
+        "passed": False, "runner_version": 3, "image_id": image, "container_name": name,
         "errors": [], "cleanup_errors": [], "before": before, "execs": [],
-        "workload": {"process_executions": 200, "nominal_executions_per_second": 5,
-                     "pacing_sleep_executions": 200, "generator_shells": 1,
+        "workload": {"process_executions": executions, "nominal_executions_per_second": 5,
+                     "pacing_sleep_executions": executions, "generator_shells": 1,
                      "docker_exec_calls": 1,
-                     "execution_deadline_seconds": 75, "http_readers": 4,
+                     "execution_deadline_seconds": deadline_seconds, "http_readers": 4,
                      "reader_pause_seconds": 0.5, "baseline_seconds": 10,
-                     "cooldown_seconds": 15}}
+                     "cooldown_seconds": 15},
+        "measurement_limits": ["One paced workload on one probe, not representative fleet traffic",
+                               "RSS observations do not prove absence of memory leaks",
+                               "No native drop-counter or model-timing instrumentation"],
+        "journal_storage_before": journal_storage(journal_directory)}
     samples: list[dict[str, Any]] = []
     reads: list[dict[str, Any]] = []
     state = {"phase": "baseline"}
@@ -276,7 +304,8 @@ def run(root):
         with requests.Session() as session:
             while not stop_sampler.is_set():
                 item: dict[str, Any] = {
-                    "phase": state["phase"], "at": datetime.now(timezone.utc).isoformat()}
+                    "phase": state["phase"], "at": datetime.now(timezone.utc).isoformat(),
+                    "journal_storage": journal_storage(journal_directory)}
                 try:
                     current, now = processes(), time.monotonic()
                     elapsed = now - previous_at if item["phase"] == previous_phase else 0
@@ -301,7 +330,7 @@ def run(root):
                 stop_sampler.wait(1)
 
     def reader(number):
-        deadline = time.monotonic() + 80
+        deadline = time.monotonic() + deadline_seconds + 5
         with requests.Session() as session:
             while not stop_readers.is_set() and time.monotonic() < deadline:
                 started = time.monotonic()
@@ -330,7 +359,7 @@ def run(root):
             "--user", "65534:65534", "--read-only", "--cap-drop", "ALL",
             "--security-opt", "no-new-privileges:true", "--network", "none",
             "--pids-limit", "32", "--memory", "64m", "--cpus", "0.25",
-            "--entrypoint", "/bin/sleep", image, "300",
+            "--entrypoint", "/bin/sleep", image, str(deadline_seconds + 180),
         ], backend_url=API)
         report["gate"] = gate
         require(gate["decision"] == "allowed", "Gate did not allow the probe; no override used")
@@ -371,9 +400,10 @@ def run(root):
             thread = threading.Thread(target=reader, args=(number,), daemon=True)
             readers.append(thread)
             thread.start()
-        print("Running one paced container loop: 200 /bin/true + 200 sleep commands...",
+        print(f"Running one paced container loop: {executions} /bin/true + "
+              f"{executions} sleep commands...",
               flush=True)
-        execute_generator(container_id, report)
+        execute_generator(container_id, report, executions)
         stop_readers.set()
         for thread in readers:
             thread.join(timeout=5)
@@ -432,6 +462,7 @@ def run(root):
             sampler.join(timeout=5)
             if sampler.is_alive():
                 report["errors"].append("Sampler did not finish before report deadline")
+        report["journal_storage_after"] = journal_storage(journal_directory)
         report["summary"] = summarize(samples, reads)
         if report["summary"]["sampling_errors"]:
             report["errors"].append("Some resource/status samples failed")
@@ -448,7 +479,7 @@ def run(root):
         if not any(item["phase"] == "workload" for item in samples):
             report["errors"].append("No resource samples cover the workload")
         report["steady_workload_passed"] = (not report["errors"] and not report["cleanup_errors"]
-                                            and len(report["execs"]) == 200)
+                                            and len(report["execs"]) == executions)
         report["setup_continuously_healthy"] = not setup_unhealthy
         report["all_sampled_phases_healthy"] = bool(samples) and not unhealthy
         report["setup_health_issues"] = [{"at": item.get("at"), "phase": item["phase"],
@@ -497,8 +528,10 @@ def run(root):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--repo", type=Path, default=Path.home() / "selfsentry")
+    parser.add_argument("--executions", type=int, default=200,
+                        help="200 to 3000; 3000 gives approximately ten minutes at five per second")
     args = parser.parse_args()
-    return run(args.repo.expanduser().resolve())
+    return run(args.repo.expanduser().resolve(), args.executions)
 
 
 if __name__ == "__main__":
