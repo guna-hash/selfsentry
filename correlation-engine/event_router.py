@@ -31,32 +31,17 @@ TIERS (on effective_score, 0-100):
   70 - 89         -> LOG + AI_ANALYSIS_NOTED + ANALYST_ALERT (paged, human must act)
   >= 90           -> LOG + AI_ANALYSIS_NOTED + ANALYST_ALERT + AUTO_ISOLATE
 
-OPEN ITEM - flag to Phase 8 owner (teammate):
-  backend-api's real POST /incidents/ appears to call Groq (ai_summary)
-  unconditionally on every incident, regardless of risk_score - confirmed
-  via curl testing on 2026-09-18 (incidents at risk_score 78, 87.5, and
-  100 all triggered a summarization attempt). This means AI_ANALYSIS_NOTED
-  below is currently just a LABEL for our own routing/audit trail, not a
-  real gate on the Groq call - the call already happened by the time this
-  function runs (since this operates on already-persisted incident data).
-  If we ever want to skip AI summarization for low-value incidents (to
-  save API cost/rate limit), that gate needs to move into the backend's
-  incident-creation route, not here. Raise at next sync.
-
-AUTO_ISOLATE is performed by response-engine/auto_isolate.py's
-isolate_container() (pauses the container and disconnects its networks).
-dispatch_incident() reports one of three outcomes for that action:
-"isolated", "isolation_failed: <reason>" (the error is logged, never
-raised, so one failed isolation cannot crash the pipeline), or
-"not_implemented_stub" (module missing or has no isolate_container()).
+The routing result describes score tiers, not permission to take a response action.
+The continuous monitor's IncidentPipeline owns automatic isolation: it checks the
+configured opt-in, both detection layers, freshness, full Docker identity, protection,
+and durable attempt/audit state. The diagnostic dispatcher below only logs suggestions.
+Optional AI enrichment also belongs to the monitor, outside backend incident creation.
 """
 
 from __future__ import annotations
 
-import importlib.util
 import logging
 from dataclasses import dataclass, field
-from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -153,31 +138,10 @@ def route_incidents(incidents: list[dict]) -> list[RoutingDecision]:
 
 # --- Dispatch: actually perform the side-effecting actions --------------
 
-def _load_auto_isolate_module():
-    """
-    response-engine/ has a hyphen in its folder name, so it can't be
-    imported as a normal Python package (same reason image-scanner/ and
-    correlation-engine/ aren't packages either, project-wide). Load
-    auto_isolate.py directly by file path instead, matching how the
-    test suite imports trivy_wrapper.py.
-    """
-    module_path = (
-        Path(__file__).resolve().parents[1] / "response-engine" / "auto_isolate.py"
-    )
-    if not module_path.exists():
-        return None
-
-    spec = importlib.util.spec_from_file_location("auto_isolate", module_path)
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
-
-
 def dispatch_incident(incident: dict, decision: RoutingDecision) -> dict:
     """
-    Performs (or safely stubs) the actions in `decision.actions`.
-    Returns a result dict describing what actually happened - useful for
-    logging/tests and for Phase 10's evaluation writeup later.
+    Log diagnostic routing suggestions without invoking security response actions.
+    A score tier cannot authorize isolation; use the durable monitor workflow.
     """
     results: dict[str, str] = {}
 
@@ -193,10 +157,7 @@ def dispatch_incident(incident: dict, decision: RoutingDecision) -> dict:
             results[ACTION_LOG] = "done"
 
         elif action == ACTION_AI_ANALYSIS_NOTED:
-            # See module docstring's "OPEN ITEM" - the real Groq call
-            # already happened in backend-api on POST, this is just an
-            # audit-trail label for now.
-            results[ACTION_AI_ANALYSIS_NOTED] = "already handled by backend-api POST /incidents/"
+            results[ACTION_AI_ANALYSIS_NOTED] = "advisory enrichment belongs to monitor workflow"
 
         elif action == ACTION_ANALYST_ALERT:
             logger.warning(
@@ -205,38 +166,14 @@ def dispatch_incident(incident: dict, decision: RoutingDecision) -> dict:
                 decision.effective_score,
             )
             results[ACTION_ANALYST_ALERT] = (
-                "paged (log-based placeholder - no real paging channel wired yet)"
+                "logged for analyst review; no paging channel configured"
             )
 
         elif action == ACTION_AUTO_ISOLATE:
-            module = _load_auto_isolate_module()
-            reason = (
-                f"effective_score={decision.effective_score} "
-                f"(risk_score={decision.risk_score}, confidence={decision.confidence})"
+            results[ACTION_AUTO_ISOLATE] = (
+                "not_attempted: diagnostic routing cannot authorize isolation; "
+                "use the durable monitor workflow"
             )
-            try:
-                if module is None or not hasattr(module, "isolate_container"):
-                    raise NotImplementedError(
-                        "response-engine/auto_isolate.py has no isolate_container() yet"
-                    )
-                module.isolate_container(decision.container_id, reason)
-                results[ACTION_AUTO_ISOLATE] = "isolated"
-            except NotImplementedError:
-                logger.warning(
-                    "[%s] WOULD AUTO-ISOLATE (reason: %s) - Phase 10 not yet implemented, "
-                    "no real action taken",
-                    decision.container_id,
-                    reason,
-                )
-                results[ACTION_AUTO_ISOLATE] = "not_implemented_stub"
-            except Exception as exc:
-                logger.error(
-                    "[%s] AUTO-ISOLATE FAILED (reason: %s): %s",
-                    decision.container_id,
-                    reason,
-                    exc,
-                )
-                results[ACTION_AUTO_ISOLATE] = f"isolation_failed: {exc}"
 
     return results
 

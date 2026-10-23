@@ -46,3 +46,17 @@ describe('isolation status', () => {
     expect(isolationState({ configuration: { auto_isolation_enabled: false } }, 'Offline').label).toBe('Isolation: unknown')
   })
 })
+
+
+it.each([null, [], 'invalid', 42])('handles malformed components without crashing (%j)', (components) => {
+  expect(monitorState({running:true,healthy:true,components}).label).toBe('Degraded')
+})
+it.each([null, {}, {state:null}])('degrades malformed component entries (%j)', (item) => {
+  expect(monitorState({running:true,healthy:true,components:{docker:item}}).label).toBe('Degraded')
+})
+it('distinguishes unavailable process state from an observed stopped process', () => {
+  expect(monitorState({status_available:false,running:null,healthy:false}).label).toBe('Unavailable')
+  expect(monitorState({running:'false',healthy:true}).label).toBe('Unavailable')
+  expect(monitorState({running:false,healthy:false}).label).toBe('Stopped')
+  expect(monitorState({running:true,healthy:'true'}).label).toBe('Degraded')
+})

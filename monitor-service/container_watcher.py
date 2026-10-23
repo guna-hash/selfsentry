@@ -86,15 +86,22 @@ class DockerInspector:
         }
 
     def inspect(self, full_id: str) -> dict | None:
+        client = self._client_factory()
         try:
-            container = self._client_factory().containers.get(full_id)
+            container = client.containers.get(full_id)
+            return self._describe(container)
         except docker.errors.NotFound:
             return None
-        return self._describe(container)
+        finally:
+            client.close()
 
     def list_running(self) -> list[dict]:
-        containers = self._client_factory().containers.list()
-        return [{"id": c.id, **self._describe(c)} for c in containers]
+        client = self._client_factory()
+        try:
+            containers = client.containers.list()
+            return [{"id": c.id, **self._describe(c)} for c in containers]
+        finally:
+            client.close()
 
 
 @dataclass
@@ -125,6 +132,16 @@ def _iso_from_event(event: dict) -> str:
 
 def _event_stamp(event: dict):
     return event.get("timeNano") or event.get("time")
+
+
+def start_observation_key(event_type, full_id, started_at, method):
+    """Deduplicate each observation without conflating delivery and reconciliation."""
+    # Keep existing Docker-event keys; reconciliation carries different evidence.
+    if method == "docker_event":
+        return make_event_key(event_type, full_id, started_at)
+    if method != "startup_reconcile":
+        raise ValueError("Unknown container start observation method")
+    return make_event_key(event_type, full_id, started_at, method)
 
 
 class ContainerWatcher:
@@ -317,7 +334,10 @@ class ContainerWatcher:
                 tracked.name,
                 tracked.image,
                 detail,
-                make_event_key("REGISTRATION_UNKNOWN", tracked.full_id, tracked.started_at),
+                start_observation_key(
+                    "REGISTRATION_UNKNOWN", tracked.full_id, tracked.started_at,
+                    pending.detection_method,
+                ),
                 tracked.started_at,
             )
             return
@@ -333,7 +353,10 @@ class ContainerWatcher:
                 tracked.name,
                 tracked.image,
                 detail,
-                make_event_key("UNAPPROVED_CONTAINER_START", tracked.full_id, tracked.started_at),
+                start_observation_key(
+                    "UNAPPROVED_CONTAINER_START", tracked.full_id, tracked.started_at,
+                    pending.detection_method,
+                ),
                 tracked.started_at,
             )
         else:
@@ -344,7 +367,10 @@ class ContainerWatcher:
                 tracked.name,
                 tracked.image,
                 detail,
-                make_event_key("CONTAINER_STARTED", tracked.full_id, tracked.started_at),
+                start_observation_key(
+                    "CONTAINER_STARTED", tracked.full_id, tracked.started_at,
+                    pending.detection_method,
+                ),
                 tracked.started_at,
             )
 
@@ -361,7 +387,7 @@ class ContainerWatcher:
                 "detection_method": method,
                 "started_at": tracked.started_at,
             },
-            make_event_key("CONTAINER_STARTED", tracked.full_id, tracked.started_at),
+            start_observation_key("CONTAINER_STARTED", tracked.full_id, tracked.started_at, method),
             tracked.started_at,
         )
 

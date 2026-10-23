@@ -2,7 +2,9 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 import os
 import secrets
+import logging
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.exc import OperationalError, TimeoutError as DatabasePoolTimeout
 
 from database import engine, Base
 
@@ -23,6 +25,19 @@ from routes import audit, containers, deployments, incidents, rules, monitor
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="SelfSentry Backend")
+logger = logging.getLogger(__name__)
+
+
+@app.exception_handler(OperationalError)
+@app.exception_handler(DatabasePoolTimeout)
+async def database_operation_unavailable(request: Request, exc: Exception):
+    # Driver errors can include SQL, parameters and credentials. Do not echo or log them.
+    logger.error("Database operation unavailable (%s); method=%s",
+                 type(exc).__name__, request.method)
+    detail = "Database operation unavailable."
+    if request.method not in ("GET", "HEAD", "OPTIONS"):
+        detail += " A write may have completed; review recorded state before retrying."
+    return JSONResponse(status_code=503, content={"detail": detail})
 
 
 @app.middleware("http")

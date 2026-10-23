@@ -30,6 +30,8 @@ Design notes:
 from __future__ import annotations
 
 import argparse
+import math
+from pathlib import Path
 import sys
 import time
 from datetime import datetime, timedelta, timezone
@@ -47,6 +49,9 @@ def run_capture(
     storage_dir: str,
     poll_interval_seconds: float = 0.5,
 ) -> None:
+    if not all(math.isfinite(v) and v > 0 for v in
+               (duration_minutes, window_seconds, poll_interval_seconds)):
+        raise ValueError("duration, window and polling interval must be finite and positive")
     store = BaselineStore(storage_dir=storage_dir)
     end_time = time.monotonic() + (duration_minutes * 60)
 
@@ -66,7 +71,11 @@ def run_capture(
         f.seek(0, 2)  # only see events from now on, not historical log content
 
         while time.monotonic() < end_time:
+            position = f.tell()
             line = f.readline()
+            if line and not line.endswith("\n"):
+                f.seek(position)
+                line = ""
             if line:
                 try:
                     event = parse_baseline_event(line)
@@ -79,8 +88,11 @@ def run_capture(
                 time.sleep(poll_interval_seconds)
 
             now = datetime.now(timezone.utc)
-            if now >= window_end:
-                fv = extract_features(buffer, container_id, window_start, window_end)
+            while now >= window_end:
+                fv = extract_features(
+                    [event for event in buffer if event.timestamp < window_end],
+                    container_id, window_start, window_end,
+                )
                 store.append(fv)
                 windows_closed += 1
                 print(
@@ -93,11 +105,11 @@ def run_capture(
                     f"shell={fv.shell_spawned_count} "
                     f"syscall={fv.sensitive_syscall_count}"
                 )
-                buffer = []
+                buffer = [event for event in buffer if event.timestamp >= window_end]
                 window_start = window_end
                 window_end = window_start + timedelta(seconds=window_seconds)
 
-    dataset = store.load(container_id)
+    dataset = store.load(container_id, allow_missing=True)
     print(
         f"\nDone. {dataset.sample_count} baseline sample(s) stored for "
         f"{container_id!r}. Ready to train: {dataset.is_ready}"
@@ -109,7 +121,8 @@ if __name__ == "__main__":
         description="SelfSentry - Phase 4 real baseline capture driver"
     )
     parser.add_argument(
-        "container_id", help="Container ID to capture baseline for (short or full)"
+        "container_id",
+        help="Container ID to capture (use the exact ID emitted in the Falco log)"
     )
     parser.add_argument(
         "--log-path",
@@ -124,7 +137,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--storage-dir",
-        default="baselines",
+        default=str(Path(__file__).resolve().parent / "baselines"),
         help="Where BaselineStore writes per-container JSON files",
     )
     args = parser.parse_args()
@@ -139,6 +152,9 @@ if __name__ == "__main__":
         )
     except FileNotFoundError:
         print(f"ERROR: log file not found: {args.log_path}", file=sys.stderr)
+        sys.exit(2)
+    except ValueError as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
         sys.exit(2)
     except KeyboardInterrupt:
         print("\nStopped early by user.")

@@ -1,5 +1,11 @@
 # Phase 3 — Falco + eBPF (Rule-Based Layer)
 
+> Historical phase record. Retained commands, test counts and implementation claims
+> describe that development stage. For current installation and safety behavior use
+> [README](../README.md), [operations](monitor_operations.md) and the
+> [repository audit](repository-audit/report.md). Do not rerun old direct-deployer or
+> database workarounds as the current human-approved workflow.
+
 ## What this phase delivers
 
 - `runtime-monitor/falco_integration.py` — parses Falco's JSON alert output,

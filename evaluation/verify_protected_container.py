@@ -16,6 +16,7 @@ import sqlite3
 import sys
 import tempfile
 import uuid
+from typing import Any
 
 
 def main():
@@ -29,10 +30,12 @@ def main():
     from monitor_config import MonitorConfig
     from monitor_status import StatusBoard
     import requests
+    from safety import require_isolation_disabled
 
     r = requests.get("http://127.0.0.1:8000/monitor/status", timeout=10)
     r.raise_for_status()
     status_before = r.json()
+    require_isolation_disabled(status_before)
     if not status_before.get("healthy"):
         raise SystemExit("Healthy running monitor required.")
     name = "selfsentry-protected-" + uuid.uuid4().hex[:8]
@@ -134,7 +137,7 @@ def main():
                     clock=lambda: now.timestamp(),
                     async_explanations=False,
                 )
-                body = {
+                body: dict[str, Any] = {
                     "id": 0,
                     "payload": payload,
                     "workflow": {

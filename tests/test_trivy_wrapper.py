@@ -21,6 +21,8 @@ import trivy_wrapper  # noqa: E402
 SAMPLE_TRIVY_JSON = {
     "SchemaVersion": 2,
     "ArtifactName": "nginx:1.25",
+    "ArtifactType": "container_image",
+    "Metadata": {"ImageID": "sha256:" + "a" * 64},
     "Results": [
         {
             "Target": "nginx:1.25 (debian 12.4)",
@@ -199,6 +201,34 @@ class TestScanImagePublicApi(unittest.TestCase):
         self.assertIsInstance(result, trivy_wrapper.ScanResult)
         self.assertEqual(result.critical_count, 1)
         assert result.raw["ArtifactName"] == "nginx:1.25"
+
+
+class TestReportTrustBoundary(unittest.TestCase):
+    def test_incomplete_or_wrong_image_report_never_returns_clean_success(self):
+        invalid = [None, [], {}, {"SchemaVersion": 2},
+                   dict(SAMPLE_TRIVY_JSON, ArtifactType="filesystem"),
+                   dict(SAMPLE_TRIVY_JSON, Metadata={}),
+                   dict(SAMPLE_TRIVY_JSON, Results={}),
+                   dict(SAMPLE_TRIVY_JSON, Results=[None]),
+                   dict(SAMPLE_TRIVY_JSON, Results=[{"Vulnerabilities": {}}]),
+                   dict(SAMPLE_TRIVY_JSON, Results=[{"Vulnerabilities": [{}]}]),
+                   dict(SAMPLE_TRIVY_JSON, Results=[{"Vulnerabilities": [{"Severity": []}]}])]
+        for raw in invalid:
+            with self.subTest(raw=raw), patch.object(
+                trivy_wrapper, "_run_trivy_json", return_value=raw
+            ):
+                with self.assertRaises(trivy_wrapper.TrivyScanError):
+                    trivy_wrapper.scan_image("sha256:" + "a" * 64)
+        with patch.object(trivy_wrapper, "_run_trivy_json", return_value=SAMPLE_TRIVY_JSON):
+            with self.assertRaisesRegex(trivy_wrapper.TrivyScanError, "does not match"):
+                trivy_wrapper.scan_image("sha256:" + "b" * 64)
+
+    def test_identity_bearing_empty_report_is_valid_without_inventing_findings(self):
+        raw = {k: v for k, v in SAMPLE_TRIVY_JSON.items() if k != "Results"}
+        with patch.object(trivy_wrapper, "_run_trivy_json", return_value=raw):
+            result = trivy_wrapper.scan_image("sha256:" + "a" * 64)
+        self.assertEqual(result.vulnerabilities, [])
+        self.assertFalse(result.has_blocking_findings)
 
 
 if __name__ == "__main__":

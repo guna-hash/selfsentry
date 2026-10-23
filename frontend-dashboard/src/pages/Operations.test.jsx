@@ -33,6 +33,13 @@ it('renders protected inventory and disables isolation, while exposing evidence 
   expect(button('Isolate').disabled).toBe(true);expect(button('Resume / restore networks').disabled).toBe(true)
   expect(document.querySelector('dialog a').getAttribute('href')).toContain('legacy_container_id=abc')
 })
+it('disables both actions when containment recovery state is unavailable',async()=>{
+  collection.rows=[{id:'abc',name:'worker',status:'paused',protected:false,isolated:null,containment_state:'record_unavailable',containment_label:'Recovery record unavailable — containment unverified',isolation_error:'Operator repair required'}]
+  await render(<Containers/>);await act(async()=>host.querySelector('[aria-label="View record abc"]').click())
+  expect(button('Isolate').disabled).toBe(true)
+  expect(button('Resume / restore networks').disabled).toBe(true)
+  expect(document.querySelector('dialog').textContent).toContain('Operator repair required')
+})
 it('opens a separate confirmation before any restore action',async()=>{
   collection.rows=[{id:'abc',name:'worker',isolated:true,status:'paused',protected:false}]
   await render(<Containers/>);await act(async()=>host.querySelector('[aria-label="View record abc"]').click())
@@ -69,9 +76,11 @@ it('keeps unreported models unknown and explains Falco coverage without a valid 
   expect(host.querySelectorAll('tbody tr')).toHaveLength(2)
 })
 it('warns for non-all rule matching, shows unavailable queues and current service failure',async()=>{
-  telemetry.status={running:true,healthy:false,rule_matching:'first',components:{database:{state:'unavailable',detail:'offline'}}}
+  telemetry.status={running:true,healthy:false,health_reason:'Components require attention: database',control_status_age_seconds:42,rule_matching:'first',components:{database:{state:'unavailable',detail:'offline'}}}
   await render(<Monitor/>);expect(host.textContent).toContain('Degraded');expect(host.textContent).toContain('Rule matching is not')
   expect(host.textContent).toContain('offline');expect(host.textContent).toContain('Not recorded')
+  expect(host.textContent).toContain('Components require attention: database')
+  expect(host.textContent).toContain('Control cycle age: 42 seconds')
   await input(host.querySelector('#operator-token'),'secret-not-in-notice')
   await act(async()=>button('Save token').click())
   expect(sessionStorage.getItem('selfsentry-api-token')).toBe('secret-not-in-notice')

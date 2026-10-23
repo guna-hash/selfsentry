@@ -251,19 +251,22 @@ class TestStreamFalcoAlertsFromStart(unittest.TestCase):
         self.assertEqual(len(first_three), 3)
 
     def test_from_start_false_starts_at_eof(self):
-        # With from_start=False (the live-monitoring default), the file
-        # pointer starts at EOF, so nothing is yielded from pre-existing
-        # content. We can't wait forever for a new line in a unit test, so
-        # this test only confirms the generator doesn't immediately replay
-        # old content — it does NOT test the live-append-and-catch-up path
-        # (that's the manually-validated behavior; see module docstring).
+        from unittest.mock import patch
+
         gen = falco_integration.stream_falco_alerts(
             str(self.log_path), from_start=False, poll_interval_seconds=0.01
         )
-        # Grab zero items — if this were from_start=True we'd assert on
-        # content instead. Here we just confirm construction doesn't raise
-        # and doesn't eagerly consume anything before iteration starts.
-        self.assertTrue(hasattr(gen, "__next__"))
+        fresh = dict(SAMPLE_ALERT_WITH_CONTAINER, rule="New alert after EOF")
+
+        def append_after_eof(_):
+            with self.log_path.open("a") as stream:
+                stream.write(_line(fresh))
+
+        try:
+            with patch.object(falco_integration.time, "sleep", side_effect=append_after_eof):
+                self.assertEqual(next(gen)["rule"], "New alert after EOF")
+        finally:
+            gen.close()
 
 
 class TestEbpfCollectorFacade(unittest.TestCase):

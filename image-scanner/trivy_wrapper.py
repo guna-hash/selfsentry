@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 import shutil
 import subprocess
 from dataclasses import dataclass, field
@@ -140,6 +141,7 @@ def _run_trivy_json(image: str, timeout_seconds: int = 300) -> dict:
         "--scanners",
         "vuln,secret,misconfig",
         "--quiet",
+        "--",
         image,
     ]
 
@@ -166,6 +168,46 @@ def _run_trivy_json(image: str, timeout_seconds: int = 300) -> dict:
         return json.loads(proc.stdout)
     except json.JSONDecodeError as exc:
         raise TrivyScanError(f"failed to parse trivy JSON output: {exc}") from exc
+
+
+def _validate_report(image: str, raw) -> None:
+    """Require a supported image report before treating absent findings as empty."""
+    if (
+        not isinstance(raw, dict)
+        or type(raw.get("SchemaVersion")) is not int
+        or raw["SchemaVersion"] != 2
+        or raw.get("ArtifactType") != "container_image"
+        or not isinstance(raw.get("ArtifactName"), str)
+        or not raw["ArtifactName"].strip()
+    ):
+        raise TrivyScanError("trivy did not return a supported container image report")
+    metadata = raw.get("Metadata")
+    image_id = metadata.get("ImageID") if isinstance(metadata, dict) else None
+    if not isinstance(image_id, str) or not re.fullmatch(r"sha256:[0-9a-f]{64}", image_id):
+        raise TrivyScanError("trivy report lacks the scanned image identity")
+    if re.fullmatch(r"sha256:[0-9a-f]{64}", image) and image_id != image:
+        raise TrivyScanError("trivy report image identity does not match the requested image")
+    targets = raw.get("Results")
+    if targets is None:
+        return  # Trivy omits empty results, e.g. images with no recognized packages.
+    if not isinstance(targets, list):
+        raise TrivyScanError("trivy Results must be an array")
+    for target in targets:
+        if not isinstance(target, dict):
+            raise TrivyScanError("trivy result target must be an object")
+        for name in ("Vulnerabilities", "Secrets", "Misconfigurations"):
+            findings = target.get(name)
+            if findings is None:
+                continue
+            if not isinstance(findings, list):
+                raise TrivyScanError(f"trivy {name} must be an array")
+            for finding in findings:
+                if (
+                    not isinstance(finding, dict)
+                    or not isinstance(finding.get("Severity"), str)
+                    or finding["Severity"] not in Severity
+                ):
+                    raise TrivyScanError(f"trivy {name} contains an invalid finding severity")
 
 
 def _parse_scan_result(image: str, raw: dict) -> ScanResult:
@@ -219,10 +261,11 @@ def scan_image(image: str, timeout_seconds: int = 300) -> ScanResult:
         if result.has_blocking_findings:
             ...
     """
-    if not image or not image.strip():
+    if not isinstance(image, str) or not image.strip():
         raise ValueError("image must be a non-empty string, e.g. 'nginx:1.25'")
 
     raw = _run_trivy_json(image, timeout_seconds=timeout_seconds)
+    _validate_report(image, raw)
     return _parse_scan_result(image, raw)
 
 
@@ -230,10 +273,12 @@ if __name__ == "__main__":
     import argparse
     import sys
 
-    parser = argparse.ArgumentParser(description="ContainerGuard AI - Image Scanner (Trivy wrapper)")
+    parser = argparse.ArgumentParser(description="SelfSentry - Image Scanner (Trivy wrapper)")
     parser.add_argument("image", help="Container image to scan, e.g. nginx:1.25")
     parser.add_argument("--timeout", type=int, default=300, help="Scan timeout in seconds")
-    parser.add_argument("--json", action="store_true", help="Print full raw JSON instead of summary")
+    parser.add_argument(
+        "--json", action="store_true", help="Print full raw JSON instead of summary"
+    )
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")

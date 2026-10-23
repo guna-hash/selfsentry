@@ -5,6 +5,7 @@ import os
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "monitor-service"))
@@ -140,10 +141,126 @@ class TestDeduplicationAndCheckpoint(TailerTestCase):
         self.assertEqual(batch.lines, [])
         self.assertEqual(batch.skipped_duplicates, 1)
 
-    def test_corrupt_checkpoint_is_ignored(self):
+    def test_corrupt_checkpoint_blocks_ingestion_and_preserves_evidence(self):
         self.append(b"old\n")
         self.checkpoint.write_text("{not json")
+        tailer = self.tailer()
+        with self.assertRaises(falco_ingest.IngestUnavailable):
+            tailer.read_batch()
+        self.assertEqual(self.checkpoint.read_text(), "{not json")
+        self.checkpoint.write_text(json.dumps({
+            "inode": self.log.stat().st_ino, "offset": 0, "recent_keys": [],
+        }))
+        self.assertEqual(tailer.read_batch().lines, ["old"])
+
+    def test_invalid_checkpoint_fields_do_not_turn_into_a_fresh_tail(self):
+        for field, value in (("inode", -1), ("offset", -1), ("offset", True),
+                             ("offset", "1"), ("recent_keys", "abc"),
+                             ("recent_keys", ["invalid"]), ("discarding_line", "false")):
+            with self.subTest(field=field, value=value):
+                data = {"inode": self.log.stat().st_ino, "offset": 0, "recent_keys": []}
+                data[field] = value
+                self.checkpoint.write_text(json.dumps(data))
+                with self.assertRaises(falco_ingest.IngestUnavailable):
+                    self.tailer().read_batch()
+
+    def test_removing_a_corrupt_checkpoint_does_not_silently_reset_position(self):
+        self.checkpoint.write_text("invalid")
+        tailer = self.tailer()
+        self.checkpoint.unlink()
+        with self.assertRaises(falco_ingest.IngestUnavailable):
+            tailer.read_batch()
+
+    def test_failed_checkpoint_write_keeps_position_and_dedup_state_replayable(self):
+        tailer = self.tailer(start_from="beginning")
+        self.append(b"first\n")
+        tailer.commit(tailer.read_batch())
+        previous = self.checkpoint.read_bytes()
+        offset = tailer.offset
+        self.append(b"second\n")
+        batch = tailer.read_batch()
+        with patch.object(falco_ingest.os, "replace", side_effect=OSError("disk error")):
+            with self.assertRaises(falco_ingest.IngestUnavailable):
+                tailer.commit(batch)
+        self.assertEqual(tailer.offset, offset)
+        self.assertEqual(self.checkpoint.read_bytes(), previous)
+        self.assertEqual(tailer.read_batch().lines, ["second"])
+        self.assertFalse(list(self.dir.glob(".checkpoint.json.*")))
+        tailer.commit(tailer.read_batch())
         self.assertEqual(self.tailer().read_batch().lines, [])
+
+    def test_sync_failure_is_not_acknowledged(self):
+        tailer = self.tailer(start_from="beginning")
+        self.append(b"first\n")
+        with patch.object(falco_ingest.os, "fsync", side_effect=OSError("sync error")):
+            with self.assertRaises(falco_ingest.IngestUnavailable):
+                tailer.commit(tailer.read_batch())
+        self.assertEqual(tailer.offset, 0)
+        self.assertEqual(tailer.read_batch().lines, ["first"])
+
+    def test_checkpoint_is_private(self):
+        tailer = self.tailer(start_from="beginning")
+        self.append(b"first\n")
+        tailer.commit(tailer.read_batch())
+        self.assertEqual(self.checkpoint.stat().st_mode & 0o777, 0o600)
+
+    def test_directory_sync_failure_keeps_current_batch_replayable(self):
+        tailer = self.tailer(start_from="beginning")
+        self.append(b"first\n")
+        with patch.object(falco_ingest.os, "fsync", side_effect=[None, OSError("sync error")]):
+            with self.assertRaises(falco_ingest.IngestUnavailable):
+                tailer.commit(tailer.read_batch())
+        self.assertEqual(tailer.offset, 0)
+        self.assertEqual(tailer.read_batch().lines, ["first"])
+        # Replacement already occurred; both valid replay positions acknowledge only handled data.
+        self.assertEqual(self.tailer().read_batch().lines, [])
+
+    def test_broken_checkpoint_symlink_is_not_treated_as_first_start(self):
+        self.checkpoint.symlink_to(self.dir / "missing-checkpoint")
+        with self.assertRaises(falco_ingest.IngestUnavailable):
+            self.tailer().read_batch()
+        self.assertTrue(self.checkpoint.is_symlink())
+
+
+class TestReadBoundaries(TailerTestCase):
+    def test_rotation_at_open_uses_the_identity_of_the_opened_file(self):
+        self.append(b"old\n")
+        tailer = self.tailer()
+        fresh = self.dir / "fresh.json"
+        fresh.write_bytes(b"first\nsecond\n")
+        real_open = open
+
+        def rotate_and_open(*args, **kwargs):
+            os.replace(fresh, self.log)
+            return real_open(*args, **kwargs)
+
+        with patch.object(falco_ingest, "open", rotate_and_open, create=True):
+            self.assertEqual(tailer.read_batch().lines, ["first", "second"])
+
+    def test_oversized_line_is_discarded_through_newline_even_after_restart(self):
+        self.append(b"ABCDEFGHIJKLM\nok\n")
+        with patch.object(falco_ingest, "MAX_READ_BYTES", 8):
+            tailer = self.tailer(start_from="beginning")
+            batch = tailer.read_batch()
+            self.assertTrue(batch.discarding_line)
+            tailer.commit(batch)
+            tailer = self.tailer()
+            seen = []
+            for _ in range(4):
+                batch = tailer.read_batch()
+                seen.extend(batch.lines)
+                tailer.commit(batch)
+        self.assertEqual(seen, ["ok"])
+
+    def test_rotation_resets_oversized_discard_state(self):
+        with patch.object(falco_ingest, "MAX_READ_BYTES", 8):
+            tailer = self.tailer(start_from="beginning")
+            self.append(b"ABCDEFGHIJK")
+            tailer.commit(tailer.read_batch())
+            fresh = self.dir / "fresh.json"
+            fresh.write_bytes(b"fresh\n")
+            os.replace(fresh, self.log)
+            self.assertEqual(tailer.read_batch().lines, ["fresh"])
 
 
 if __name__ == "__main__":

@@ -8,7 +8,8 @@ Isolation pauses the container and disconnects it from every network it was atta
 to. The container is never stopped or removed, so its filesystem and process state stay
 inspectable. Before touching anything, the attached networks are saved to an isolation
 record on disk (state/isolations/<full container id>.json, or under $SELFSENTRY_STATE_DIR),
-because resume_container() needs them to put the container back exactly as it was.
+because resume_container() needs them to restore network membership and aliases.
+Static IPs and other Docker endpoint options are not preserved.
 """
 
 from __future__ import annotations
@@ -17,15 +18,19 @@ import json
 import logging
 import os
 import fcntl
+import tempfile
 from functools import wraps
 from datetime import datetime, timezone
 from pathlib import Path
 
 import docker
+import requests
 
 logger = logging.getLogger(__name__)
 
 _REPO_ROOT = Path(__file__).resolve().parents[1]
+# Docker's SDK can propagate requests transport failures without wrapping APIError.
+_DOCKER_OPERATION_ERRORS = (docker.errors.DockerException, requests.RequestException)
 
 
 class IsolationError(RuntimeError):
@@ -40,6 +45,10 @@ class ContainerNotFound(IsolationError, ResumeError):
     """Raised by both isolate and resume when the container does not exist."""
 
 
+class IsolationRecordError(IsolationError, ResumeError):
+    """Recovery state is invalid or cannot be durably saved; refuse further actions."""
+
+
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
@@ -50,31 +59,93 @@ def _isolation_dir() -> Path:
 
 
 def _record_path(full_container_id: str) -> Path:
+    if (
+        not isinstance(full_container_id, str)
+        or len(full_container_id) != 64
+        or any(c not in "0123456789abcdef" for c in full_container_id)
+    ):
+        raise IsolationRecordError("Isolation records require a full Docker hexadecimal ID")
     return _isolation_dir() / f"{full_container_id}.json"
+
+
+def _validate_record(record, full_container_id):
+    valid = (
+        isinstance(record, dict)
+        and record.get("container_id") == full_container_id
+        and record.get("state") in (
+            "isolating", "isolated", "isolation_failed", "resuming", "resume_failed", "resumed"
+        )
+        and isinstance(record.get("networks"), dict)
+    )
+    if valid:
+        for name, config in record["networks"].items():
+            if not isinstance(name, str) or not name.strip() or not isinstance(config, dict):
+                valid = False
+                break
+            aliases, network_id = config.get("aliases"), config.get("id")
+            if (
+                (aliases is not None and (
+                    not isinstance(aliases, list) or any(not isinstance(a, str) for a in aliases)
+                ))
+                or (network_id is not None and (
+                    not isinstance(network_id, str) or not network_id
+                ))
+            ):
+                valid = False
+                break
+    if not valid:
+        raise IsolationRecordError("Invalid isolation recovery record; operator repair required")
 
 
 def _write_record(full_container_id: str, record: dict) -> None:
     path = _record_path(full_container_id)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    tmp_path = path.with_suffix(".tmp")
-    tmp_path.write_text(json.dumps(record, indent=2))
-    tmp_path.replace(path)
+    _validate_record(record, full_container_id)
+    tmp_path = None
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        descriptor, filename = tempfile.mkstemp(prefix=f".{full_container_id}.", dir=path.parent)
+        tmp_path = Path(filename)
+        with os.fdopen(descriptor, "w") as handle:
+            json.dump(record, handle, indent=2)
+            handle.flush()
+            os.fsync(handle.fileno())
+        tmp_path.replace(path)
+        directory = os.open(path.parent, os.O_RDONLY | os.O_DIRECTORY)
+        try:
+            os.fsync(directory)
+        finally:
+            os.close(directory)
+    except OSError as exc:
+        raise IsolationRecordError(
+            "Cannot durably save isolation recovery state; inspect the container before retrying"
+        ) from exc
+    finally:
+        if tmp_path is not None:
+            try:
+                tmp_path.unlink(missing_ok=True)
+            except OSError:
+                logger.warning("Could not remove unused isolation temporary file")
 
 
 def get_isolation_record(full_container_id: str) -> dict | None:
-    """The saved isolation record, or None if missing or unreadable."""
+    """Return validated recovery state; only a genuinely missing file returns None."""
     path = _record_path(full_container_id)
-    if not path.exists():
-        return None
     try:
-        return json.loads(path.read_text())
-    except (OSError, ValueError) as exc:
-        logger.warning("Isolation record %s is unreadable: %s", path, exc)
+        record = json.loads(path.read_text())
+    except FileNotFoundError as exc:
+        if path.is_symlink():
+            raise IsolationRecordError(
+                "Unreadable isolation recovery record; repair required"
+            ) from exc
         return None
+    except (OSError, ValueError) as exc:
+        raise IsolationRecordError("Unreadable isolation recovery record; repair required") from exc
+    _validate_record(record, full_container_id)
+    return record
 
 
 def is_isolated(record: dict | None) -> bool:
-    return bool(record) and record.get("state") == "isolated"
+    return record is not None and record.get("state") == "isolated"
 
 
 def _attached_networks(container) -> dict:
@@ -118,9 +189,9 @@ def _locked_action(function):
         try:
             container = _get_container(client, container_id)
             full_id = container.id
-            folder = _isolation_dir()
-            folder.mkdir(parents=True, exist_ok=True)
-            with open(folder / f"{full_id}.lock", "a") as lock:
+            lock_path = _record_path(full_id).with_suffix(".lock")
+            lock_path.parent.mkdir(parents=True, exist_ok=True)
+            with open(lock_path, "a") as lock:
                 fcntl.flock(lock, fcntl.LOCK_EX)
                 return function(full_id, *args, _client=client, _container=container, **kwargs)
         finally:
@@ -173,7 +244,7 @@ def isolate_container(container_id: str, reason: str, *, _client=None, _containe
     for name in networks:
         try:
             client.networks.get(networks[name].get("id") or name).disconnect(container, force=True)
-        except docker.errors.APIError as exc:
+        except _DOCKER_OPERATION_ERRORS as exc:
             failures[name] = str(exc)
     try:
         if container.status != "paused":
@@ -181,7 +252,7 @@ def isolate_container(container_id: str, reason: str, *, _client=None, _containe
         container.reload()
         if container.status != "paused" or _attached_networks(container):
             failures["verification"] = "container is not paused with all networks disconnected"
-    except docker.errors.APIError as exc:
+    except _DOCKER_OPERATION_ERRORS as exc:
         failures["pause"] = str(exc)
     if failures:
         record.update(state="isolation_failed", error=failures)
@@ -223,45 +294,55 @@ def resume_container(container_id: str, resumed_by: str, *, _client=None, _conta
         raise ResumeError("Container is stopped; resume does not start stopped workloads")
     record.update(state="resuming", resumed_by=resumed_by, resume_attempt_at=_now())
     _write_record(container.id, record)
-    if container.status == "paused":
-        try:
-            container.unpause()
-        except docker.errors.APIError as exc:
-            raise ResumeError(f"Failed to unpause container {container_id}: {exc}") from exc
-
-    container.reload()
-    already_attached = set(_attached_networks(container))
     failed = {}
-    for name, config in record["networks"].items():
-        if name in already_attached:
-            continue
-        try:
-            client.networks.get(config.get("id") or name).connect(
-                container, aliases=config.get("aliases") or None
-            )
-        except docker.errors.APIError as exc:
-            failed[name] = str(exc)
-    container.reload()
-    live_networks = _attached_networks(container)
-    for name, config in record["networks"].items():
-        if config.get("id") and live_networks.get(name, {}).get("id") != config["id"]:
-            failed[name] = "network identity differs from saved attachment"
-    if container.status != "running" or not set(record["networks"]) <= set(
-        _attached_networks(container)
-    ):
-        failed["verification"] = "container is not running with all original networks attached"
+    try:
+        if container.status == "paused":
+            container.unpause()
+        container.reload()
+        already_attached = set(_attached_networks(container))
+        for name, config in record["networks"].items():
+            if name in already_attached:
+                continue
+            try:
+                client.networks.get(config.get("id") or name).connect(
+                    container, aliases=config.get("aliases") or None
+                )
+            except _DOCKER_OPERATION_ERRORS as exc:
+                failed[name] = str(exc)
+        container.reload()
+        live_networks = _attached_networks(container)
+        for name, config in record["networks"].items():
+            if config.get("id") and live_networks.get(name, {}).get("id") != config["id"]:
+                failed[name] = "network identity differs from saved attachment"
+        if container.status != "running" or not set(record["networks"]) <= set(live_networks):
+            failed["verification"] = "container is not running with all original networks attached"
+    except _DOCKER_OPERATION_ERRORS as exc:
+        failed["docker"] = str(exc)
     if failed:
-        # Keep a failed recovery contained; a retry restores only missing attachments.
+        # A failed request may have reached the daemon. Inspect again, and attempt pause
+        # even with unknown state rather than trusting the pre-request cached status.
+        needs_pause = True
         try:
-            if container.status == "running":
+            container.reload()
+            needs_pause = container.status == "running"
+        except _DOCKER_OPERATION_ERRORS as exc:
+            failed["repause_inspect"] = str(exc)
+        if needs_pause:
+            try:
                 container.pause()
-        except docker.errors.APIError as exc:
-            failed["repause"] = str(exc)
+            except _DOCKER_OPERATION_ERRORS as exc:
+                failed["repause"] = str(exc)
+        try:
+            container.reload()
+            if container.status != "paused":
+                failed["repause_verification"] = "container is not verified paused"
+        except _DOCKER_OPERATION_ERRORS as exc:
+            failed["repause_verification"] = str(exc)
         record.update(state="resume_failed", error=failed)
         _write_record(container.id, record)
         raise ResumeError(
-            f"Container {container_id} recovery incomplete; these networks could not be "
-            f"reconnected (retry resume): {failed}"
+            f"Container {container_id} recovery incomplete; inspect host state before retrying: "
+            f"{failed}"
         )
 
     record.update(state="resumed", resumed_by=resumed_by, resumed_at=_now(), error=None)

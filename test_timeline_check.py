@@ -1,6 +1,9 @@
+"""Optional live AI diagnostic; run explicitly, never during test discovery."""
+
 import sys
-sys.path.append("ai-analysis")
-from attack_timeline_builder import build_timeline
+from pathlib import Path
+sys.path.append(str(Path(__file__).resolve().parent / "ai-analysis"))
+from attack_timeline_builder import build_timeline  # noqa: E402
 
 fixture_incident = {
     "incident_id": "inc_001",
@@ -26,5 +29,7 @@ fixture_events = [
     }
 ]
 
-result = build_timeline(fixture_incident, fixture_events)
-print(result)
+
+if __name__ == "__main__":
+    result = build_timeline(fixture_incident, fixture_events)
+    print(result)

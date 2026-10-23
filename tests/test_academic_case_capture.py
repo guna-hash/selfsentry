@@ -48,6 +48,7 @@ def test_capture_requires_ready_default_model_and_healthy_monitor(state, algorit
             {
                 "running": True,
                 "healthy": healthy,
+                "configuration": {"auto_isolation_enabled": False},
                 "baselines": {"abc": {"state": state, "model_algorithm": algorithm}},
             },
             "abc",

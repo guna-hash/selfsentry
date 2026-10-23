@@ -8,6 +8,7 @@ import tempfile
 import threading
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "monitor-service"))
 
@@ -195,6 +196,42 @@ def service_config():
 
 
 class TestIngestAvailability(ServiceTestCase):
+    def test_checkpoint_failure_is_visible_while_docker_work_continues(self):
+        from falco_ingest import IngestUnavailable
+
+        self.write_lines(falco_line(second=10))
+        self.docker_queue.put({"Action": "start", "id": "a" * 64})
+        with patch.object(
+            self.service._tailer, "_write_checkpoint", side_effect=IngestUnavailable("disk full")
+        ):
+            self.assertEqual(self.service.run_once(), 1)
+            self.assertEqual(self.service.run_once(), 1)
+        self.assertEqual(self.service._tailer.offset, 0)
+        self.assertEqual(len(self.watcher.events), 1)
+        self.assertEqual(
+            self.status.snapshot()["components"]["falco_ingest"]["state"], "unavailable"
+        )
+        self.assertEqual(self.audit.types(), ["FALCO_INGEST_UNAVAILABLE"])
+        self.service.run_once()
+        self.assertEqual(self.audit.types(), ["FALCO_INGEST_UNAVAILABLE", "FALCO_INGEST_RECOVERED"])
+        self.assertEqual(self.status.snapshot()["components"]["falco_ingest"]["state"], "ok")
+
+    def test_corrupt_checkpoint_remains_visible_and_repaired_position_recovers(self):
+        checkpoint = self.dir / "checkpoint.json"
+        checkpoint.write_text("invalid")
+        service = self.make_service()
+        self.write_lines(falco_line(second=12))
+        service.run_once()
+        self.assertEqual(self.sink.alerts, [])
+        self.assertEqual(self.watcher.ticks, 1)
+        self.assertEqual(self.audit.types(), ["FALCO_INGEST_UNAVAILABLE"])
+        checkpoint.write_text(json.dumps({
+            "inode": self.log.stat().st_ino, "offset": 0, "recent_keys": [],
+        }))
+        service.run_once()
+        self.assertEqual(len(self.sink.alerts), 1)
+        self.assertEqual(self.audit.types(), ["FALCO_INGEST_UNAVAILABLE", "FALCO_INGEST_RECOVERED"])
+
     def test_outage_and_recovery_are_audited_once_each(self):
         self.log.unlink()
         self.assertEqual(self.service.run_once(), 0)
@@ -213,6 +250,42 @@ class TestIngestAvailability(ServiceTestCase):
 
 
 class TestDockerHandling(ServiceTestCase):
+    def test_full_control_queue_retains_event_without_reordering_or_blocking(self):
+        accepted = []
+        full = [True]
+
+        def offer(event):
+            if full[0]:
+                return False
+            accepted.append(event)
+            return True
+
+        self.watcher.handle_docker_event = offer
+        self.docker_queue.put({"sequence": 1})
+        self.docker_queue.put({"sequence": 2})
+        self.service.run_once()
+        self.assertEqual(accepted, [])
+        self.assertEqual(self.docker_queue.qsize(), 1)
+        self.assertEqual(self.watcher.ticks, 1)
+        full[0] = False
+        self.service.run_once()
+        self.assertEqual(accepted, [{"sequence": 1}, {"sequence": 2}])
+        self.assertIsNone(self.service._pending_docker_event)
+
+    def test_docker_burst_leaves_fifo_remainder_for_later_iterations(self):
+        limit = self.service._config.max_batch_lines
+        for index in range(limit + 3):
+            self.docker_queue.put({"sequence": index})
+        self.service.run_once()
+        self.assertEqual(self.watcher.events, [{"sequence": i} for i in range(limit)])
+        self.assertEqual(self.docker_queue.qsize(), 3)
+        self.assertEqual(self.watcher.ticks, 1)
+        self.write_lines(falco_line(second=14))
+        self.service.run_once()
+        self.assertEqual(len(self.sink.alerts), 1)
+        self.assertEqual(len(self.watcher.events), limit + 3)
+        self.assertTrue(self.docker_queue.empty())
+
     def test_docker_events_are_forwarded_to_the_watcher(self):
         self.docker_queue.put({"Action": "start"})
         self.docker_queue.put({"Action": "die"})
@@ -264,3 +337,36 @@ class TestLifecycleAndStatus(ServiceTestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestCorruptAuditSpool(ServiceTestCase):
+    def test_ingestion_and_status_continue_with_unknown_audit_depth(self):
+        from audit_client import DurableAuditClient
+        spool = self.dir / 'audit_spool.jsonl'
+        original = b'private-malformed\n'
+        spool.write_bytes(original)
+        self.service._audit = DurableAuditClient('http://unused', spool)
+        with patch('audit_client.requests.post', side_effect=AssertionError('No corrupt HTTP')):
+            for second in (0, 1):
+                self.write_lines(falco_line(second=second))
+                self.assertEqual(self.service.run_once(), 1)
+        self.assertEqual(len(self.sink.alerts), 2)
+        snapshot = json.loads((self.dir / 'status.json').read_text())
+        self.assertIsNone(snapshot['audit_spool_size'])
+        self.assertEqual(snapshot['components']['audit_spool']['state'], 'degraded')
+        self.assertEqual(snapshot['counters']['audit_flush_errors'], 2)
+        self.assertNotIn('private-', json.dumps(snapshot))
+        self.assertEqual(spool.read_bytes(), original)
+        self.assertFalse(self.service._audit._rejected_path.exists())
+        # Simulate reviewed repair only on this disposable test file, with a backup.
+        backup = spool.with_suffix('.operator-backup')
+        backup.write_bytes(original)
+        spool.write_text('{"event_type":"REVIEWED","event_key":"retained-valid"}\n')
+        response = type('Reply', (), {
+            'status_code': 201, 'json': lambda self: {'id': 1, 'duplicate': False}})()
+        with patch('audit_client.requests.post', return_value=response):
+            self.service.run_once()
+        snapshot = json.loads((self.dir / 'status.json').read_text())
+        self.assertEqual(snapshot['audit_spool_size'], 0)
+        self.assertEqual(snapshot['components']['audit_spool']['state'], 'ok')
+        self.assertEqual(backup.read_bytes(), original)

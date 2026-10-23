@@ -1,5 +1,11 @@
 ## Manual validation — RESULT (real run, 2026-08-28)
 
+> Historical phase record. Retained commands, test counts and implementation claims
+> describe that development stage. For current installation and safety behavior use
+> [README](../README.md), [operations](monitor_operations.md) and the
+> [repository audit](repository-audit/report.md). Do not rerun old direct-deployer or
+> database workarounds as the current human-approved workflow.
+
 Performed on the real VM against `test-container` (nginx:1.25), using
 `falco-rules/baseline-capture-rules.yaml` + `behavioral-engine/
 collect_baseline.py` + `behavioral-engine/validate_live.py`.

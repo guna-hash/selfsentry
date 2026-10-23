@@ -2,7 +2,7 @@ import { finiteNumber } from './format.js'
 import { utcEpoch } from './overviewModel.js'
 
 export const actionableRule = (rule) => ['pending_review', 'approved'].includes(rule?.status)
-export const ruleStatus = (status) => ({pending_review:'Pending review',approved:'Approved · deployment pending',deployed:'Deployed',rejected:'Rejected',rejected_duplicate:'Rejected – Duplicate',retired:'Retired (disabled)',disabled:'Disabled'})[status] || status || 'Not recorded'
+export const ruleStatus = (status) => ({pending_review:'Pending review',approved:'Approved · deployment pending',deployed:'Deployed',rejected:'Rejected',rejected_duplicate:'Rejected – Duplicate',retired:'Retired · native state unverified',disabled:'Disabled'})[status] || status || 'Not recorded'
 export function backtestSummary(rule) {
   const gate = latestEvent(rule, ['RULE_CANDIDATE_CREATED','RULE_BACKTEST_REVALIDATED','RULE_BACKTEST_BLOCKED_DEPLOYMENT'])
   const blockedReport = gate?.event_type === 'RULE_BACKTEST_BLOCKED_DEPLOYMENT' ? gate.detail?.reason : null
@@ -31,6 +31,7 @@ function latestEvent(rule, types) {
     .sort((a,b)=>(a.time ?? -Infinity)-(b.time ?? -Infinity) || a.index-b.index).at(-1)?.event
 }
 export function deploymentSummary(rule) {
+  if (rule.status === 'retired') return {label:'Native state unverified',tone:'medium',detail:'Database retirement does not unload the Falco rule. Inspect the live rule set before claiming it is disabled.'}
   const last = latestEvent(rule, ['RULE_DEPLOYED','RULE_DEPLOYMENT_FAILED'])
   if (rule.status === 'deployed') return {label:'Deployed',tone:'low',detail:last?.event_type==='RULE_DEPLOYED'?'Backend recorded deployment after Falco reload. Native re-fire is separate evidence.':'Backend status is deployed; detailed reload history is not recorded.'}
   if (last?.event_type === 'RULE_DEPLOYMENT_FAILED') return {label:'Reload / deployment failed',tone:'critical',detail:typeof last.detail?.reason==='string'?last.detail.reason:'Failure reason not recorded.'}

@@ -3,14 +3,14 @@ Tests for correlation-engine/event_router.py
 
 Pure unit tests against route_incident()'s decision logic - no live
 backend, Docker, or Falco required. dispatch_incident()'s side-effecting
-paths (logging, the auto_isolate stub) are tested separately with a
-smaller set of smoke tests, since their job is "did the right branch
-run", not "is the math right".
+paths only log diagnostic suggestions. Actual response actions are covered
+by tests/test_incident_pipeline.py and tests/test_auto_isolate.py.
 """
 
 import sys
+import os
 import unittest
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "correlation-engine"))
@@ -146,57 +146,27 @@ class TestRouteIncidentsBatch(unittest.TestCase):
 
 
 class TestDispatchIncident(unittest.TestCase):
-    """
-    Smoke tests for dispatch_incident() - confirms the right branches run
-    and auto_isolate's NotImplementedError is caught safely rather than
-    crashing the pipeline, since response-engine/auto_isolate.py is still
-    a stub as of this writing.
-    """
+    """Diagnostic routing must never bypass the durable response controller."""
 
     def test_log_only_incident_dispatches_cleanly(self):
         incident = {"container_id": "c1", "risk_score": 20, "confidence": "high"}
-        decision = event_router.route_incident(incident)
-        results = event_router.dispatch_incident(incident, decision)
-        self.assertEqual(results[event_router.ACTION_LOG], "done")
+        result = event_router.dispatch_incident(incident, event_router.route_incident(incident))
+        self.assertEqual(result[event_router.ACTION_LOG], "done")
 
-    def test_auto_isolate_success_reports_isolated(self):
-        incident = {"container_id": "c1", "risk_score": 95, "confidence": "high"}
-        decision = event_router.route_incident(incident)
-        fake_module = MagicMock()
-        with patch.object(
-            event_router, "_load_auto_isolate_module", return_value=fake_module
-        ):
-            results = event_router.dispatch_incident(incident, decision)
-        self.assertEqual(results[event_router.ACTION_AUTO_ISOLATE], "isolated")
-        fake_module.isolate_container.assert_called_once()
-        container_id, reason = fake_module.isolate_container.call_args.args
-        self.assertEqual(container_id, "c1")
-        self.assertIn("effective_score=", reason)
-
-    def test_auto_isolate_failure_is_reported_not_raised(self):
-        incident = {"container_id": "c1", "risk_score": 95, "confidence": "high"}
-        decision = event_router.route_incident(incident)
-        fake_module = MagicMock()
-        fake_module.isolate_container.side_effect = RuntimeError("docker down")
-        with patch.object(
-            event_router, "_load_auto_isolate_module", return_value=fake_module
-        ):
-            results = event_router.dispatch_incident(incident, decision)
-        self.assertEqual(
-            results[event_router.ACTION_AUTO_ISOLATE],
-            "isolation_failed: docker down",
-        )
-
-    def test_auto_isolate_missing_module_falls_back_to_stub(self):
-        incident = {"container_id": "c1", "risk_score": 95, "confidence": "high"}
-        decision = event_router.route_incident(incident)
-        with patch.object(
-            event_router, "_load_auto_isolate_module", return_value=None
-        ):
-            results = event_router.dispatch_incident(incident, decision)
-        self.assertEqual(
-            results[event_router.ACTION_AUTO_ISOLATE], "not_implemented_stub"
-        )
+    def test_high_score_does_not_touch_docker_even_with_automation_enabled(self):
+        for enabled in ("false", "true"):
+            with self.subTest(automatic_isolation=enabled):
+                incident = {"container_id": "a" * 12, "risk_score": 100, "confidence": "high"}
+                with patch.dict(os.environ, {"AUTO_ISOLATION_ENABLED": enabled}), patch(
+                    "docker.from_env"
+                ) as factory:
+                    result = event_router.dispatch_incident(
+                        incident, event_router.route_incident(incident)
+                    )
+                factory.assert_not_called()
+                self.assertIn("not_attempted", result[event_router.ACTION_AUTO_ISOLATE])
+                self.assertIn("no paging channel", result[event_router.ACTION_ANALYST_ALERT])
+                self.assertIn("monitor workflow", result[event_router.ACTION_AI_ANALYSIS_NOTED])
 
 
 if __name__ == "__main__":

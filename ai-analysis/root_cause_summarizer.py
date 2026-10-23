@@ -36,16 +36,19 @@ Incident: {incident}
         raise RuntimeError("AI provider is not configured")
     from openai import OpenAI
 
-    client = OpenAI(
+    with OpenAI(
         api_key=key,
         base_url=os.environ.get("AI_BASE_URL", "https://api.groq.com/openai/v1"),
         timeout=15,
         max_retries=0,
-    )
-    response = client.chat.completions.create(
-        model=os.environ.get("AI_MODEL", "openai/gpt-oss-20b"),
-        messages=[{"role": "user", "content": prompt}],
-        response_format={"type": "json_object"},
-    )
+    ) as client:
+        response = client.chat.completions.create(
+            model=os.environ.get("AI_MODEL", "openai/gpt-oss-20b"),
+            messages=[{"role": "user", "content": prompt}],
+            response_format={"type": "json_object"},
+        )
 
-    return json.loads(response.choices[0].message.content)
+    content = response.choices[0].message.content
+    if not content:
+        raise ValueError("AI provider returned no JSON content")
+    return json.loads(content)

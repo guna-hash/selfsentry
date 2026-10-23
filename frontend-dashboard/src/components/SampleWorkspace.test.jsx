@@ -20,8 +20,14 @@ it.each([
 ])('renders %s through the real shell and data hooks without live network traffic',async(url,heading)=>{
   history.replaceState({},'',url)
   await act(async()=>root.render(<App/>))
-  for(let n=0;n<30 && !host.querySelector('.page-header h2');n++)await act(async()=>new Promise(resolve=>setTimeout(resolve,10)))
-  expect(host.querySelector('.page-header h2')?.textContent.toLowerCase()).toContain(heading.toLowerCase())
+  await vi.waitFor(async () => {
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 10))
+    })
+    const title = host.querySelector('.page-header h2')
+    expect(title, `Missing page heading for ${url}`).not.toBeNull()
+    expect(title.textContent.toLowerCase()).toContain(heading.toLowerCase())
+  }, {timeout: 3000, interval: 20})
   expect(host.querySelector('[aria-label="Sample data notice"]')).not.toBeNull()
   expect(host.textContent).toContain('no API connection');expect(host.textContent).not.toContain('API connected')
   expect(fetch).not.toHaveBeenCalled()

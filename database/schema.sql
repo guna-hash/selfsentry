@@ -1,9 +1,9 @@
 -- schema.sql
 -- ------------
--- PostgreSQL schema draft for ContainerGuard AI.
--- STATUS: DRAFT — not yet executed against a real database (Phase 8).
--- Refine column types/constraints once backend-api/models/db_models.py
--- (SQLAlchemy) is actually implemented in Phase 8.
+-- Historical PostgreSQL schema draft; NOT the current installation/migration path.
+-- Current table declarations: backend-api/models/db_models.py.
+-- This draft has an incident/container foreign key absent from the ORM.
+-- Do not apply it to an existing database; see docs/interfaces.md and the audit.
 
 -- Phase 1/2 support
 CREATE TABLE IF NOT EXISTS containers (
@@ -58,7 +58,7 @@ CREATE TABLE IF NOT EXISTS generated_rules (
 
 CREATE TABLE IF NOT EXISTS rule_performance (
     id              SERIAL PRIMARY KEY,
-    rule_id         INTEGER REFERENCES generated_rules(id),
+    rule_id         INTEGER UNIQUE REFERENCES generated_rules(id),
     true_positives  INTEGER DEFAULT 0,
     false_positives INTEGER DEFAULT 0,
     last_updated    TIMESTAMP DEFAULT NOW()

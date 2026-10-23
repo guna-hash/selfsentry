@@ -1,6 +1,8 @@
 import os
 import sys
 import hashlib
+import fcntl
+import logging
 from contextlib import contextmanager
 from sqlalchemy import text
 from pathlib import Path
@@ -10,6 +12,7 @@ import yaml
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import SQLAlchemyError
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "rule-synthesis-engine"))
 
@@ -25,9 +28,69 @@ from submit_candidate import _load_benign_events  # noqa: E402
 from fastapi.encoders import jsonable_encoder  # noqa: E402
 
 router = APIRouter(prefix="/rules", tags=["rules"])
+logger = logging.getLogger(__name__)
 
 # A confirmed incident may only have one rule in any of these states at a time.
 ACTIVE_STATUSES = ("pending_review", "approved", "deployed")
+
+
+@contextmanager
+def _review_session(db, rule_id):
+    """Serialize a rule's whole review, including commits and native reload.
+
+    Transaction locks would end at the approval commit, before deployment. Pin a
+    PostgreSQL connection and its session lock until all response work finishes.
+    SQLite test/local callers use a nonblocking host lock instead.
+    """
+    if not 1 <= rule_id <= 2**31 - 1:
+        raise HTTPException(404, "Rule not found")
+    if db.get_bind().dialect.name == "postgresql":
+        params = {"namespace": 1936026728, "rule_id": rule_id}
+        with db.get_bind().connect() as connection:
+            try:
+                acquired = connection.execute(
+                    text("SELECT pg_try_advisory_lock(:namespace, :rule_id)"), params
+                ).scalar()
+                connection.commit()
+            except SQLAlchemyError:
+                connection.invalidate()
+                raise
+            if not acquired:
+                raise HTTPException(409, "Another review for this rule is in progress")
+            try:
+                with Session(bind=connection) as review_db:
+                    yield review_db
+            finally:
+                try:
+                    connection.execute(
+                        text("SELECT pg_advisory_unlock(:namespace, :rule_id)"), params
+                    )
+                    connection.commit()
+                except SQLAlchemyError:
+                    # Never return a possibly locked connection to the pool.
+                    connection.invalidate()
+                    logger.exception("Failed to release rule review lock; connection discarded")
+        return
+
+    folder = Path(os.environ.get(
+        "RULE_GUARD_STATE_DIR", str(Path(__file__).resolve().parents[2] / "state/rule-guard")
+    )) / "reviews"
+    lock = None
+    try:
+        folder.mkdir(parents=True, exist_ok=True)
+        lock = (folder / f"{rule_id}.lock").open("a")
+        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError as exc:
+        if lock:
+            lock.close()
+        raise HTTPException(409, "Another review for this rule is in progress") from exc
+    except OSError as exc:
+        if lock:
+            lock.close()
+        raise HTTPException(503, "Rule review lock unavailable") from exc
+    with lock:
+        db.expire_all()
+        yield db
 
 
 class CandidateRuleIn(BaseModel):
@@ -306,83 +369,96 @@ def approve_rule(rule_id: int, reviewed_by: str, db: Session = Depends(get_db)):
     """
     if not reviewed_by.strip() or reviewed_by.strip() == "selfsentry-auto":
         raise HTTPException(422, "An explicit human reviewer identity is required")
-    rule = _get_rule_or_404(db, rule_id)
-    if rule.status not in ("pending_review", "approved"):
-        raise HTTPException(
-            status_code=409,
-            detail=f"Rule is '{rule.status}'; expected pending_review or approved",
-        )
+    with _review_session(db, rule_id) as db:
+        rule = _get_rule_or_404(db, rule_id)
+        if rule.status not in ("pending_review", "approved"):
+            raise HTTPException(
+                status_code=409,
+                detail=f"Rule is '{rule.status}'; expected pending_review or approved",
+            )
 
-    with _inventory_guard(db) as registry:
+        with _inventory_guard(db) as registry:
+            try:
+                if not registry.receipt(str(rule.id), rule.rule_yaml):
+                    _check_duplicate(db, registry, rule.rule_yaml, exclude_id=rule.id)
+            except DuplicateRule as exc:
+                result = _reject_duplicate(db, rule, exc, rule=rule)
+                raise HTTPException(409, result)
+
         try:
-            if not registry.receipt(str(rule.id), rule.rule_yaml):
-                _check_duplicate(db, registry, rule.rule_yaml, exclude_id=rule.id)
+            verified = _verified_backtest(rule.rule_yaml)
+        except HTTPException as exc:
+            _audit_rule(db, "RULE_BACKTEST_BLOCKED_DEPLOYMENT", rule, {"reason": exc.detail})
+            db.commit()
+            raise
+        rule.backtested_fp_rate = verified["false_positive_rate"]
+        _audit_rule(db, "RULE_BACKTEST_REVALIDATED", rule, {"backtest": verified})
+        rule.status = "approved"
+        rule.reviewed_by = reviewed_by
+        rule.reviewed_at = datetime.now(timezone.utc)
+        _audit_rule(db, "RULE_APPROVED", rule, {"reviewed_by": reviewed_by})
+        db.commit()
+
+        try:
+            deploy_rule(str(rule.id), rule.rule_yaml)
         except DuplicateRule as exc:
             result = _reject_duplicate(db, rule, exc, rule=rule)
-            raise HTTPException(409, result)
+            raise HTTPException(409, result) from exc
+        except (RuleDeploymentError, OSError) as exc:
+            _audit_rule(
+                db, "RULE_DEPLOYMENT_FAILED", rule, {"reason": str(exc), "reviewed_by": reviewed_by}
+            )
+            db.commit()
+            raise HTTPException(
+                status_code=502, detail=f"Rule approved but deployment failed: {exc}"
+            ) from exc
 
-    try:
-        verified = _verified_backtest(rule.rule_yaml)
-    except HTTPException as exc:
-        _audit_rule(db, "RULE_BACKTEST_BLOCKED_DEPLOYMENT", rule, {"reason": exc.detail})
+        rule.status = "deployed"
+        _audit_rule(db, "RULE_DEPLOYED", rule, {"reviewed_by": reviewed_by})
         db.commit()
-        raise
-    rule.backtested_fp_rate = verified["false_positive_rate"]
-    _audit_rule(db, "RULE_BACKTEST_REVALIDATED", rule, {"backtest": verified})
-    rule.status = "approved"
-    rule.reviewed_by = reviewed_by
-    rule.reviewed_at = datetime.now(timezone.utc)
-    _audit_rule(db, "RULE_APPROVED", rule, {"reviewed_by": reviewed_by})
-    db.commit()
-
-    try:
-        deploy_rule(str(rule.id), rule.rule_yaml)
-    except DuplicateRule as exc:
-        result = _reject_duplicate(db, rule, exc, rule=rule)
-        raise HTTPException(409, result) from exc
-    except (RuleDeploymentError, OSError) as exc:
-        _audit_rule(
-            db, "RULE_DEPLOYMENT_FAILED", rule, {"reason": str(exc), "reviewed_by": reviewed_by}
-        )
-        db.commit()
-        raise HTTPException(
-            status_code=502, detail=f"Rule approved but deployment failed: {exc}"
-        ) from exc
-
-    rule.status = "deployed"
-    _audit_rule(db, "RULE_DEPLOYED", rule, {"reviewed_by": reviewed_by})
-    db.commit()
-    return {"status": "deployed", "rule_id": rule_id, "reviewed_by": reviewed_by}
+        return {"status": "deployed", "rule_id": rule_id, "reviewed_by": reviewed_by}
 
 
 @router.post("/{rule_id}/reject")
 def reject_rule(rule_id: int, reviewed_by: str, reason: str, db: Session = Depends(get_db)):
     if not reviewed_by.strip() or reviewed_by.strip() == "selfsentry-auto":
         raise HTTPException(422, "An explicit human reviewer identity is required")
-    rule = _get_rule_or_404(db, rule_id)
-    if rule.status not in ("pending_review", "approved"):
-        raise HTTPException(
-            status_code=409,
-            detail=f"Rule is '{rule.status}'; expected pending_review or approved",
-        )
-    if not reason.strip():
-        raise HTTPException(422, "Rejection reason is required")
-    _audit_rule(db, "RULE_REJECTED", rule, {"reviewed_by": reviewed_by, "reason": reason})
-    rule.status = "rejected"
-    rule.reviewed_by = reviewed_by
-    rule.reviewed_at = datetime.now(timezone.utc)
-    db.commit()
-    return {"status": "rejected", "rule_id": rule_id, "reason": reason}
+    with _review_session(db, rule_id) as db:
+        rule = _get_rule_or_404(db, rule_id)
+        if rule.status not in ("pending_review", "approved"):
+            raise HTTPException(
+                status_code=409,
+                detail=f"Rule is '{rule.status}'; expected pending_review or approved",
+            )
+        if not reason.strip():
+            raise HTTPException(422, "Rejection reason is required")
+        _audit_rule(db, "RULE_REJECTED", rule, {"reviewed_by": reviewed_by, "reason": reason})
+        rule.status = "rejected"
+        rule.reviewed_by = reviewed_by
+        rule.reviewed_at = datetime.now(timezone.utc)
+        db.commit()
+        return {"status": "rejected", "rule_id": rule_id, "reason": reason}
 
 
 @router.post("/{rule_id}/deprecate")
 def deprecate_rule(rule_id: int, reviewed_by: str, db: Session = Depends(get_db)):
-    rule = _get_rule_or_404(db, rule_id)
-    rule.status = "retired"
-    rule.reviewed_by = reviewed_by
-    rule.reviewed_at = datetime.now(timezone.utc)
-    db.commit()
-    return {"status": "retired", "rule_id": rule_id}
+    """Record database retirement; this does not unload the native Falco rule."""
+    if not reviewed_by.strip() or reviewed_by.strip() == "selfsentry-auto":
+        raise HTTPException(422, "An explicit human reviewer identity is required")
+    with _review_session(db, rule_id) as db:
+        rule = _get_rule_or_404(db, rule_id)
+        if rule.status == "retired":
+            return {"status": "retired", "rule_id": rule_id, "native_rule_unloaded": False}
+        rule.status = "retired"
+        rule.reviewed_by = reviewed_by
+        rule.reviewed_at = datetime.now(timezone.utc)
+        _audit_rule(db, "RULE_RETIRED", rule, {
+            "reviewed_by": reviewed_by,
+            "native_rule_unloaded": False,
+            "reason": "Database retirement only; native Falco rule removal is not implemented",
+        })
+        db.commit()
+        return {"status": "retired", "rule_id": rule_id, "native_rule_unloaded": False}
 
 
 def record_native_refires(db, incident, payload):
@@ -393,7 +469,9 @@ def record_native_refires(db, incident, payload):
     names = {a.get("rule") for a in alerts}
     if not any(str(name).startswith("Auto_Generated_") for name in names):
         return
-    for rule in db.query(GeneratedRule).filter(GeneratedRule.status == "deployed").all():
+    for rule in db.query(GeneratedRule).filter(
+        GeneratedRule.status.in_(("deployed", "retired"))
+    ).all():
         definitions = yaml.safe_load(rule.rule_yaml) or []
         for definition in definitions:
             if definition.get("rule") in names:
@@ -405,6 +483,7 @@ def record_native_refires(db, incident, payload):
                         "incident_id": incident.id,
                         "container_id": incident.container_id,
                         "native_rule_name": definition["rule"],
+                        "recorded_rule_status": rule.status,
                         "evidence": [a for a in alerts if a.get("rule") == definition["rule"]],
                     },
                 )

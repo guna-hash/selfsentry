@@ -10,12 +10,9 @@ baseline-capture-rules.yaml, converting each matching line into a
 RawEvent (feature_extractor.py's input type).
 
 Design notes:
-  - This module and falco_integration.py can safely tail the SAME log
-    file at the same time. Each one recognizes a disjoint set of rule
-    names and silently ignores lines it doesn't recognize - a real
-    security alert line is invisible to this module, and a baseline line
-    is invisible to falco_integration.py. No coordination between the two
-    is required.
+  - This reader selects baseline rules. The generic falco_integration parser
+    also accepts them; the continuous monitor's event_classifier separates
+    baseline telemetry from security alerts before correlation.
   - Falco's own top-level "time" field is used for the event timestamp,
     NOT the custom "timestamp=%evt.time.iso8601" field baked into our
     rules' output text - that field turned out to return a raw nanosecond
@@ -119,26 +116,37 @@ def parse_baseline_event(raw_line: str) -> Optional[RawEvent]:
     except json.JSONDecodeError:
         return None  # not JSON at all - not our concern, skip quietly
 
+    if not isinstance(raw, dict):
+        raise BaselineParseError("baseline event must be a JSON object")
     rule_name = raw.get("rule")
+    if not isinstance(rule_name, str):
+        raise BaselineParseError("rule must be a string")
     event_type = _RULE_TO_EVENT_TYPE.get(rule_name)
     if event_type is None:
         return None  # a real security alert or unrelated rule - not ours
 
-    if "time" not in raw:
-        raise BaselineParseError(f"baseline rule {rule_name!r} line missing 'time' field")
+    if not isinstance(raw.get("time"), str):
+        raise BaselineParseError(f"baseline rule {rule_name!r} requires a timestamp string")
 
     output_fields = raw.get("output_fields") or {}
+    if not isinstance(output_fields, dict):
+        raise BaselineParseError("output_fields must be an object")
     container_id = _extract_container_id(output_fields)
     if container_id is None:
         return None  # host-level event, not tied to a container - skip
 
-    event_dict = {
-        "container_id": container_id,
-        "timestamp": raw["time"],
-        "event_type": event_type.value,
-        **_build_event_kwargs(event_type, output_fields),
-    }
-    return RawEvent.from_dict(event_dict)
+    try:
+        event = RawEvent.from_dict({
+            "container_id": container_id,
+            "timestamp": raw["time"],
+            "event_type": event_type.value,
+            **_build_event_kwargs(event_type, output_fields),
+        })
+        if event.timestamp.tzinfo is None:
+            raise ValueError("timestamp requires a timezone")
+        return event
+    except (ValueError, TypeError, OverflowError) as exc:
+        raise BaselineParseError(f"invalid baseline fields: {exc}") from exc
 
 
 def read_baseline_events_from_file(log_path: str) -> list[RawEvent]:

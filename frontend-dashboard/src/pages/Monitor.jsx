@@ -15,7 +15,8 @@ export default function Monitor() {
   const matching = status?.configuration?.rule_matching ?? status?.rule_matching
   const queueRows = [
     ['incident_outbox_size','Incident delivery outbox'],['audit_spool_size','Audit delivery spool'],
-    ['event_queue_depth','Event queue'],['rule_queue_depth','Rule queue'],
+    ['docker_event_queue_depth','Docker event queue'],
+    ['control_event_queue_depth','Control event queue'],
   ].map(([key,name]) => ({id:key,name,value:status?.[key]}))
   function saveToken() {
     if (isSampleMode()) return
@@ -27,8 +28,8 @@ export default function Monitor() {
   }
   return <><PageHeader title="Monitor">Service health and recorded pipeline telemetry. Global safety indicators continue updating when this page snapshot is paused.</PageHeader>
     <RefreshControls {...data} />{loading && <Skeleton label="Loading monitor…" />}{error && <ErrorState error={error} onRetry={data.refresh} />}
-    <section className="health-panel"><div><h3><StatusBadge tone={state.tone}>{state.label}</StatusBadge></h3><p>{status?.reason || 'No additional service reason recorded'}</p></div>
-      <div>Last event: {eventAge(status?.last_event_at,dashboardNow())}<br />Snapshot: {formatDate(status?.updated_at)}<br />Heartbeat age: {formatNumber(status?.status_age_seconds, {maximumFractionDigits:0})} seconds</div></section>
+    <section className="health-panel"><div><h3><StatusBadge tone={state.tone}>{state.label}</StatusBadge></h3><p>{status?.health_reason || status?.reason || 'No additional service reason recorded'}</p></div>
+      <div>Last event: {eventAge(status?.last_event_at,dashboardNow())}<br />Snapshot: {formatDate(status?.updated_at)}<br />Heartbeat age: {formatNumber(status?.status_age_seconds, {maximumFractionDigits:0})} seconds<br />Control cycle age: {formatNumber(status?.control_status_age_seconds, {maximumFractionDigits:0})} seconds</div></section>
     <div className="metrics-grid">{[['Failed responses',status?.failed_response_actions],['Pending incidents',status?.unconfirmed_incidents],['Containers tracked',status?.containers?.tracked],['Models ready',status?.models_ready]].map(([label,value]) => <KpiCard key={label} label={label} value={value} comparisonLabel="Historical comparison unavailable" />)}</div>
     <p>Rule matching: {matching ?? 'Not exposed by this API'}.</p>{matching != null && matching !== 'all' && <p className="error-state" role="alert">Rule matching is not “all”; multiple matching detections may be suppressed. Review Falco configuration.</p>}
     <p>Last error: {status?.last_error || 'Not exposed; inspect recorded connection details below.'}</p>

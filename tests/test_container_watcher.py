@@ -234,9 +234,21 @@ class TestReconcile(WatcherTestCase):
         second = [event["event_key"] for event in second_audit.events]
         self.assertEqual(first, second)
 
-
-if __name__ == "__main__":
-    unittest.main()
+    def test_reconciliation_has_a_distinct_key_from_the_live_start(self):
+        live = self.make_watcher()
+        live.handle_docker_event(docker_event("start", ID_A))
+        original = self.audit.events[-1]
+        recovered = FakeAudit()
+        self.make_watcher(audit=recovered).reconcile()
+        observed = recovered.events[0]
+        self.assertEqual(original["event_type"], observed["event_type"])
+        self.assertNotEqual(original["event_key"], observed["event_key"])
+        self.assertEqual(original["detail"]["detection_method"], "docker_event")
+        self.assertEqual(observed["detail"]["detection_method"], "startup_reconcile")
+        self.assertEqual(
+            original["event_key"],
+            container_watcher.make_event_key("CONTAINER_STARTED", ID_A, STARTED),
+        )
 
 
 class TestStartupGrace(WatcherTestCase):
@@ -248,3 +260,7 @@ class TestStartupGrace(WatcherTestCase):
         self.lookup.registered[SHORT_A] = True
         self.advance(20)
         self.assertEqual(self.audit.types(), ['CONTAINER_STARTED'])
+
+
+if __name__ == "__main__":
+    unittest.main()

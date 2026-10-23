@@ -115,10 +115,6 @@ class TestIdempotentDeploy(DeployerTestCase):
         self.assertEqual(self.reload_mock.call_count, 2)
 
 
-if __name__ == "__main__":
-    unittest.main()
-
-
 class TestDeploymentDuplicates(DeployerTestCase):
     def test_different_owner_and_name_cannot_duplicate_existing_condition(self):
         from rule_deduplicator import DuplicateRule
@@ -151,3 +147,7 @@ class TestDeploymentDuplicates(DeployerTestCase):
         with self.assertRaises(DuplicateRule):
             rule_deployer.deploy_rule("r1", VALID_RULE)
         self.assertEqual(self.reload_mock.call_count, 1)
+
+
+if __name__ == "__main__":
+    unittest.main()

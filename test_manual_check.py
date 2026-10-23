@@ -1,6 +1,9 @@
+"""Optional live AI diagnostic; run explicitly, never during test discovery."""
+
 import sys
-sys.path.append("ai-analysis")
-from root_cause_summarizer import summarize_incident
+from pathlib import Path
+sys.path.append(str(Path(__file__).resolve().parent / "ai-analysis"))
+from root_cause_summarizer import summarize_incident  # noqa: E402
 
 fixture_incident = {
     "incident_id": "inc_001",
@@ -18,5 +21,7 @@ fixture_incident = {
     "status": "open"
 }
 
-result = summarize_incident(fixture_incident)
-print(result)
+
+if __name__ == "__main__":
+    result = summarize_incident(fixture_incident)
+    print(result)

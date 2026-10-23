@@ -11,6 +11,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import requests
+from safety import require_isolation_disabled
 from dotenv import dotenv_values
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -57,6 +58,7 @@ def get(base, route):
 
 
 def validate_status(status, cid):
+    require_isolation_disabled(status)
     model = status.get("baselines", {}).get(cid, {})
     if not status.get("running") or not status.get("healthy"):
         raise RuntimeError("Monitor must be running and healthy")
@@ -114,7 +116,10 @@ def main():
             if "=" in part
         )
         validate_env(env)
-        config = load_config({**dotenv_values(ROOT / ".env"), **env})
+        config = load_config({
+            **{key: value for key, value in dotenv_values(ROOT / ".env").items()
+               if value is not None}, **env,
+        })
         if config.window_seconds != 60:
             raise RuntimeError("This study protocol specifies 60-second windows")
         baseline = config.baseline_dir / f"{cid}.json"
@@ -129,7 +134,8 @@ def main():
             source_status=subprocess.check_output(["git", "status", "--short"], text=True).strip(),
             generated_rules_sha256=sha(ROOT / "falco-rules/auto-generated-rules.yaml"),
         )
-        preflight = run_preflight(args.container, config.falco_log_path, args.out / "clock.json")
+        preflight = run_preflight(args.container, config.falco_log_path,
+                                  args.out / "clock.json", backend=base)
         if not preflight["passed"]:
             raise RuntimeError("Clock preflight failed; no study trigger executed")
         boundary = (int(time.time()) // 60 + 2) * 60

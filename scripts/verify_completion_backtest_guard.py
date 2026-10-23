@@ -37,7 +37,7 @@ def main():
     path = Path(cfg.benign_log_path)
     fingerprint = hashlib.sha256(path.read_bytes()).hexdigest()
     events = _load_benign_events(str(path))
-    pairs = Counter()
+    pairs: Counter[tuple[str, str]] = Counter()
     for event in events:
         if event.get("rule") != "Baseline Process Spawn":
             continue
@@ -49,9 +49,9 @@ def main():
             or event.get("parent_proc_name")
             or fields.get("parent_proc_name")
         )
-        if all(
-            isinstance(v, str) and re.fullmatch(r"[A-Za-z0-9_./:+-]{1,128}", v)
-            for v in (proc, parent)
+        if (
+            isinstance(proc, str) and isinstance(parent, str)
+            and all(re.fullmatch(r"[A-Za-z0-9_./:+-]{1,128}", v) for v in (proc, parent))
         ):
             pairs[proc, parent] += 1
     if not pairs:

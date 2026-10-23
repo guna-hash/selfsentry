@@ -27,6 +27,10 @@ def anomaly(container_id="c1", timestamp="2026-08-16T10:00:00Z", score=0.5):
 
 
 class TestOutputShape(unittest.TestCase):
+    def test_normalized_info_priority_keeps_the_informational_base_score(self):
+        result = compute_risk_score([falco(priority="INFO")], [])
+        self.assertEqual(result[0]["risk_score"], 10)
+
     def test_output_has_exactly_the_real_backend_fields(self):
         result = compute_risk_score([falco()], [])
         self.assertEqual(

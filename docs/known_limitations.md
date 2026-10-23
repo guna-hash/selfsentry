@@ -1,9 +1,58 @@
 # Known limitations and evidence history
 
+> Engineering review: [22 October repository audit](repository-audit/report.md). Historical checked items below apply only to their recorded source/configuration; they are not acceptance of the audit patch.
+
 Updated 15 October 2026. M1–M4 implementation and controlled VM checks are recorded;
 M5 full-run measurements and retrospective comparison are delivered. See
 [monitor_final_review.md](monitor_final_review.md) and [TODO.md](../TODO.md).
 Historical entries below retain the original observations and dates.
+
+## Current audit patch: deployment recovery boundary
+
+Gate start/removal now require durable local intent; completed decisions enqueue atomically
+with their CLI outcome. This does not make Docker and SQLite atomic. Creation now records separate intent before Docker; a lost create response or outcome-write
+failure can still leave an unstarted orphan with unknown ID. Successful creation IDs persist
+before inspection/scanning; those stages can still be interrupted without a completed gate decision. Interrupted outcome writes retain uncertainty;
+no automatic action replay exists. Failed/unfinished actions remain local with aggregate monitor
+health, not individual backend deployment records. Operator reconciliation/retention UI and native
+crash/filesystem acceptance remain unverified; see [operations](monitor_operations.md).
+
+## Current audit patch: response transport recovery
+
+Docker/requests transport failures now retain failed recovery state and attempt best-effort
+pause, including when an unpause response is lost or subsequent inspection fails. Re-pause and
+verification failures stay explicit. This cannot guarantee containment with an unreachable
+daemon or after a hard process termination. Recovery still unpauses before restoring networks.
+Two-thread full-ID lock contention is tested locally; native outages, multi-process schedules,
+actual response/recovery and hard-kill acceptance remain unverified. Automatic isolation remains
+disabled during audit checks.
+
+## Current audit patch: health interpretation
+
+The API now separates heartbeat freshness from aggregate reported health. Required service
+reports, reported running state and an API database read contribute to `healthy`; unknown
+snapshots are Unavailable with nullable `running`. This tightens the former heartbeat-only
+contract and needs coordinated backend/frontend integration. It does not independently prove
+fresh per-component probes or end-to-end detection. Completed control-cycle progress is now
+checked separately, but a stale marker cannot distinguish legitimate slow work from a stall. Native outage/browser and
+continuous-monitoring acceptance remain unverified.
+
+## Current audit patch: database connection limits
+
+The ORM selects the declared psycopg2 driver for plain PostgreSQL URLs and adds five-second
+connect/pool-checkout defaults, respecting a positive URL connection-timeout override. A real
+client/silent-local-TCP experiment verifies handshake timeout; it is not PostgreSQL integration.
+SQL/lock/established-socket waits, full request deadlines, native pool pressure, migrations,
+restart and transaction/backup recovery remain unverified or unbounded. No statement timeout
+or automatic mutation retry was silently added.
+
+## Current audit patch: database request errors
+
+Request-time OperationalError and pool TimeoutError now produce sanitized 503 responses, with
+unknown-outcome guidance for writes. This does not prove rollback, authorize blind retries or
+cover startup failures/every database exception. Local tests distinguish pre-insert failure from
+injected commit-ack loss and exercise disposable SQLite pool recovery; native PostgreSQL outage
+and ambiguous-commit recovery remain unverified. Full SQL/lock/request deadlines remain open.
 
 ## Academic claim boundaries — 15 October 2026
 
@@ -197,3 +246,49 @@ process spawn and the auto-generated rules never ran. With `rule_matching: all`,
 same `ls`-from-`sh` action fires `Auto_Generated_ls_from_sh_8` at the same timestamp as
 the baseline rule (2026-10-08 07:35:10 UTC). Full evidence and fix: docs/falco_rule_matching.md.
 Remaining caveat: `all` may carry a performance cost per Falco's own docs; not yet measured.
+
+## Current audit patch: deployment journal inspection
+
+A read-only local CLI now exposes individual creation/action metadata alongside aggregate
+counts: `bin/selfsentry-run --inspect-journal`. It omits private decision bodies and performs
+no Docker/backend actions or state transitions. This helps collect reconciliation evidence;
+it does not resolve uncertain outcomes, provide a retention/export policy or replace native
+crash acceptance. Multi-page reads are separate snapshots, and existing SQLite WAL sidecars
+may be used. See [deployment operations](deployment_gate.md#read-only-journal-inspection).
+
+## Current audit patch: audit delivery contract
+
+Malformed or contradictory success replies remain queued; HTTP 401/403/429 can recover after
+operator intervention rather than being treated as permanent payload rejections. This can grow
+the backlog during prolonged failure; retention and overall request deadlines are not solved.
+The current reply lacks an event-key binding, backend identity comparison excludes timestamps, and the
+historical spool and direct API events can still be keyless. Disposable SQLite/route tests cover controlled lost
+responses and deterministic connection closure; native PostgreSQL/network/power-loss recovery
+remains NOT VERIFIED.
+
+## Current audit patch: corrupt audit record retention
+
+Legacy audit reads no longer create duplicate dead letters. Structural corruption is explicit,
+with unknown depth/degraded spool telemetry while ingestion/status updates continue. SQLite
+batch validation rejects malformed or key-mismatched entries before sending that batch. Both
+paths retain evidence and block affected replay until reviewed repair; later control delivery
+stages can be delayed. This is not automatic quarantine/recovery, full schema validation or
+storage-failure recovery. Whole-file legacy reads, retention and consistent multi-process repair
+remain unresolved. See [audit operations](monitor_operations.md#corrupt-audit-records).
+
+## Current audit patch: pending audit key conflicts
+
+Changed data under a pending durable key is now refused explicitly, preserving the original
+row. Automatic timestamp drift is ignored only when the retry omits the event time; an explicit
+changed time conflicts. The check is atomic in local SQLite. Local comparison does not cover
+deleted rows or the legacy JSONL client; the backend now checks keyed content as described below. Caller investigation
+is required after a conflict, and native process/crash/commit-uncertainty validation remains open.
+
+## Current audit patch: backend audit replay identity
+
+Backend keyed dedup now compares event fields/detail and refuses changed data with 409, covering
+key reuse after local outbox deletion. Timestamps remain first-write metadata outside server
+identity comparison; keys differing only by a later timestamp still acknowledge the original.
+The acknowledgement body is not cryptographically bound to the key/content. Keyless events,
+producer key selection, ordered backlog handling after a conflict, retention and native
+PostgreSQL race/crash/network validation remain limitations. Existing records are not rewritten.

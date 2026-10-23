@@ -1,5 +1,18 @@
-import { describe, expect, it } from 'vitest'
-import { incidentSeverity } from './api.js'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { apiFetch, incidentSeverity } from './api.js'
+
+describe('live API with unavailable browser storage', () => {
+  afterEach(() => vi.unstubAllGlobals())
+
+  it('keeps reads available without inventing credentials', async () => {
+    vi.stubGlobal('sessionStorage', { getItem() { throw new DOMException('Blocked', 'SecurityError') } })
+    const response = new Response('[]')
+    const request = vi.fn().mockResolvedValue(response)
+    vi.stubGlobal('fetch', request)
+    expect(await apiFetch('http://127.0.0.1:8000/incidents/')).toBe(response)
+    expect(request.mock.calls[0][1].headers).not.toHaveProperty('Authorization')
+  })
+})
 
 describe('incident severity when AI is absent', () => {
   it('retains critical Falco evidence', () => {

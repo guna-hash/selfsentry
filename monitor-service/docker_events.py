@@ -41,6 +41,28 @@ class DockerEventPump(threading.Thread):
         self.reconnected = threading.Event()
         self.state = "starting"
         self.last_error: str | None = None
+        self._stream_lock = threading.Lock()
+        self._stream = None
+
+    @staticmethod
+    def _close(resource):
+        close = getattr(resource, "close", None)
+        if close:
+            try:
+                close()
+            except Exception:
+                logger.exception("failed to close Docker event resource")
+
+    def _close_stream(self):
+        with self._stream_lock:
+            stream, self._stream = self._stream, None
+        self._close(stream)
+
+    def stop(self):
+        self._stop_event.set()
+        # Docker's CancellableStream supports cancellation from another thread.
+        # Unsupported transports/failures are logged; the owner still waits for exit.
+        self._close_stream()
 
     def _remember_time(self, event: dict) -> None:
         stamp = event.get("time")
@@ -50,20 +72,35 @@ class DockerEventPump(threading.Thread):
     def run(self) -> None:
         delay = self._retry_base
         while not self._stop_event.is_set():
+            client, stream = None, None
             try:
                 client = self._client_factory()
+                if self._stop_event.is_set():
+                    return
                 stream = client.events(decode=True, since=self._last_time, filters=EVENT_FILTERS)
+                with self._stream_lock:
+                    self._stream = stream
+                if self._stop_event.is_set():
+                    return
                 self.state, self.last_error = "connected", None
                 self.reconnected.set()
                 delay = self._retry_base
                 for event in stream:
-                    self._remember_time(event)
-                    self._queue.put(event)
-                    if self._stop_event.is_set():
+                    while not self._stop_event.is_set():
+                        try:
+                            self._queue.put(event, timeout=0.1)
+                            self._remember_time(event)
+                            break
+                        except queue.Full:
+                            continue
+                    else:
                         return
             except Exception as exc:  # noqa: BLE001 - supervisor loop: log, back off, retry
                 self.state, self.last_error = "unavailable", str(exc)
                 logger.warning("Docker event stream unavailable: %s", exc)
+            finally:
+                self._close_stream()
+                self._close(client)
             if self._stop_event.wait(delay):
                 return
             delay = min(self._retry_max, delay * 2)

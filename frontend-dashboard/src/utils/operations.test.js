@@ -34,6 +34,14 @@ it('blocks protected or unknown protection, missing identity, and resume without
   await expect(containerAction({isolated:true},'resume',' ','',request,token)).rejects.toThrow('operator')
   expect(request).not.toHaveBeenCalled()
 })
+it('blocks actions when the backend cannot validate the recovery record',async()=>{
+  const request=vi.fn(),token=vi.fn()
+  for (const action of ['isolate','resume']) {
+    await expect(containerAction({id:'a',protected:false,isolated:null,containment_state:'record_unavailable'},action,'Ada','reason',request,token)).rejects.toThrow('recovery record')
+  }
+  expect(request).not.toHaveBeenCalled()
+  expect(token).not.toHaveBeenCalled()
+})
 it('sends one attributed write with encoded full ID and existing token precondition',async()=>{
   const request=vi.fn().mockResolvedValue({networks:['app']}),token=vi.fn()
   await containerAction({id:'short',full_id:'full/id',isolated:true},'resume',' Ada ','',request,token)

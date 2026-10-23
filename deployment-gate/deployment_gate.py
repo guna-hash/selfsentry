@@ -17,7 +17,8 @@ Flow:
 
 The gate FAILS CLOSED: if the image scan cannot run, the deployment is blocked.
 Recording the decision in the backend is best-effort: if the backend is unreachable the
-decision is still enforced locally and a warning is printed.
+decision delivery is retried from the local journal and a warning is printed.
+Action intent must persist before start/removal; journal errors require operator review.
 
 Scope: the gate covers deployments made through this wrapper. A plain `docker run`
 bypasses it; the continuous monitor is what catches those.
@@ -29,7 +30,9 @@ import argparse
 import getpass
 import json
 import os
+import re
 import subprocess
+import sqlite3
 import sys
 
 import requests
@@ -37,7 +40,10 @@ import requests
 _REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(_REPO_ROOT, "monitor-service"))
 from backend_auth import backend_headers  # noqa: E402
-from deployment_outbox import enqueue, acknowledge  # noqa: E402
+from deployment_outbox import (  # noqa: E402
+    enqueue, acknowledge, valid_acknowledgement, begin_action, finish_action,
+    begin_creation, finish_creation, inspect_actions,
+)
 
 sys.path.insert(0, os.path.join(_REPO_ROOT, "image-scanner"))
 sys.path.insert(0, os.path.join(_REPO_ROOT, "policy-checker"))
@@ -48,14 +54,33 @@ from trivy_wrapper import TrivyNotInstalledError, TrivyScanError, scan_image  # 
 DEFAULT_BACKEND_URL = "http://localhost:8000"
 OWN_FLAGS = ("--override-reason", "--backend-url")
 MAX_FINDINGS = 10
+# Creation may pull an image. Other daemon requests should finish much sooner.
+DOCKER_TIMEOUT_SECONDS = {"create": 300, "inspect": 30, "start": 60, "rm": 60}
 
 
 class DockerCommandError(RuntimeError):
     """Raised when a docker command the gate depends on fails."""
 
 
+class DockerOutcomeUnknown(RuntimeError):
+    """No trustworthy result/identity is available; reconcile before another action."""
+
+
+class DockerCommandTimeout(DockerOutcomeUnknown):
+    """CLI deadline expired; the Docker daemon's action outcome is unknown."""
+
+
 def _docker(*args: str) -> subprocess.CompletedProcess:
-    return subprocess.run(["docker", *args], capture_output=True, text=True, check=False)
+    timeout = DOCKER_TIMEOUT_SECONDS[args[0]]
+    try:
+        return subprocess.run(
+            ["docker", *args], capture_output=True, text=True, check=False, timeout=timeout
+        )
+    except subprocess.TimeoutExpired as exc:
+        # Do not echo full command arguments (which can contain container credentials).
+        raise DockerCommandTimeout(
+            f"docker {args[0]} timed out after {timeout}s; daemon outcome requires operator review"
+        ) from exc
 
 
 def _docker_ok(*args: str) -> str:
@@ -97,7 +122,12 @@ def parse_args(argv: list[str]):
 
 def create_container(docker_args: list[str]) -> str:
     output = _docker_ok("create", *docker_args)
-    return output.splitlines()[-1].strip()
+    container_id = output.strip()
+    if not re.fullmatch(r"[0-9a-f]{64}", container_id):
+        raise DockerOutcomeUnknown(
+            "docker create returned no valid full container ID; inspect the daemon before retrying"
+        )
+    return container_id
 
 
 def inspect_container(container_id: str) -> dict:
@@ -109,7 +139,12 @@ def evaluate(spec: dict):
     image = (spec.get("Config") or {}).get("Image") or spec.get("Image", "")
     scan, scan_error = None, None
     try:
-        scan = scan_image(image)
+        # A tag can change after docker create. Inspect records the actual local
+        # image ID used by this container; the scan must cover those same bytes.
+        image_id = spec.get("Image", "")
+        if not isinstance(image_id, str) or not re.fullmatch(r"sha256:[0-9a-f]{64}", image_id):
+            raise ValueError("Docker inspect did not provide an immutable image ID")
+        scan = scan_image(image_id)
     except (TrivyNotInstalledError, TrivyScanError, ValueError) as exc:
         scan_error = str(exc)
     policy = check_deployment_config(
@@ -192,13 +227,30 @@ def record_decision(record: dict, backend_url: str) -> bool:
         return False
     if response.status_code != 201:
         print(
-            f"WARNING: backend rejected the deployment record: HTTP {response.status_code} "
-            f"- {response.text}",
+            f"WARNING: backend rejected the deployment record: HTTP {response.status_code}",
             file=sys.stderr,
         )
         return False
+    if not valid_acknowledgement(response, record):
+        print("WARNING: deployment acknowledgement invalid; journal retained for replay",
+              file=sys.stderr)
+        return False
     acknowledge(record["event_key"])
     return True
+
+
+def perform_action(container_id, action, record=None):
+    key = begin_action(container_id, action, record)
+    try:
+        if action == "start":
+            _docker_ok("start", container_id)
+        else:
+            _docker_ok("rm", "-f", container_id)
+    except DockerCommandError:
+        finish_action(key, False)
+        raise
+    # An exception or interruption here leaves explicit uncertainty, never a replayable action.
+    finish_action(key, True)
 
 
 def run_gate(
@@ -206,28 +258,39 @@ def run_gate(
     override_reason: str | None = None,
     backend_url: str = DEFAULT_BACKEND_URL,
 ) -> dict:
-    container_id = create_container(docker_args)
+    creation_key = begin_creation()
+    try:
+        container_id = create_container(docker_args)
+    except DockerCommandError:
+        finish_creation(creation_key)
+        raise
+    try:
+        finish_creation(creation_key, container_id)
+    except (OSError, sqlite3.Error):
+        print(f"WARNING: created container {container_id}; creation outcome not durably saved; "
+              "inspect before retrying", file=sys.stderr)
+        raise
     try:
         spec = inspect_container(container_id)
         image, scan, scan_error, policy = evaluate(spec)
     except Exception:
-        _docker("rm", "-f", container_id)  # never leave an unvetted container behind
+        perform_action(container_id, "remove")
         raise
 
     decision = decide(policy, scan_error, override_reason)
+    record = build_record(container_id, image, scan, scan_error, policy, decision, override_reason)
     if decision == "blocked":
-        _docker("rm", "-f", container_id)
+        perform_action(container_id, "remove", record)
     else:
         try:
-            _docker_ok("start", container_id)
+            perform_action(container_id, "start", record)
         except DockerCommandError:
-            _docker("rm", "-f", container_id)
+            perform_action(container_id, "remove")
             raise
 
-    record = build_record(container_id, image, scan, scan_error, policy, decision, override_reason)
     try:
         recorded = record_decision(record, backend_url)
-    except OSError as exc:
+    except (OSError, sqlite3.Error) as exc:
         print(f"WARNING: deployment journal unavailable: {type(exc).__name__}", file=sys.stderr)
         recorded = False
     return {
@@ -267,10 +330,23 @@ def print_report(result: dict) -> None:
 
 
 def main(argv: list[str] | None = None) -> int:
-    options, docker_args = parse_args(sys.argv[1:] if argv is None else argv)
+    args = list(sys.argv[1:] if argv is None else argv)
+    if args and args[0] == "--inspect-journal":
+        parser = argparse.ArgumentParser(prog="selfsentry-run --inspect-journal")
+        parser.add_argument("--limit", type=int, default=50)
+        parser.add_argument("--offset", type=int, default=0)
+        options = parser.parse_args(args[1:])
+        try:
+            snapshot = inspect_actions(options.limit, options.offset)
+        except (OSError, sqlite3.Error, ValueError) as exc:
+            print(f"Journal inspection unavailable ({type(exc).__name__})", file=sys.stderr)
+            return 2
+        print(json.dumps(snapshot, indent=2))
+        return 0
+    options, docker_args = parse_args(args)
     try:
         result = run_gate(docker_args, options.override_reason, options.backend_url)
-    except DockerCommandError as exc:
+    except (DockerCommandError, DockerOutcomeUnknown, OSError, sqlite3.Error) as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 2
     print_report(result)

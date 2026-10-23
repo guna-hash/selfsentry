@@ -1,6 +1,13 @@
 import {expect,it} from 'vitest'
-import {backtestSummary,deploymentSummary,mergeRuleSources,recordedCondition} from './ruleView.js'
+import {backtestSummary,deploymentSummary,mergeRuleSources,recordedCondition,ruleStatus} from './ruleView.js'
 const pass={false_positive_rate:0,events_tested:20,verdict:'pass'}
+it('never represents database retirement as verified native disablement',()=>{
+  expect(ruleStatus('retired')).toBe('Retired · native state unverified')
+  expect(deploymentSummary({status:'retired'})).toMatchObject({
+    label:'Native state unverified',tone:'medium',
+  })
+  expect(deploymentSummary({status:'retired'}).detail).toContain('does not unload')
+})
 it('distinguishes measured passes, revision, no-event failures and missing data',()=>{
   expect(backtestSummary({backtest:pass})).toMatchObject({rate:0,events:20,tone:'low',blocked:false})
   expect(backtestSummary({backtest:{...pass,verdict:'flag_for_revision'}})).toMatchObject({tone:'medium',blocked:true})

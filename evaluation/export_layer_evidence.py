@@ -1,5 +1,7 @@
 """Export only target telemetry for an existing schedule; source database is read-only."""
 
+from contextlib import closing
+
 import json
 import sqlite3
 import tarfile
@@ -23,8 +25,8 @@ if not db_path.is_file():
 out = root / "state/evaluation/full-20261011-telemetry.jsonl"
 if out.exists():
     raise SystemExit("Telemetry export already exists; preserve it or use another filename.")
-counts = {}
-with sqlite3.connect(db_path.as_uri() + "?mode=ro", uri=True) as db:
+counts: dict[str, int] = {}
+with closing(sqlite3.connect(db_path.as_uri() + "?mode=ro", uri=True)) as db:
     selected = list(
         db.execute(
             "SELECT key,bucket,kind,body FROM events "

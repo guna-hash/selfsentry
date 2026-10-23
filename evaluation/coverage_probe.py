@@ -11,6 +11,8 @@ Probe windows are written to state/evaluation/coverage.json so they can be exclu
 from trial and benign corpora. Run it with no other workload on the target.
 """
 
+from safety import check_monitor
+
 import argparse
 import json
 import subprocess
@@ -96,6 +98,7 @@ def judge_probe(alerts, expected):
 
 
 def run_probe(scenario, container, tail, wait_seconds):
+    check_monitor()
     tail.mark()
     started = datetime.now(timezone.utc).isoformat()
     cmd = (

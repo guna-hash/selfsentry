@@ -43,8 +43,9 @@ class TailAlerts(unittest.TestCase):
             path.write_text("")
             tail = clock_guard.AlertTail(path)
             tail.mark()
-            path.write_text(json.dumps({"time": "2026-10-11T12:00:00.5Z", "rule": "R", "priority": "Warning",
-                                        "output_fields": {"container.id": "abc123456789"}}) + "\n")
+            path.write_text(json.dumps({
+                "time": "2026-10-11T12:00:00.5Z", "rule": "R", "priority": "Warning",
+                "output_fields": {"container.id": "abc123456789"}}) + "\n")
             alerts = tail.new_alerts("abc123456789")
             self.assertEqual([(a["rule"], a["priority"]) for a in alerts], [("R", "Warning")])
 

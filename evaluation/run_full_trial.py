@@ -17,6 +17,7 @@ import time
 import uuid
 
 import requests
+from safety import require_isolation_disabled
 from dotenv import dotenv_values
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -57,6 +58,7 @@ def main():
     if not info["State"]["Running"] or info["State"]["Paused"]:
         raise SystemExit("Target must be running and unpaused.")
     status = get_json(base, "/monitor/status")
+    require_isolation_disabled(status)
     baseline = status.get("baselines", {}).get(target, {})
     if not status.get("healthy") or baseline.get("state") != "MODEL_READY":
         raise SystemExit("A healthy monitor and a ready target model are required.")
@@ -78,6 +80,7 @@ def main():
     delay = max(0, boundary + 2 - time.time())
     print(f"Waiting {delay:.1f}s for a fresh {window}s window...", flush=True)
     time.sleep(delay)
+    require_isolation_disabled(get_json(base, "/monitor/status"))
     trial_id = uuid.uuid4().hex
     started_epoch = time.time()
     started = utc_now()
