@@ -1842,3 +1842,35 @@ Private evidence:
 Scope: one controlled resume interruption boundary and explicit recovery.
 This does not establish continuous paused containment, automatic crash
 recovery, every response interruption boundary or API audit acceptance.
+
+## Sustained workload measurement and false positives — 26 October 2026
+
+A 30-minute single-container synthetic routine workload completed on commit
+468d20b. Of 181 status samples, 180 succeeded and one connection reset;
+the failed request is unavailable evidence, not a reported unhealthy state.
+Successful-request latency was p95 72.4 ms, maximum 163.2 ms.
+All sampled delivery/control queues were zero.
+
+One Falco instance reported 3,104,885 additional kernel events with zero
+kernel and output-queue counter drops over approximately 1,800 seconds.
+This does not prove end-to-end losslessness. Managed monitor root-process
+RSS increased from 92.5 to 218.2 MiB; the main journal grew approximately
+102 MiB. Initialization and later incident/AI activity coincided with
+memory increases; their causal contributions and leak absence are unproven.
+The temporary Falco metrics override was removed and service activity verified.
+
+The unchanged routine workload generated anomaly-only incidents 228–231
+during full steady-operation windows. Incident 232 overlaps cleanup and
+is assessed separately. Offline production-model replay reproduced all five
+raw and normalized scores exactly; sklearn also predicted anomaly.
+The frozen 20-sample baseline contained six unique vectors.
+This establishes false positives for this controlled workload, not a
+representative false-positive rate. No baseline or threshold was changed.
+
+Private evidence:
+~/selfsentry-private-evidence/sustained-e13584e27565/
+
+Remaining: explain the connection reset, assess memory/storage behavior
+under longer representative workloads, and validate any model improvement
+with independent benign and deviation cases. No blanket performance or
+detection-quality acceptance is claimed.
