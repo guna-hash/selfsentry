@@ -1682,3 +1682,19 @@ Private evidence remains outside Git:
 ~/selfsentry-private-evidence/docker-outage-fixed-20261026T092311Z/results.json.
 Earlier failed attempts are retained. This does not establish full-monitor
 reconciliation, Docker daemon restart or native Falco lifecycle acceptance.
+
+## Full-monitor Docker connection recovery — 26 October 2026
+
+Operator execution on commit 628ae21 passed seven prerequisite audit checks
+and five separate full-monitor checks. Docker degradation retained fresh
+heartbeat/control progress; synthetic incident delivery continued during
+the outage. Automatic reconciliation recovered a container whose start
+event was deliberately excluded from replay. Post-recovery events arrived,
+incident identity/timeline remained unchanged, and incident/audit queues
+drained. Owned probes, database, API, monitor and proxy were cleaned up.
+The original live monitor remained healthy.
+
+Private evidence: ~/selfsentry-private-evidence/full-monitor-docker-20261026T094026Z.
+Scope: private Docker connection failure, not daemon restart. Falco input
+was explicitly synthetic; native Falco lifecycle, model accuracy and real
+isolation were not tested. Raw evidence remains outside Git.
