@@ -125,7 +125,15 @@ class BehaviorPipeline:
     def discover(self, cid):
         cid = container_identity(cid)
         if cid not in self.lifecycle:
-            self.lifecycle[cid] = {"started_at": self.clock(), "samples": 0}
+            discovered_at = self.clock()
+            # Train only on buckets beginning after observation starts.
+            # Persist this boundary so restart/replay cannot admit the
+            # partially observed discovery bucket.
+            self.lifecycle[cid] = {
+                "started_at": discovered_at,
+                "samples": 0,
+                "learn_after": discovered_at,
+            }
             self._transition(cid, "NO_BASELINE", "no validated baseline")
         if cid not in self._restored:
             self._restored.add(cid)

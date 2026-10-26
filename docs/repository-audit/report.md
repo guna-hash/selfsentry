@@ -1874,3 +1874,22 @@ Remaining: explain the connection reset, assess memory/storage behavior
 under longer representative workloads, and validate any model improvement
 with independent benign and deviation cases. No blanket performance or
 detection-quality acceptance is claimed.
+
+## New baseline observation boundary — 26 October 2026
+
+New container lifecycles persist learn_after at discovery. Training accepts
+only buckets beginning at or after that boundary, excluding the partially
+observed discovery bucket. Existing saved baselines remain unchanged.
+
+Regression checks cover exclusion across restart, subsequent full-window
+admission and security-alert delivery from the excluded bucket. Existing
+replay, late-alert invalidation and readiness assertions were retained with
+fixtures explicitly discovered at the window boundary.
+
+Operator release passed 1,274 Python tests plus 104 subtests, 168 frontend
+tests, lint, scoped types, build and whitespace checks.
+Evidence: state/evaluation/final-checks-20261026T154456Z.
+
+This improves training admission. It does not establish observation
+continuity during later outages or resolve the recorded routine-workload
+false positives; independent model-quality validation remains open.

@@ -73,6 +73,8 @@ def test_learning_falco_alert_persists_without_fabricated_anomaly(tmp_path):
 
 def test_window_closes_when_quiet_and_replay_does_not_duplicate(tmp_path):
     pipe, clock, _ = setup(tmp_path)
+    clock[0] = START
+    pipe.discover(CID)
     pipe.handle_baseline_event(event())
     pipe.handle_baseline_event(event())
     clock[0] += 80
@@ -162,6 +164,8 @@ def test_insufficient_samples_cannot_train(tmp_path):
 
 def test_late_alert_is_retained_and_invalidates_model(tmp_path):
     pipe, clock, audit = setup(tmp_path)
+    clock[0] = START
+    pipe.discover(CID)
     pipe.handle_baseline_event(event())
     clock[0] += 80
     pipe.tick()
@@ -198,6 +202,8 @@ def test_out_of_order_events_inside_open_window_are_grouped(tmp_path):
 
 def test_new_container_automatically_trains_after_twenty_valid_windows(tmp_path):
     pipe, clock, _ = setup(tmp_path)
+    clock[0] = START
+    pipe.discover(CID)
     for window in range(20):
         clock[0] = START + window * 60 + 10
         for n in range(1 + window % 3):
@@ -331,3 +337,46 @@ def test_candidate_algorithm_is_recorded_in_model_lifecycle_and_assessment(tmp_p
     pipe.tick()
     assessment = outbox(pipe)[0]["monitor_evidence"]["anomaly_assessment"]
     assert assessment["model_algorithm"] == "one_class_svm"
+
+
+def test_discovery_partial_bucket_excluded_across_restart(tmp_path):
+    pipe, clock, _ = setup(tmp_path)
+    clock[0] = START + 51
+    pipe.handle_baseline_event(event(second=51, key="partial"))
+    assert pipe.lifecycle[CID]["learn_after"] == START + 51
+    pipe.db.close()
+
+    pipe = BehaviorPipeline(pipe.config, pipe.status, pipe.audit,
+                            clock=lambda: clock[0])
+    try:
+        clock[0] = START + 131
+        pipe.tick()
+        assert pipe.store.load(CID, allow_missing=True).sample_count == 0
+        assert pipe.db.execute(
+            "SELECT count(*) FROM windows WHERE container=?", (CID,)
+        ).fetchone()[0] == 1
+
+        pipe.handle_baseline_event(event(second=121, key="full"))
+        clock[0] = START + 191
+        pipe.tick()
+        dataset = pipe.store.load(CID)
+        assert dataset.sample_count == 1
+        assert dataset.feature_vectors[0].window_start.timestamp() == START + 120
+    finally:
+        pipe.db.close()
+
+
+def test_discovery_partial_bucket_still_delivers_security_alert(tmp_path):
+    pipe, clock, _ = setup(tmp_path)
+    try:
+        clock[0] = START + 51
+        pipe.handle_baseline_event(event(second=51, key="partial-baseline"))
+        pipe.handle_alert(event(second=52, key="partial-alert", security=True))
+        clock[0] = START + 131
+        pipe.tick()
+        assert pipe.store.load(CID, allow_missing=True).sample_count == 0
+        payloads = outbox(pipe)
+        assert len(payloads) == 1
+        assert payloads[0]["monitor_evidence"]["falco_alerts"]
+    finally:
+        pipe.db.close()
