@@ -1,5 +1,54 @@
 # Known limitations and evidence history
 
+## Consolidated acceptance status — 26 October 2026
+
+This section supersedes older current-status statements only within the
+evidence scopes below. Historical results and failed attempts remain intact.
+Source and verification summaries have been integrated into main through
+27a97d2; raw operational evidence remains outside Git.
+
+Verified:
+- Latest operator release: 1,272 Python tests plus 104 subtests, 168 frontend
+  tests, lint, scoped types, production build and whitespace checks passed.
+- Default Isolation Forest anomaly-only file-write and process rule loops
+  passed human review, native deployment and linked re-fire verification.
+  Both temporary rules were subsequently verified unloaded.
+- Scoped PostgreSQL, audit replay, monitor replay and full-monitor Docker
+  connection recovery passed. HTTP response loss is not PostgreSQL
+  COMMIT-acknowledgement loss.
+- Separate bounded native Falco captures verified checkpoint reopening and
+  private-log replacement; this does not prove lossless engine downtime.
+- Controlled gate start/create/remove interruption boundaries preserved
+  uncertain intent and required explicit current-state reconciliation.
+  Missing creation identity was correctly left unresolved.
+- Existing separate-host recovery and post-reboot checks passed; these are
+  not clean-installation evidence.
+- Operator reported mobile/theme/keyboard and sample-mode checks passed.
+  This is bounded operator evidence, not exhaustive browser accessibility.
+- pip check passed; npm audit and the declared Python lock audit reported
+  no known vulnerabilities at execution time.
+
+Remaining:
+- Independent clean supported-Linux installation.
+- Current native response/isolation interruption acceptance in an explicitly
+  named disposable environment.
+- Remaining review/deployment fault interleavings and genuine PostgreSQL
+  COMMIT-acknowledgement-loss testing.
+- Representative independent benign/attack evaluation and sustained
+  resource, queue, disk, dropped-event and shutdown measurements.
+- Recurring Falco clock-skew root-cause investigation.
+- Owner license decision and any required artifact/OS provenance review.
+- Final documentation and ten-criterion reconciliation after remaining work.
+
+Four proposed file removals remain retained; no deletion is required merely
+to complete a checklist. Live archival needs a specific approved cutoff.
+Demo recording remains deferred. Multi-user deployment and production
+certification are not claimed. Automatic isolation remains disabled.
+Full master-prompt completion is not yet established.
+
+---
+
+
 ## 25 October source follow-up: UTC and acceptance tools
 
 New psycopg2 application connections force UTC before the first transaction, preserving
