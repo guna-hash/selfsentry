@@ -1711,3 +1711,20 @@ health were preserved.
 Private evidence: ~/selfsentry-private-evidence/native-falco-lifecycle-20261026T094817Z.
 No live service restart, live-log rotation, full-monitor incident flow,
 lossless downtime capture or permanent clock-skew repair is established.
+
+## Interrupted gate-action verification — 26 October 2026
+
+Operator execution on commit b0560dc passed controlled SIGKILL before
+Docker start and after acknowledged start before durable outcome storage.
+Production action helpers, leases and a private SQLite journal were used.
+Original intents remained unchanged; unfinished actions were not queued
+as completed decisions. Active ownership blocked reconciliation.
+Explicit full-ID observations recorded stopped/running state without
+rewriting uncertain outcomes; duplicate reconciliation was refused.
+Unknown creation identity remained unresolved. Owned probe cleanup and
+live monitor health with empty incident outbox were verified.
+
+Private evidence: ~/selfsentry-private-evidence/interrupted-gate-20261026T095550Z.
+This does not establish complete scan/policy/create/remove crash acceptance
+or automatic response/isolation recovery. The runner import-path failure
+was retained; the successful run supplied monitor-service via PYTHONPATH.
