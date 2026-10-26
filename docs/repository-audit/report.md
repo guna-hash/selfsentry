@@ -1728,3 +1728,34 @@ Private evidence: ~/selfsentry-private-evidence/interrupted-gate-20261026T095550
 This does not establish complete scan/policy/create/remove crash acceptance
 or automatic response/isolation recovery. The runner import-path failure
 was retained; the successful run supplied monitor-service via PYTHONPATH.
+
+## Interrupted gate-create verification — 26 October 2026
+
+A controlled interruption after Docker acknowledged creation but before
+the gate persisted the container identity retained the unfinished intent.
+Reconciliation refused to guess the missing identity. The owned disposable
+container was removed; subsequent live monitor health and an empty incident
+outbox were verified.
+
+Private evidence remains outside Git:
+~/selfsentry-private-evidence/gate-create-85c8666d4cbe/results.json.
+
+Scope: create acknowledgement before identity persistence. This does not
+establish scan/policy acceptance, removal interruption recovery, or recovery
+from a lost Docker acknowledgement.
+
+## Interrupted gate-remove verification — 26 October 2026
+
+Operator execution on commit 764cc0d interrupted the production removal
+helper after Docker acknowledged removal but before durable outcome storage.
+The original unfinished intent remained unchanged. Explicit reconciliation
+verified the full-ID container's current absence without rewriting the
+original uncertain outcome. The disposable container was absent afterward;
+live monitor health and an empty incident outbox were verified.
+
+Private evidence remains outside Git:
+~/selfsentry-private-evidence/gate-remove-cdbccd12b7e6/results.json.
+
+Scope: acknowledged removal before outcome persistence. This does not
+establish recovery from a lost Docker acknowledgement or automatic-response
+interruption.
