@@ -1808,3 +1808,37 @@ Private evidence remains outside Git:
 Scope: acknowledged removal before outcome persistence. This does not
 establish recovery from a lost Docker acknowledgement or automatic-response
 interruption.
+
+## Native disposable response verification — 26 October 2026
+
+Operator execution on commit b2e1cbf exercised production isolation/resume
+functions against one explicitly authorized disposable container on a new
+internal Docker network, using private response state.
+
+Native pause and complete network disconnection passed. Repeated isolation
+preserved the original record. Resume restored running/unpaused state and
+the exact original network identity. Both owned resources were removed;
+live monitor health and an empty incident outbox were verified.
+
+Private evidence: ~/selfsentry-private-evidence/response-19dd96f1c0a5/results.json.
+Scope: direct response functions, not automatic policy, API audit delivery,
+transport failure or process-interruption acceptance. Ordinary automatic
+isolation remained disabled.
+
+## Native response interruption verification — 26 October 2026
+
+A controlled SIGKILL after acknowledged unpause and before network
+restoration preserved the private durable resuming record and original
+network identity. Independent inspection found the disposable container
+running, unpaused and disconnected. An explicit production-function retry
+restored the exact original network and persisted resumed state.
+
+Both owned resources were removed. Live monitor health and an empty
+incident outbox were verified. Ordinary automatic isolation remained off.
+
+Private evidence:
+~/selfsentry-private-evidence/response-kill-3ac509862ace/results.json.
+
+Scope: one controlled resume interruption boundary and explicit recovery.
+This does not establish continuous paused containment, automatic crash
+recovery, every response interruption boundary or API audit acceptance.
