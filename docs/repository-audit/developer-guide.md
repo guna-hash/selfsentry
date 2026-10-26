@@ -3,6 +3,82 @@
 Read this alongside the audit report. This guide explains the implementation; it does
 not certify live operation or eliminate the review gaps recorded in the inventory.
 
+## Completion checks added 25 October 2026
+
+These tools do not change the default model, approve generated rules, enable response
+automation, rewrite existing timestamps or publish private runtime evidence.
+
+### PostgreSQL timezone and disposable connection faults
+
+The backend uses startup-packet `options` to force UTC, retaining other options and
+the connect timeout. This avoids a transaction-local timezone setting being undone
+by pool rollback. The first default `now()` written to a naive timestamp must already
+be UTC. Unit checks exercise construction and rejection; only native execution tests
+actual PostgreSQL behavior.
+
+On a Docker-enabled Linux host, use a new private result file outside the checkout:
+
+```bash
+.venv/bin/python evaluation/verify_database_faults.py \
+  --output "$HOME/selfsentry-db-faults-$(date -u +%Y%m%dT%H%M%SZ).json"
+```
+
+The runner creates its own PostgreSQL 18 container, binds its randomly allocated port
+to loopback, and uses generated credentials. It does not use the application's database
+URL or stop existing services. Checks cover the non-UTC server default, first timestamp,
+termination of an established uncommitted connection, fresh pool checkout, duplicate-key
+replay after a committed write, bounded row-lock failure and a restart of only the owned
+container. Exact ID and label ownership are verified before restart/removal. A lost create
+response remains unknown and is not retried; inspect the retained name if reported.
+Results retain partial successful checks and cleanup failures without connection secrets.
+
+The post-commit case proves uniqueness/durability at a controlled boundary. It does not
+simulate a lost TCP commit acknowledgement. This suite does not accept monitor queue
+replay, application process crashes, multi-service failure or automatic containment.
+
+### Anomaly-only process and file-write loop evidence
+
+`tests/test_final_completion.py` exercises both real API routes over disposable SQLite:
+anomaly witness, confirmation, candidate backtest, human review and a linked subsequent
+incident. Native validation/reload remains mocked. Fixture tests are not live detections.
+
+For each actual native chain, first collect a qualifying default-model anomaly with its
+same-container baseline witness. Capture a separate, operator-reviewed benign JSONL corpus.
+Use the existing confirmation and review UI to submit/backtest and explicitly approve
+the candidate after inspecting its literals. Repeat the harmless operation in the isolated
+workload, await the correlation window, and retain the native log and linked incident.
+Human approval is a required action, never something an acceptance script fabricates.
+
+Then run the read-only verifier with the actual IDs and paths:
+
+```bash
+.venv/bin/python evaluation/verify_rule_loop.py --help
+```
+
+Required arguments are `--source-incident`, `--rule`, `--refire-incident`,
+`--template spawned_process` or `--template file_write`, `--falco-log`,
+`--benign-corpus` and a new private `--output` outside the checkout. The local API
+provides the incident and latest 100 rule-history records. Older rules outside this
+bounded history require a reviewed export rather than assuming they were found.
+The verifier rejects Falco-backed source incidents, non-ready model states, missing
+confirmation, wrong-container/out-of-window witnesses, changed template content,
+missing human/deploy lifecycle records, a changed approval-time corpus, failed backtest,
+pre-deployment re-fire evidence and missing native-log corroboration. A pass establishes
+the recorded loop, not malicious intent or additional detection coverage.
+
+### Independent detection measurements
+
+Use `evaluation/evaluate_holdout.py` only with operator-labeled independent validation
+windows following frozen training. Labels must not be inferred from Falco matches or
+model predictions. Training and validation must use the same window duration. Keep missing,
+invalid, overlapping and unscored windows in declared denominators. The default model and
+threshold remain unchanged; no evaluation-time tuning is performed. Its fixture tests do
+not establish representativeness, recall or false-positive rates on actual workloads.
+
+Fresh installation, real native loop runs, representative labeled data, live UI permutations,
+pending-work crash/replay schedules and owner-approved destructive/real-response actions
+remain separate evidence requirements. Never mark them passed merely because these tools exist.
+
 ## Follow one container
 
 1. `bin/selfsentry-run` invokes `deployment_gate.run_gate`. Docker creates a stopped

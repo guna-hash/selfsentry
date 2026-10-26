@@ -36,7 +36,9 @@ def test_connection_policy_preserves_explicit_positive_timeout(monkeypatch, quer
     create = Mock()
     monkeypatch.setattr(database, "create_engine", create)
     database.create_database_engine("postgresql+psycopg2://test@127.0.0.1/test" + query)
-    assert create.call_args.kwargs["connect_args"] == {"connect_timeout": expected}
+    assert create.call_args.kwargs["connect_args"] == {
+        "connect_timeout": expected, "options": "-c timezone=UTC",
+    }
     assert create.call_args.kwargs["pool_timeout"] == 5
     assert create.call_args.kwargs["pool_pre_ping"] is True
 
@@ -60,6 +62,26 @@ def test_sqlite_disposable_transaction_remains_usable():
             assert connection.execute(text("SELECT value FROM example")).scalar_one() == 7
     finally:
         engine.dispose()
+
+
+def test_utc_startup_preserves_other_options_and_overrides_explicit_timezone(monkeypatch):
+    create = Mock()
+    monkeypatch.setattr(database, "create_engine", create)
+    database.create_database_engine(
+        "postgresql://test@127.0.0.1/test?"
+        "options=-c%20statement_timeout%3D2000%20-c%20timezone%3DAsia%2FKolkata"
+    )
+    assert create.call_args.kwargs["connect_args"]["options"] == (
+        "-c statement_timeout=2000 -c timezone=Asia/Kolkata -c timezone=UTC"
+    )
+
+
+def test_ambiguous_postgres_options_fail_before_connecting(monkeypatch):
+    create = Mock()
+    monkeypatch.setattr(database, "create_engine", create)
+    with pytest.raises(ValueError, match="single string"):
+        database.create_database_engine("postgresql://test@localhost/test?options=a&options=b")
+    create.assert_not_called()
 
 
 @pytest.fixture

@@ -1,5 +1,19 @@
 # Known limitations and evidence history
 
+## 25 October source follow-up: UTC and acceptance tools
+
+New psycopg2 application connections force UTC before the first transaction, preserving
+other libpq options. This prevents host/database timezone defaults from shifting new naive
+timestamps. Existing ambiguous rows are not rewritten. External SQL clients remain responsible
+for their own timezone, and this fix does not address Falco/eBPF event-clock recurrence.
+
+The independent-window evaluator now rejects duration mismatches as unscored validation
+windows rather than treating their feature counts as comparable. Both anomaly-template API
+chains have regression coverage with native reload mocked. The new read-only native-chain
+verifier and disposable PostgreSQL fault runner must actually be executed before claiming
+their native acceptance. They do not replace representative labeled trials, pending-work
+application crash/replay schedules, clean-host installation or human rule approval.
+
 > Current 23 October follow-up: [individual acceptance assessment](repository-audit/report.md).
 > PostgreSQL migration/adoption/restore/concurrency, gate/shell, workload and journal export
 > have passes recorded in the committed VM note; raw evidence not inspected here. The dated
@@ -305,3 +319,30 @@ identity comparison; keys differing only by a later timestamp still acknowledge 
 The acknowledgement body is not cryptographically bound to the key/content. Keyless events,
 producer key selection, ordered backlog handling after a conflict, retention and native
 PostgreSQL race/crash/network validation remain limitations. Existing records are not rewritten.
+
+## Current acceptance update — 26 October 2026
+
+The following supersedes older current-status wording only. Dated historical results,
+failed trials and scope boundaries remain unchanged. Evidence was inspected from supplied
+operator terminal output; private database/journal files remain outside the repository.
+
+| Evidence | Current result and boundary |
+| --- | --- |
+| Release checks | Operator VM: 1,268 Python tests plus 104 subtests, 168 frontend tests in 34 files, lint, scoped types over 99 files, production build and whitespace check passed. Evidence directory: `state/evaluation/final-checks-20261026T064610Z`. Chart bundle warning remains non-blocking. |
+| Audit durability | Seven disposable PostgreSQL/API checks passed: producer/backend SIGKILL, pending replay, unreachable backend, lost HTTP response after commit, database stop/start and retained changed-content conflict. HTTP acknowledgement loss is not PostgreSQL COMMIT acknowledgement loss. |
+| Monitor replay | Five additional checks passed with real separate monitor/API processes and disposable PostgreSQL: pending incident survives SIGKILL during outage, exact-once recovery with original timeline, checkpoint reopening, private-log inode replacement and partial-line completion. Telemetry was explicitly synthetic; native Falco lifecycle was not exercised. |
+| Test cleanup | Owned API/monitor stopped and owned database container removed; live monitor healthy with incident outbox zero afterward. Disposable final status had an outbox depth of one, so this run does not establish every disposable workflow drained before shutdown. |
+| Rule loops | Default Isolation Forest anomaly-only sources 220 and 224 produced reviewed rules 24 and 25 and linked native re-fire incidents 223 and 226. File-write and process/parent verifier results passed. Each backtest had 36 usable matching-type benign events, zero false positives; no representative accuracy claim. |
+| Native cleanup | Rules 24 and 25 retired with `native_rule_unloaded=true`; temporary reload socket override removed, environment settings restored, test container stopped. Earlier blocked retirement attempts were retained. |
+| Separate host recovery | Existing separate VM restored and verified database tables/sequences, state/checkpoint/model readback and live ingestion; post-reboot health/UTC and operator browser checks recorded. This is not clean installation proof. |
+| Idle health | Authenticated database readiness probe fixes backend-unknown health on an idle monitor. Its 17 targeted regressions and the current full release passed. |
+
+Private replay evidence directory: `~/selfsentry-private-evidence/monitor-replay-20261026T064051Z`.
+The terminal report is inspected evidence, not an independent execution on the operator VM.
+No credentials, original logs, baselines or database exports are included here.
+
+Open boundaries remain: genuine PostgreSQL COMMIT acknowledgement loss; native Falco engine
+lifecycle and live rotation; Docker unavailability and remaining interrupted response/gate
+operations; clean host provisioning; representative accuracy and sustained performance;
+recurring clock-skew root cause. Original historical rows and rejected/invalid trials are
+unchanged. Isolation remains disabled for ordinary operation.

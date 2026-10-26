@@ -3093,5 +3093,111 @@
       "followup_status": "Uncommitted local source continuation; not merged or pushed",
       "our_actions": "Read-only remote inspection/fetch; no main merge performed by this agent"
     }
+  },
+  "completion_validation_20261025": {
+    "source_base": "229c236d325013e9249069affdf8b4c38e83e923",
+    "status": "SOURCE_CHECKS_PASSED; NATIVE_AND_DATA_DEPENDENT_ACCEPTANCE_PENDING",
+    "python": {
+      "passed": 1229,
+      "subtests": 104,
+      "skipped": 3,
+      "seconds": 31.02,
+      "log_sha256": "3d70ab75a6c0fb41b255c53bc8e84d2d6ca02d33faf28d33c41766a3874c4313"
+    },
+    "frontend": {
+      "passed": 168,
+      "build": "PASS"
+    },
+    "lint": "PASS",
+    "types": {
+      "status": "PASS",
+      "source_files": 99
+    },
+    "native_fault_runner": "Prepared; Docker/PostgreSQL unavailable in this workspace; NOT EXECUTED",
+    "native_rule_loop": "Read-only verifier prepared; both template API chains tested with native reload mocked",
+    "private_recovery_evidence_included": false,
+    "live_services_changed": false,
+    "committed": false,
+    "pushed": false,
+    "remaining": [
+      "Native fault-runner execution",
+      "Independent representative labeled validation corpus",
+      "Human-approved native anomaly-only process/parent and file-write chains",
+      "Clean-host installation",
+      "Pending-work crash/replay schedules and remaining live browser permutations",
+      "Explicit owner decisions for destructive cleanup or real automatic response"
+    ]
+  },
+  "current_acceptance_20261026": {
+    "source_commit": "229c236d325013e9249069affdf8b4c38e83e923",
+    "source_state": "uncommitted cumulative follow-up changes; no push authorized",
+    "evidence_basis": "operator-supplied terminal output inspected; not independently executed on VM",
+    "release": {
+      "python_passed": 1268,
+      "subtests_passed": 104,
+      "frontend_passed": 168,
+      "frontend_files": 34,
+      "typed_files": 99,
+      "lint": "PASS",
+      "build": "PASS",
+      "diff_check": "PASS",
+      "evidence": "state/evaluation/final-checks-20261026T064610Z"
+    },
+    "replay": {
+      "passed": true,
+      "checks": 12,
+      "evidence": "~/selfsentry-private-evidence/monitor-replay-20261026T064051Z",
+      "native_postgres": true,
+      "real_monitor_api": true,
+      "synthetic_telemetry": true,
+      "native_falco_lifecycle": false,
+      "postgres_commit_ack_loss": false,
+      "live_monitor_after_healthy": true,
+      "live_incident_outbox_after": 0,
+      "disposable_final_incident_outbox": 1
+    },
+    "rule_loops": [
+      {
+        "template": "file_write",
+        "source": 220,
+        "rule": 24,
+        "refire": 223
+      },
+      {
+        "template": "spawned_process",
+        "source": 224,
+        "rule": 25,
+        "refire": 226
+      }
+    ],
+    "rule_loop_scope": "controlled synthetic workload; 36 usable benign events per template; not representative accuracy",
+    "fresh_host_setup_verified": false,
+    "private_runtime_evidence_included": false,
+    "criterion_results": [
+      "PASS_SCOPED",
+      "PASS_SCOPED",
+      "PARTIAL",
+      "PASS",
+      "PASS",
+      "PARTIAL",
+      "NOT_VERIFIED",
+      "PARTIAL",
+      "PASS_SCOPED",
+      "PASS"
+    ],
+    "no_original_files_removed": true,
+    "no_commit_or_push": true,
+    "uploaded_diff_review": {
+      "base_commit": "229c236d325013e9249069affdf8b4c38e83e923",
+      "changed_files": 30,
+      "inventory_paths": 387,
+      "missing_paths": [],
+      "extra_paths": [],
+      "populated_hash_mismatches": [],
+      "independent_focused_tests_passed": 123,
+      "diff_check": "PASS",
+      "application_changes_required": false,
+      "scope": "Reconstructed uploaded diff and five untracked source/test files; no fresh native execution"
+    }
   }
 }

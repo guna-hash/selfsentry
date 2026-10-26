@@ -1,12 +1,14 @@
-from fastapi import FastAPI, Request
+from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 import os
 import secrets
 import logging
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import text
 from sqlalchemy.exc import OperationalError, TimeoutError as DatabasePoolTimeout
+from sqlalchemy.orm import Session
 
-from database import engine, Base
+from database import engine, Base, get_db
 
 # Imported so Base.metadata.create_all() sees every table.
 from models.db_models import (  # noqa: F401
@@ -77,3 +79,16 @@ app.include_router(monitor.router)
 @app.get("/")
 async def root():
     return {"status": "SelfSentry backend running"}
+
+
+@app.get("/health/ready")
+def readiness(request: Request, db: Session = Depends(get_db)):
+    """Read-only database readiness, authenticated with the configured write token."""
+    token = os.environ.get("SELFSENTRY_API_TOKEN", "")
+    if not token:
+        raise HTTPException(503, "Configure SELFSENTRY_API_TOKEN")
+    supplied = request.headers.get("Authorization", "")
+    if not secrets.compare_digest(supplied.encode(), f"Bearer {token}".encode()):
+        raise HTTPException(401, "Bearer token required")
+    db.execute(text("SELECT 1"))
+    return {"ready": True}

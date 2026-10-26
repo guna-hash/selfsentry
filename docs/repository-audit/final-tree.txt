@@ -146,12 +146,14 @@ evaluation/scenarios.py
 evaluation/source-hashes.json
 evaluation/verify_archive_copy.py
 evaluation/verify_coordinated_restore.py
+evaluation/verify_database_faults.py
 evaluation/verify_no_baseline.py
 evaluation/verify_postgres_acceptance.py
 evaluation/verify_postgres_concurrency.py
 evaluation/verify_postgres_recovery.py
 evaluation/verify_protected_container.py
 evaluation/verify_retirement_behavior.py
+evaluation/verify_rule_loop.py
 falco-rules/auto-generated-rules.yaml
 falco-rules/base-rules.yaml
 falco-rules/baseline-capture-rules.yaml
@@ -337,6 +339,7 @@ tests/test_behavior_pipeline.py
 tests/test_container_watcher.py
 tests/test_control_worker.py
 tests/test_coordinated_restore.py
+tests/test_database_fault_runner.py
 tests/test_deploy_policy_validator.py
 tests/test_deployment_action_ownership.py
 tests/test_deployment_gate.py
@@ -357,6 +360,7 @@ tests/test_feature_extractor.py
 tests/test_final_completion.py
 tests/test_gate_reconciliation.py
 tests/test_holdout_evaluation.py
+tests/test_idle_backend_readiness.py
 tests/test_incident_pipeline.py
 tests/test_journal_archive.py
 tests/test_live_restart_acceptance.py
@@ -377,6 +381,7 @@ tests/test_risk_scorer.py
 tests/test_rule_deduplicator.py
 tests/test_rule_deployer.py
 tests/test_rule_lifecycle_manager.py
+tests/test_rule_loop_verifier.py
 tests/test_rule_review_lock.py
 tests/test_schema_migrations.py
 tests/test_submit_candidate.py

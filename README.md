@@ -32,7 +32,8 @@ for current review coverage, executed checks and unresolved findings.
   authoritative benign backtesting and human approval. Missing evidence blocks progression.
   AI is optional advisory narration and cannot authorize rules or response actions. Native retirement
   has an opt-in, human-confirmed workflow with retained originals and reload receipts; it defaults
-  disabled and still requires disposable native acceptance. Database-only retirement remains distinct.
+  disabled. Controlled native retirement and two supervised rule loops are recorded in the
+  current audit update; broader failure coverage remains incomplete. Database-only retirement remains distinct.
 - **Dashboard:** live inventory, incidents, audit, rule review, models and monitor health.
   `/sample/overview` is explicitly synthetic and read-only. `/evidence` shows historical
   reports, not current detection measurements.

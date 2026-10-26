@@ -457,6 +457,79 @@ def test_native_refire_is_linked_without_claiming_true_positive(final_api):
     assert history["native_refires"][0]["detail"]["evidence"][0]["rule"] == name
 
 
+@pytest.mark.parametrize("action", ["spawned_process", "file_write"])
+def test_anomaly_witness_to_review_and_linked_incident_for_each_template(
+    final_api, tmp_path, monkeypatch, action,
+):
+    """Exercise real routes/SQLite; native validation/reload is explicitly mocked."""
+    from pattern_extractor import extract_pattern
+    from routes import rules
+    from tests.rule_guard_support import inventory
+    import yaml
+
+    http, _ = final_api
+    config, _ = inventory(tmp_path)
+    monkeypatch.setattr(
+        "rule_deduplicator._runtime_arguments", lambda: ["falco", "-c", str(config)]
+    )
+    monkeypatch.setenv("FALCO_CONFIG_PATH", str(config))
+    monkeypatch.setenv("RULE_GUARD_STATE_DIR", str(tmp_path / "guard"))
+    kind = "Baseline Process Spawn" if action == "spawned_process" else "Baseline File Write"
+    corpus = tmp_path / "benign.jsonl"
+    corpus.write_text(json.dumps({
+        "rule": kind, "priority": "Notice",
+        "time": "2026-10-25T00:00:00Z", "output": "benign",
+        "output_fields": {
+            "container.id": CID, "proc.name": "nginx",
+            "proc.pname": "systemd", "fd.name": "/tmp/benign",
+        },
+    }) + "\n")
+    monkeypatch.setenv("MONITOR_BENIGN_LOG_PATH", str(corpus))
+    item = anomaly_payload()
+    item["monitor_evidence"]["synthesis_evidence"].update(
+        rule=kind, output_fields={
+            "proc.name": "cat", "proc.pname": "sh", "fd.name": "/tmp/reviewed-write",
+        },
+    )
+    created = http.post("/incidents/", json=item)
+    assert created.status_code == 200, created.text
+    source = created.json()
+    assert source["falco_alert"] is None and source["confirmation"] is None
+    rule_yaml = generate_rule(extract_pattern(source), source["id"])
+    confirmed = http.post(
+        f"/incidents/{source['id']}/confirm", params={"confirmed_by": "operator"}
+    )
+    assert confirmed.status_code == 200, confirmed.text
+    with patch.object(rules, "deploy_rule") as deploy:
+        candidate = http.post("/rules/", json={
+            "confirmed_incident_id": confirmed.json()["confirmed_incident_id"],
+            "rule_yaml": rule_yaml, "backtested_fp_rate": 0.04,
+        })
+        assert candidate.status_code == 201, candidate.text
+        rule_id = candidate.json()["id"]
+        deploy.assert_not_called()
+        assert http.post(
+            f"/rules/{rule_id}/approve", params={"reviewed_by": "selfsentry-auto"}
+        ).status_code == 422
+        deploy.assert_not_called()
+        approval = http.post(
+            f"/rules/{rule_id}/approve", params={"reviewed_by": "operator"}
+        )
+        assert approval.status_code == 200, approval.text
+        deploy.assert_called_once_with(str(rule_id), rule_yaml)
+    name = yaml.safe_load(rule_yaml)[0]["rule"]
+    subsequent = http.post("/incidents/", json={
+        "container_id": CID, "risk_score": 50, "event_key": "template-refire-" + action,
+        "falco_alert": {"rule": name, "timestamp": "2026-10-25T00:03:00Z"},
+    })
+    assert subsequent.status_code == 200, subsequent.text
+    history = next(row for row in http.get("/rules/history").json() if row["id"] == rule_id)
+    assert history["incident_id"] == source["id"]
+    assert history["backtested_fp_rate"] == 0  # client-supplied rate was ignored
+    assert history["backtest"]["events_tested"] == 1
+    assert history["native_refires"][0]["detail"]["incident_id"] == subsequent.json()["id"]
+
+
 def test_failed_frontend_start_rolls_back_managed_processes_only(tmp_path, monkeypatch):
     path = tmp_path / "processes.json"
     (tmp_path / "state/logs").mkdir(parents=True)

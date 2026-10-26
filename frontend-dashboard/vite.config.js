@@ -3,6 +3,9 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
+  // DOM integration workers compete for CPU/RAM on the supported small VMs.
+  // Preserve file isolation and the existing test deadlines, but bound concurrency.
+  test: { maxWorkers: 2 },
   build: {
     rolldownOptions: {
       output: {

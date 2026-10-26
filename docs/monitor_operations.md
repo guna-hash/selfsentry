@@ -1,5 +1,19 @@
 # SelfSentry continuous monitor: setup and operation
 
+## Database timezone contract
+
+The backend stores naive timestamps as UTC; the dashboard interprets them as UTC.
+The application engine sets `timezone=UTC` in the psycopg2 startup options before
+any transaction, including fresh pooled connections after a disconnect. This also
+applies to tools and migrations using `create_database_engine`. Existing libpq
+options are retained, with UTC taking precedence over an explicit timezone option.
+External SQL clients must set their own session timezone when writing naive columns.
+This is separate from Falco event-clock freshness and does not repair kernel timestamps.
+
+This change affects future writes. Do not shift existing timestamps in bulk:
+restored data may already be UTC. Correct only rows with independently established
+provenance, retaining the original values and the reason for any correction.
+
 The completion extension builds on source `0dc6374`. Existing modules, tables and data are
 preserved. Explanations use the existing Incident.ai_summary JSON (a deterministic
 risk_explanation member); deployment guidance uses Deployment.policy_summary JSON. Rule

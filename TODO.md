@@ -185,3 +185,13 @@ production CWPP, fleet or Kubernetes expansion is part of this academic work.
 - [ ] Review and merge follow-up/main only after maintainer acceptance; no push performed here.
 
 - [x] Final remote recheck: PR #6 merged the original audit integration into main (`16ac05b`), with the same source tree as `a25fca0`. This continuation remains unmerged.
+
+## Current acceptance update — 26 October 2026
+
+- [x] Inspect operator release output: 1,268 Python tests, 104 subtests, 168 frontend tests, lint/types/build/whitespace passed.
+- [x] Inspect seven disposable audit and five real-monitor replay checks; retain synthetic/native boundaries.
+- [x] Record both supervised default-IF rule loops and verified native test-rule cleanup.
+- [x] Record existing separate-host recovery, without relabeling it as clean installation.
+- [ ] Complete current ten-criterion closure items in docs/repository-audit/report.md.
+
+These entries supersede corresponding older open items only within the stated tested scope.

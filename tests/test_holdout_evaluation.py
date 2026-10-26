@@ -65,3 +65,35 @@ def test_invalid_training_and_underdeclared_trials_cannot_produce_metrics():
     raw['feature_vectors'][0] = raw['feature_vectors'][1]
     with pytest.raises(ValueError, match='overlap'):
         evaluate(json.dumps(raw).encode(), b'{}', 1)
+
+
+def test_mixed_training_duration_is_rejected_before_scoring():
+    raw = json.loads(baseline())
+    raw['feature_vectors'][-1]['window_end'] = window(21)['window_end']
+    with pytest.raises(ValueError, match='fixed duration'):
+        evaluate(json.dumps(raw).encode(), b'{}', 1)
+
+
+def test_long_validation_cannot_inflate_counts_and_appear_complete():
+    longer = window(21)
+    longer['window_end'] = window(22)['window_end']
+    result = evaluate(baseline(), corpus(
+        {'label': 'benign', 'feature_vector': window(20)},
+        {'label': 'attack', 'feature_vector': longer},
+    ), 2)
+    assert result['window_seconds'] == 60
+    assert result['valid_complete_run'] is False
+    assert result['unscored']['attack'] == 1
+    assert result['attack_scored_denominator'] == 0
+
+
+def test_equivalent_offset_windows_do_not_evade_overlap_detection():
+    overlapping = window(0)
+    overlapping['window_start'] = '2026-01-01T05:30:00+05:30'
+    overlapping['window_end'] = '2026-01-01T05:31:00+05:30'
+    result = evaluate(baseline(), corpus(
+        {'label': 'benign', 'feature_vector': overlapping},
+        {'label': 'attack', 'feature_vector': window(20)},
+    ), 2)
+    assert result['separation_errors'] == 1
+    assert result['valid_complete_run'] is False

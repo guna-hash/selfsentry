@@ -1593,3 +1593,73 @@ results; they were not rerun or relabeled as native verification. The stale deli
 reference to Batch 23 was corrected to Batch 25. Closure metadata and package integrity were
 checked separately. Missing native executables were rechecked without installing software,
 starting services, accessing production state or performing response actions.
+
+## Current acceptance update — 26 October 2026
+
+The following supersedes older current-status wording only. Dated historical results,
+failed trials and scope boundaries remain unchanged. Evidence was inspected from supplied
+operator terminal output; private database/journal files remain outside the repository.
+
+| Evidence | Current result and boundary |
+| --- | --- |
+| Release checks | Operator VM: 1,268 Python tests plus 104 subtests, 168 frontend tests in 34 files, lint, scoped types over 99 files, production build and whitespace check passed. Evidence directory: `state/evaluation/final-checks-20261026T064610Z`. Chart bundle warning remains non-blocking. |
+| Audit durability | Seven disposable PostgreSQL/API checks passed: producer/backend SIGKILL, pending replay, unreachable backend, lost HTTP response after commit, database stop/start and retained changed-content conflict. HTTP acknowledgement loss is not PostgreSQL COMMIT acknowledgement loss. |
+| Monitor replay | Five additional checks passed with real separate monitor/API processes and disposable PostgreSQL: pending incident survives SIGKILL during outage, exact-once recovery with original timeline, checkpoint reopening, private-log inode replacement and partial-line completion. Telemetry was explicitly synthetic; native Falco lifecycle was not exercised. |
+| Test cleanup | Owned API/monitor stopped and owned database container removed; live monitor healthy with incident outbox zero afterward. Disposable final status had an outbox depth of one, so this run does not establish every disposable workflow drained before shutdown. |
+| Rule loops | Default Isolation Forest anomaly-only sources 220 and 224 produced reviewed rules 24 and 25 and linked native re-fire incidents 223 and 226. File-write and process/parent verifier results passed. Each backtest had 36 usable matching-type benign events, zero false positives; no representative accuracy claim. |
+| Native cleanup | Rules 24 and 25 retired with `native_rule_unloaded=true`; temporary reload socket override removed, environment settings restored, test container stopped. Earlier blocked retirement attempts were retained. |
+| Separate host recovery | Existing separate VM restored and verified database tables/sequences, state/checkpoint/model readback and live ingestion; post-reboot health/UTC and operator browser checks recorded. This is not clean installation proof. |
+| Idle health | Authenticated database readiness probe fixes backend-unknown health on an idle monitor. Its 17 targeted regressions and the current full release passed. |
+
+Private replay evidence directory: `~/selfsentry-private-evidence/monitor-replay-20261026T064051Z`.
+The terminal report is inspected evidence, not an independent execution on the operator VM.
+No credentials, original logs, baselines or database exports are included here.
+
+### Current ten-criterion assessment
+
+| Criterion | Result | Evidence / remaining boundary |
+| --- | --- | --- |
+| 1. Complete inventory | PASS within scope | Uploaded VM inventory covers all 387 source paths; no missing/extra rows or final hash mismatches. Semantic review depth remains as recorded. |
+| 2. Justified removals | PASS within scope | No original files deleted; four concrete removal proposals remain retained pending owner approval. |
+| 3. Critical feature flow | PARTIAL | Native gate/Falco and two supervised anomaly-only rule loops recorded; current full response and remaining fault interleavings unverified. |
+| 4. Executed tests | PASS | Current operator release and 12 scoped replay checks above. |
+| 5. Build | PASS | Current production build; chart-size warning preserved. |
+| 6. Security findings resolved or documented | PARTIAL | Controls and known risks documented; current advisory refresh and remaining native action checks outstanding. |
+| 7. Reproducible setup | NOT VERIFIED | Locked dependencies exist; existing-host recovery is not clean Linux provisioning. |
+| 8. Accurate docs | PARTIAL | Current acceptance updated here; final inventory and all feature wording still require reconciliation. |
+| 9. Final Git diff reviewed | PASS within scope | Exact uploaded tracked patch and five new files reconstructed at base 229c236; 30 changed files compared, focused source review and 123 regressions passed. No new actionable defect established in this diff; not proof of defect absence. |
+| 10. Limitations documented | PASS | Explicit synthetic/native, accuracy, recovery and deployment boundaries retained. |
+
+### Remaining closure work by master-prompt phases
+
+- Phases 1–4, 9–14: inventory and uploaded diff reviewed; remaining live
+  mobile/theme/keyboard/loading/error/operator-action walkthrough and final documentation consistency.
+- Phases 5–8, 21–22: clean supported Linux provisioning with locked dependencies;
+  current advisory/package-use/permissions review and owner license decision.
+- Phases 15–20: Docker unavailability, native Falco engine restart/log lifecycle,
+  remaining gate/action interruption and review/deployment interleavings, database
+  COMMIT acknowledgement uncertainty. Keep uncertain actions explicit and never auto-repeat.
+- Phases 23–24: representative sustained measurements and independent benign/attack
+  validation with declared denominators; investigate recurring clock skew root cause.
+- File deletion, live pruning and real isolation remain separately controlled owner actions.
+  A general completion request does not authorize real isolation on existing workloads.
+
+Historical tables above retain their original dates and evidence. This assessment supersedes
+older blanket pass counts; it is not release approval or a production-readiness claim.
+
+### Uploaded final diff review — 26 October 2026
+
+The operator package reconstructed cleanly at `229c236d325013e9249069affdf8b4c38e83e923`.
+All 30 changed files matched the previously reviewed source except the two expected
+VM-regenerated inventory files. Inventory rows, final tree and source path set each
+cover 387 paths; every populated final SHA-256 matched the reconstructed bytes.
+Historical inventory counts in older validation sections retain their original scope.
+
+Focused checks independently executed on the reconstruction: 123 passed across database
+configuration, idle readiness, duplicate guard, holdout accounting and both new verification
+runners. These are unit/component regressions, not a repeated native PostgreSQL/Falco run.
+Whitespace checking passed. The supplied native/full-release evidence remains separately
+attributed above. No new actionable application defect was established during this review.
+
+This documentation update changes inventory/report hashes; regenerate inventory after
+applying it. No new files, runtime changes, deletions, commits or pushes are required.

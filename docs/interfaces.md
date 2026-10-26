@@ -380,3 +380,17 @@ reload generations; completed duplicates do not repeat native reloads or rewrite
 review timestamps. DB-only deprecate still reports false for unloading performed by that
 DB-only call. Earlier unimplemented-native statements describe the prior checkpoint; live
 Falco acceptance remains NOT VERIFIED. See the developer guide for exact recovery limits.
+
+### Idle backend readiness
+
+`GET /health/ready` requires the configured bearer token and executes only `SELECT 1`.
+It returns `{"ready": true}` after the authenticated database check; missing credentials,
+incorrect credentials and database failures remain non-success responses. It does not
+create audit records or confirm a pending write outcome.
+
+The control worker probes this endpoint at startup and every 15 seconds, with a client
+timeout capped at two seconds and redirects disabled. Falco ingestion never performs
+the probe. A successful probe can resolve an idle startup's unknown backend state;
+it does not clear rejected or retrying audit-delivery outcomes. A failed probe makes
+old delivery success unavailable until readiness recovers. Fresh control/heartbeat
+requirements still apply. Queue depth alone does not establish backend readiness.

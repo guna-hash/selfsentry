@@ -1,5 +1,14 @@
 # Changelog
 
+### Completion validation follow-up — 25 October 2026
+- Enforce UTC in PostgreSQL connection startup options while retaining other libpq settings;
+  host/database timezone defaults no longer change new naive timestamp values.
+- Reject mixed training/validation window durations in independent holdout accounting.
+- Add a disposable PostgreSQL fault runner and read-only evidence verification for each
+  anomaly-only literal-template loop; distinguish native results from fixture tests.
+- Exercise both templates through confirmation, authoritative candidate backtesting,
+  explicit human review and linked incident routes with native reload mocked.
+
 ### Uncommitted native retirement continuation — 23 October 2026
 - Add explicit opt-in human-reviewed native unload/recovery with prevalidation, durable originals/intent, generation receipts and no blind uncertain retries.
 - Preserve pending/native refire evidence, serialize reviews and retain integer audit links and first-result metadata.

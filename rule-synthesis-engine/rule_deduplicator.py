@@ -46,6 +46,20 @@ OPS = {
     "regex",
 }
 
+# Full parsed definitions of the two shipped telemetry collectors, including
+# output, description, priority and tags. Names/tags alone never establish trust.
+# A collector edit requires review and an explicit update of these pins.
+BASELINE_COLLECTORS = {
+    "Baseline Process Spawn": (
+        "76a3fa674b13a5c547e730314838fd8756c8a10cae380837ddacc94c3732441f",
+        ("proc.name", "proc.pname"),
+    ),
+    "Baseline File Write": (
+        "90747f8d2a79e73178cdeac83621fdef0279097a8e086e412ba602ab11e82207",
+        ("proc.name", "fd.name"),
+    ),
+}
+
 
 class InventoryError(RuntimeError):
     """Coverage or comparison cannot be established; never assume an empty inventory."""
@@ -148,7 +162,9 @@ class Parser:
         if field in self.macros:
             if field in self.stack or len(self.stack) > 64:
                 raise InventoryError("Cyclic or excessive macro expansion")
-            return Parser(self.macros[field], self.macros, self.lists, (*self.stack, field)).parse()
+            return Parser(
+                self.macros[field], self.macros, self.lists, (*self.stack, field)
+            ).parse()
         if field in ("true", "false"):
             return (field,)
         # Field transforms are distinct from the underlying field.
@@ -292,7 +308,9 @@ def fingerprint(node):
             if atom[1:3] == (field, "="):
                 result = restrict(hi if atom[3] == value else lo, field, value)
             else:
-                result = make(atom, restrict(lo, field, value), restrict(hi, field, value))
+                result = make(
+                    atom, restrict(lo, field, value), restrict(hi, field, value)
+                )
             restrictions[key] = result
         return restrictions[key]
 
@@ -356,9 +374,13 @@ def _runtime_arguments():
         pid = int(result.stdout.strip())
         if pid <= 0:
             raise ValueError("Falco is not running")
-        return Path(f"/proc/{pid}/cmdline").read_bytes().decode().rstrip("\0").split("\0")
+        return (
+            Path(f"/proc/{pid}/cmdline").read_bytes().decode().rstrip("\0").split("\0")
+        )
     except (OSError, ValueError, subprocess.SubprocessError) as exc:
-        raise InventoryError("Cannot establish the running Falco service inventory") from exc
+        raise InventoryError(
+            "Cannot establish the running Falco service inventory"
+        ) from exc
 
 
 def _verify_runtime(config_path):
@@ -391,19 +413,29 @@ def _verify_runtime(config_path):
                 "config_files",
                 "rule_matching",
             }:
-                raise InventoryError("Runtime rules/config override cannot be safely inventoried")
+                raise InventoryError(
+                    "Runtime rules/config override cannot be safely inventoried"
+                )
         elif arg.startswith(("--option=", "-o")):
-            option = arg.removeprefix("--option=") if arg.startswith("--option=") else arg[2:]
+            option = (
+                arg.removeprefix("--option=")
+                if arg.startswith("--option=")
+                else arg[2:]
+            )
             if option.split("=", 1)[0].split("[", 1)[0] in {
                 "rules_files",
                 "rules_file",
                 "config_files",
                 "rule_matching",
             }:
-                raise InventoryError("Runtime rules/config override cannot be safely inventoried")
+                raise InventoryError(
+                    "Runtime rules/config override cannot be safely inventoried"
+                )
         index += 1
     if configured.resolve() != Path(config_path).resolve():
-        raise InventoryError("FALCO_CONFIG_PATH differs from the running Falco configuration")
+        raise InventoryError(
+            "FALCO_CONFIG_PATH differs from the running Falco configuration"
+        )
 
 
 def load_inventory(config_path=None, *, files: list[Path] | None = None):
@@ -412,7 +444,9 @@ def load_inventory(config_path=None, *, files: list[Path] | None = None):
     Every observed version is protected, including overrides and disabled rules.
     This deliberately errs on the side of blocking regeneration.
     """
-    config_path = Path(config_path or os.environ.get("FALCO_CONFIG_PATH", "/etc/falco/falco.yaml"))
+    config_path = Path(
+        config_path or os.environ.get("FALCO_CONFIG_PATH", "/etc/falco/falco.yaml")
+    )
     config: dict[str, Any] = {}
     visited: set[Path] = set()
 
@@ -511,14 +545,22 @@ def _compiled(serialized):
             lists[row[key]] = items
         elif key == "macro":
             condition = row.get("condition")
-            if row.get("append") or row.get("override", {}).get("condition") == "append":
+            if (
+                row.get("append")
+                or row.get("override", {}).get("condition") == "append"
+            ):
                 condition = macros.get(row[key], "") + " " + str(condition)
             macros[row[key]] = condition
         elif "condition" in row:
             # Protect all observed rule definitions, even after replacement/disable.
             condition = row["condition"]
-            if row.get("append") or row.get("override", {}).get("condition") == "append":
-                previous = next((r for r in reversed(rules) if r["rule"] == row["rule"]), None)
+            if (
+                row.get("append")
+                or row.get("override", {}).get("condition") == "append"
+            ):
+                previous = next(
+                    (r for r in reversed(rules) if r["rule"] == row["rule"]), None
+                )
                 if previous is None:
                     raise InventoryError("Rule append has no original definition")
                 condition = previous["condition"] + " " + condition
@@ -562,14 +604,51 @@ def check(candidate_yaml, rows, candidate_environment=None):
     return _compare(candidate_yaml, existing, macros, lists)
 
 
+def _refines_collector(
+    candidate_node, candidate_digest, row, other, other_digest, macros, lists
+):
+    """Prove a literal refinement of a pinned telemetry collector only.
+
+    This is not a general strict-subset exemption for security rules. Both
+    template dimensions must add necessary singleton constraints, and Boolean
+    implication must hold. Historical macro meanings must also match today's
+    interpretation; uncertain comparisons retain the normal rejection policy.
+    """
+    spec = BASELINE_COLLECTORS.get(row["rule"])
+    if spec is None or candidate_digest == "false":
+        return False
+    definition_digest = hashlib.sha256(
+        json.dumps(row, sort_keys=True).encode()
+    ).hexdigest()
+    if definition_digest != spec[0]:
+        return False
+    if fingerprint(Parser(row["condition"], macros, lists).parse()) != other_digest:
+        return False
+    for field in spec[1]:
+        domain = _domain(candidate_node, field)
+        if domain is None or len(domain) != 1 or _domain(other, field) is not None:
+            return False
+    return (
+        candidate_digest != other_digest
+        and fingerprint(_join("and", [candidate_node, other])) == candidate_digest
+        and fingerprint(_join("and", [other, ("not", candidate_node)])) != "false"
+    )
+
+
 def _compare(candidate_yaml, existing, macros, lists):
     candidates = definitions(candidate_yaml)
-    if len(candidates) != 1 or "rule" not in candidates[0] or "condition" not in candidates[0]:
+    if (
+        len(candidates) != 1
+        or "rule" not in candidates[0]
+        or "condition" not in candidates[0]
+    ):
         raise InventoryError("Exactly one rule required")
     candidate = candidates[0]
     if candidate.get("source", "syscall") != "syscall":
         raise InventoryError("Only syscall template candidates are supported")
-    if any(k in candidate for k in ("macro", "list", "override", "append", "exceptions")):
+    if any(
+        k in candidate for k in ("macro", "list", "override", "append", "exceptions")
+    ):
         raise InventoryError("Candidate directives/overrides are forbidden")
     try:
         node = Parser(candidate["condition"], macros, lists).parse()
@@ -591,6 +670,8 @@ def _compare(candidate_yaml, existing, macros, lists):
                 else "Semantically equivalent to deployed rule"
             )
             raise DuplicateRule(f'{label}: {row["rule"]}', row["rule"])
+        if _refines_collector(node, digest, row, other, other_digest, macros, lists):
+            continue
         other_atoms = _atoms(other)
         # Boolean canonicalization never guesses that two different string,
         # regex, numeric or network predicates are independent. Where those
@@ -613,10 +694,14 @@ def _compare(candidate_yaml, existing, macros, lists):
                 "(overlapping predicates; semantic equivalence cannot be excluded)",
                 row["rule"],
             )
-        other_processes = {a[3] for a in other_atoms if a[:3] == ("atom", "proc.name", "=")}
+        other_processes = {
+            a[3] for a in other_atoms if a[:3] == ("atom", "proc.name", "=")
+        }
         similarity = len(atoms & other_atoms) / max(1, len(atoms | other_atoms))
         if processes & other_processes and similarity >= 0.75:
-            raise DuplicateRule(f'Near-duplicate of existing rule: {row["rule"]}', row["rule"])
+            raise DuplicateRule(
+                f'Near-duplicate of existing rule: {row["rule"]}', row["rule"]
+            )
     return digest
 
 
@@ -638,7 +723,9 @@ def _remember_rules(db, compiled):
 
 @contextlib.contextmanager
 def guard(config_path=None):
-    state = Path(os.environ.get("RULE_GUARD_STATE_DIR", str(ROOT / "state" / "rule-guard")))
+    state = Path(
+        os.environ.get("RULE_GUARD_STATE_DIR", str(ROOT / "state" / "rule-guard"))
+    )
     state.mkdir(parents=True, exist_ok=True)
     with (state / "guard.lock").open("a") as lock:
         fcntl.flock(lock, fcntl.LOCK_EX)
@@ -696,12 +783,18 @@ class RuleGuard:
 
     def check_retry(self, text):
         own = definitions(text)
-        other = [(row, node, digest) for row, node, digest in self.protected if row not in own]
+        other = [
+            (row, node, digest)
+            for row, node, digest in self.protected
+            if row not in own
+        ]
         _compare(text, other, self.macros, self.lists)
 
     def receipt(self, owner, text):
         digest = hashlib.sha256(text.encode()).hexdigest()
-        row = self.db.execute("SELECT digest FROM receipts WHERE owner=?", (owner,)).fetchone()
+        row = self.db.execute(
+            "SELECT digest FROM receipts WHERE owner=?", (owner,)
+        ).fetchone()
         return row == (digest,)
 
     def remember(self, owner, text):

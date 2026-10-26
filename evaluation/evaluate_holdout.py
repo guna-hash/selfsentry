@@ -12,6 +12,7 @@ import json
 import math
 import os
 from pathlib import Path
+import re
 import sys
 import time
 from typing import Any
@@ -33,18 +34,24 @@ def vector(raw, cid):
     features = {name: raw[name] for name in FEATURE_NAMES}
     if any(type(v) is not int or v < 0 for v in features.values()):
         raise ValueError('window features must be nonnegative integers')
-    return FeatureVector(cid, start, end, **features)
+    return FeatureVector(cid, start.astimezone(timezone.utc),
+                         end.astimezone(timezone.utc), **features)
 
 
 def evaluate(baseline_bytes, validation_bytes, expected_windows):
     raw = json.loads(baseline_bytes)
     cid = raw['container_id']
+    if not isinstance(cid, str) or not re.fullmatch(r'[0-9a-f]{12,64}', cid):
+        raise ValueError('Training container must be a Docker hex identity')
     training = [vector(item, cid) for item in raw['feature_vectors']]
     if not training or len({tuple(v.to_array()) for v in training}) < 2:
         raise ValueError('Training requires nonempty varied baseline data')
     ordered = sorted(training, key=lambda v: v.window_start)
     if any(a.window_end > b.window_start for a, b in zip(ordered, ordered[1:])):
         raise ValueError('Training windows overlap or repeat')
+    window_seconds = (ordered[0].window_end - ordered[0].window_start).total_seconds()
+    if any((v.window_end - v.window_start).total_seconds() != window_seconds for v in training):
+        raise ValueError('Training windows must use one fixed duration')
     lines = validation_bytes.decode('utf-8').splitlines()
     if type(expected_windows) is not int or expected_windows <= 0 or expected_windows < len(lines):
         raise ValueError('Declare an expected window count covering all validation rows')
@@ -66,6 +73,8 @@ def evaluate(baseline_bytes, validation_bytes, expected_windows):
                 label = 'unknown'
                 raise ValueError('missing/invalid ground-truth label')
             fv = vector(item['feature_vector'], cid)
+            if (fv.window_end - fv.window_start).total_seconds() != window_seconds:
+                raise ValueError('Validation window duration differs from frozen training')
             if any(fv.window_start < old.window_end and old.window_start < fv.window_end
                    for old in training + seen):
                 separation_errors += 1
@@ -92,6 +101,7 @@ def evaluate(baseline_bytes, validation_bytes, expected_windows):
                                           'inspect private input'})
     benign, attacks = counts['fp'] + counts['tn'], counts['tp'] + counts['fn']
     return {'algorithm': 'isolation_forest', 'threshold': 0.5,
+            'window_seconds': window_seconds,
             'score_meaning': 'ranking score; not calibrated confidence',
             'baseline_sha256': hashlib.sha256(baseline_bytes).hexdigest(),
             'validation_sha256': hashlib.sha256(validation_bytes).hexdigest(),
