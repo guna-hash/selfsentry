@@ -192,6 +192,71 @@ class TestDockerEventPump(unittest.TestCase):
         self.stop.set()
         self.assertIn("no daemon", pump.last_error)
 
+    def test_normal_stream_eof_reports_unavailable_before_cleanup_and_backoff(self):
+        observed = []
+        client = MagicMock()
+        client.events.return_value = iter([])
+        pump = self.make_pump(lambda: client)
+
+        def close():
+            observed.append((pump.state, pump.last_error))
+            self.stop.set()
+
+        client.close.side_effect = close
+        pump.start()
+        pump.join(timeout=3)
+        self.assertFalse(pump.is_alive())
+        self.assertEqual(observed, [("unavailable", "Docker event stream ended; reconnecting")])
+
+    def test_sdk_transport_error_converted_to_eof_remains_unavailable(self):
+        from docker.types.daemon import CancellableStream
+
+        def broken():
+            raise OSError("controlled transport loss")
+            yield  # pragma: no cover - force generator semantics
+
+        stream = CancellableStream(broken(), SimpleNamespace(raw=SimpleNamespace(closed=True)))
+        client = MagicMock()
+        client.events.return_value = stream
+        pump = self.make_pump(lambda: client)
+        client.close.side_effect = self.stop.set
+        pump.start()
+        pump.join(timeout=3)
+        self.assertFalse(pump.is_alive())
+        self.assertEqual(pump.state, "unavailable")
+        self.assertIn("stream ended", pump.last_error)
+
+    def test_eof_during_requested_shutdown_is_not_reported_as_outage(self):
+        def ending():
+            self.stop.set()
+            yield from ()
+
+        pump = self.make_pump(lambda: FakeStreamClient(ending()))
+        pump.start()
+        pump.join(timeout=3)
+        self.assertFalse(pump.is_alive())
+        self.assertEqual(pump.state, "connected")
+        self.assertIsNone(pump.last_error)
+
+    def test_repeated_empty_streams_increase_backoff_until_an_event_is_accepted(self):
+        waits = []
+        stop = self.stop
+
+        class Stop:
+            def is_set(self):
+                return stop.is_set()
+
+            def wait(self, delay):
+                waits.append(delay)
+                return len(waits) == 3
+
+        pump = docker_events.DockerEventPump(
+            lambda: FakeStreamClient([]), self.out, Stop(), 0.1, 0.4
+        )
+        pump.run()
+        self.assertEqual(waits, [0.1, 0.2, 0.4])
+        self.assertEqual(pump.state, "unavailable")
+
 
 if __name__ == "__main__":
     unittest.main()

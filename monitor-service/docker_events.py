@@ -84,17 +84,24 @@ class DockerEventPump(threading.Thread):
                     return
                 self.state, self.last_error = "connected", None
                 self.reconnected.set()
-                delay = self._retry_base
                 for event in stream:
                     while not self._stop_event.is_set():
                         try:
                             self._queue.put(event, timeout=0.1)
                             self._remember_time(event)
+                            delay = self._retry_base
                             break
                         except queue.Full:
                             continue
                     else:
                         return
+                # CancellableStream converts some transport errors to EOF. An
+                # unbounded event subscription ending is still a disconnection;
+                # do not advertise connected while waiting to reconnect.
+                if not self._stop_event.is_set():
+                    self.state = "unavailable"
+                    self.last_error = "Docker event stream ended; reconnecting"
+                    logger.warning(self.last_error)
             except Exception as exc:  # noqa: BLE001 - supervisor loop: log, back off, retry
                 self.state, self.last_error = "unavailable", str(exc)
                 logger.warning("Docker event stream unavailable: %s", exc)

@@ -1663,3 +1663,22 @@ attributed above. No new actionable application defect was established during th
 
 This documentation update changes inventory/report hashes; regenerate inventory after
 applying it. No new files, runtime changes, deletions, commits or pushes are required.
+
+## Docker event-stream EOF follow-up — 26 October 2026
+
+Unexpected Docker event-stream EOF now reports unavailable during reconnect
+backoff. Backoff resets after an accepted event rather than an empty stream.
+
+Verification: 12 event-pump tests passed; full release passed 1,272 Python
+tests plus 104 subtests, 168 frontend tests, lint, scoped types and build.
+Release evidence: state/evaluation/final-checks-20261026T092428Z.
+
+Four native component checks passed through a private faulting connection:
+outage reporting, reconnection, explicit recovery enumeration and subsequent
+real event delivery. Owned probe cleanup succeeded; live health and empty
+outbox verified after application restart.
+
+Private evidence remains outside Git:
+~/selfsentry-private-evidence/docker-outage-fixed-20261026T092311Z/results.json.
+Earlier failed attempts are retained. This does not establish full-monitor
+reconciliation, Docker daemon restart or native Falco lifecycle acceptance.
