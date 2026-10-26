@@ -1698,3 +1698,16 @@ Private evidence: ~/selfsentry-private-evidence/full-monitor-docker-20261026T094
 Scope: private Docker connection failure, not daemon restart. Falco input
 was explicitly synthetic; native Falco lifecycle, model accuracy and real
 isolation were not tested. Raw evidence remains outside Git.
+
+## Private native Falco lifecycle — 26 October 2026
+
+Operator execution on commit 9a5498d passed four checks using two separate,
+bounded modern-eBPF Falco captures and a private literal host-printf rule.
+Both captures produced fresh native events. The real FalcoTailer reopened
+committed checkpoints without replay and recovered after private-log inode
+replacement. Both capture processes exited; live Falco PID 4366 and monitor
+health were preserved.
+
+Private evidence: ~/selfsentry-private-evidence/native-falco-lifecycle-20261026T094817Z.
+No live service restart, live-log rotation, full-monitor incident flow,
+lossless downtime capture or permanent clock-skew repair is established.
