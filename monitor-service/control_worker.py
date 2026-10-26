@@ -99,6 +99,7 @@ class ControlWorker:
             )
             pipeline = IncidentPipeline(behavior)
             next_reconcile = 0.0
+            next_backend_probe = 0.0
             while not self.stopping.is_set():
                 try:
                     # Bounded batches prevent a busy host from starving response delivery.
@@ -141,6 +142,13 @@ class ControlWorker:
                     if self.stopping.is_set():
                         break
                     self.audit.flush_spool()
+                    if self.stopping.is_set():
+                        break
+                    if time.monotonic() >= next_backend_probe:
+                        probe = getattr(self.audit, "check_backend", None)
+                        if callable(probe):
+                            probe()
+                        next_backend_probe = time.monotonic() + 15.0
                     if self.stopping.is_set():
                         break
                     delivery = flush_deployments(self.config.backend_url)

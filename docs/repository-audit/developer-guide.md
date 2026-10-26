@@ -3,6 +3,82 @@
 Read this alongside the audit report. This guide explains the implementation; it does
 not certify live operation or eliminate the review gaps recorded in the inventory.
 
+## Completion checks added 25 October 2026
+
+These tools do not change the default model, approve generated rules, enable response
+automation, rewrite existing timestamps or publish private runtime evidence.
+
+### PostgreSQL timezone and disposable connection faults
+
+The backend uses startup-packet `options` to force UTC, retaining other options and
+the connect timeout. This avoids a transaction-local timezone setting being undone
+by pool rollback. The first default `now()` written to a naive timestamp must already
+be UTC. Unit checks exercise construction and rejection; only native execution tests
+actual PostgreSQL behavior.
+
+On a Docker-enabled Linux host, use a new private result file outside the checkout:
+
+```bash
+.venv/bin/python evaluation/verify_database_faults.py \
+  --output "$HOME/selfsentry-db-faults-$(date -u +%Y%m%dT%H%M%SZ).json"
+```
+
+The runner creates its own PostgreSQL 18 container, binds its randomly allocated port
+to loopback, and uses generated credentials. It does not use the application's database
+URL or stop existing services. Checks cover the non-UTC server default, first timestamp,
+termination of an established uncommitted connection, fresh pool checkout, duplicate-key
+replay after a committed write, bounded row-lock failure and a restart of only the owned
+container. Exact ID and label ownership are verified before restart/removal. A lost create
+response remains unknown and is not retried; inspect the retained name if reported.
+Results retain partial successful checks and cleanup failures without connection secrets.
+
+The post-commit case proves uniqueness/durability at a controlled boundary. It does not
+simulate a lost TCP commit acknowledgement. This suite does not accept monitor queue
+replay, application process crashes, multi-service failure or automatic containment.
+
+### Anomaly-only process and file-write loop evidence
+
+`tests/test_final_completion.py` exercises both real API routes over disposable SQLite:
+anomaly witness, confirmation, candidate backtest, human review and a linked subsequent
+incident. Native validation/reload remains mocked. Fixture tests are not live detections.
+
+For each actual native chain, first collect a qualifying default-model anomaly with its
+same-container baseline witness. Capture a separate, operator-reviewed benign JSONL corpus.
+Use the existing confirmation and review UI to submit/backtest and explicitly approve
+the candidate after inspecting its literals. Repeat the harmless operation in the isolated
+workload, await the correlation window, and retain the native log and linked incident.
+Human approval is a required action, never something an acceptance script fabricates.
+
+Then run the read-only verifier with the actual IDs and paths:
+
+```bash
+.venv/bin/python evaluation/verify_rule_loop.py --help
+```
+
+Required arguments are `--source-incident`, `--rule`, `--refire-incident`,
+`--template spawned_process` or `--template file_write`, `--falco-log`,
+`--benign-corpus` and a new private `--output` outside the checkout. The local API
+provides the incident and latest 100 rule-history records. Older rules outside this
+bounded history require a reviewed export rather than assuming they were found.
+The verifier rejects Falco-backed source incidents, non-ready model states, missing
+confirmation, wrong-container/out-of-window witnesses, changed template content,
+missing human/deploy lifecycle records, a changed approval-time corpus, failed backtest,
+pre-deployment re-fire evidence and missing native-log corroboration. A pass establishes
+the recorded loop, not malicious intent or additional detection coverage.
+
+### Independent detection measurements
+
+Use `evaluation/evaluate_holdout.py` only with operator-labeled independent validation
+windows following frozen training. Labels must not be inferred from Falco matches or
+model predictions. Training and validation must use the same window duration. Keep missing,
+invalid, overlapping and unscored windows in declared denominators. The default model and
+threshold remain unchanged; no evaluation-time tuning is performed. Its fixture tests do
+not establish representativeness, recall or false-positive rates on actual workloads.
+
+Fresh installation, real native loop runs, representative labeled data, live UI permutations,
+pending-work crash/replay schedules and owner-approved destructive/real-response actions
+remain separate evidence requirements. Never mark them passed merely because these tools exist.
+
 ## Follow one container
 
 1. `bin/selfsentry-run` invokes `deployment_gate.run_gate`. Docker creates a stopped
@@ -425,3 +501,336 @@ from a caller-omitted default. Tests cover matching/racing replays, seven change
 mapping order, booleans versus integers, timestamp retention, finite input and invalid historical
 data. Client-to-route tests show that a changed event stays pending with 409 after its first
 local record was delivered. Native PostgreSQL race and keyless-event limitations remain open.
+
+## Tracked follow-up tools — 23 October 2026
+
+Run from the repository root with its locked `.venv`. These tools do not form a
+single all-purpose acceptance command. The current report distinguishes local checks
+from the committed native records. Original package/source hashes are retained in
+`recovered-runners.json`; adaptations preserve target ownership/cleanup and isolation gates.
+
+| Tool | Scope and prerequisites |
+| --- | --- |
+| `evaluation/verify_postgres_acceptance.py --repo "$PWD"` | Existing local PostgreSQL and healthy monitor; read-only source snapshot, private dump, two uniquely owned disposable databases; sudo socket identity must match; restores/adopts only the copies |
+| `evaluation/verify_postgres_concurrency.py --repo "$PWD"` | Healthy local stack and PostgreSQL/admin socket; one owned fresh DB; actual keyed audit races, outcome counters and pinned review-lock probe; no full native deploy/review chain |
+| `evaluation/measure_workload.py --repo "$PWD"` | Explicit runtime isolation OFF, managed process identities, empty delivery queues, existing immutable Alpine image; actual gate and one bounded owned container; cleanup checks name/label/full ID |
+| `scripts/export_monitor_journal.py --repo "$PWD"` | Healthy monitor, configured state/PID match; private verified journal **and every referenced archive**, outside checkout/state; no pruning or restore |
+| `evaluation/verify_archive_copy.py --repo "$PWD" --snapshot /private/original-export` | Verified pre-archive export; exercises archive/readback/missing-file refusal on disposable copies; `--offline` is fixture-only and must not be called a native run |
+| `scripts/archive_journal.py --before <past-ISO-time-with-zone> --limit 1000` | Read-only plan by default. Runtime `--apply` moves live payloads and needs a reviewed cutoff, separate approval and stopped monitor; not run by installation |
+| `deployment-gate/reconcile_action.py --kind action --key <32-hex-attempt-key>` | Read-only plan for a **known full ID**; successful local daemon inventory/inspection; refuses unknown creation identity |
+| `evaluation/evaluate_holdout.py` | Offline private frozen baseline/validation inputs; reports invalid/missing trials and class denominators; no live workload or threshold tuning |
+| `scripts/refresh_audit_inventory.py` | Refresh tracked/nonignored-path metadata, symbols/imports/references and hashes; not a claim to re-review every historical file |
+| `scripts/lockfile_sbom.py` | SPDX inventory of pinned Python/npm entries including dev/optional; no dependency/artifact/OS/license verification |
+
+Review native runner source before execution. Native runners have real setup/cleanup
+side effects; successful local unit tests are not permission to point them at arbitrary
+hosts. Do not restart or disrupt the existing VM merely to reproduce an already recorded
+pass. Private dumps and runtime evidence stay outside Git. Record exact source commit,
+dirty-state diff, command, versions, failed runs and cleanup status beside native results.
+`evaluation/source-hashes.json` is a review gate, never a historical native result; changes
+require review of newly pinned source and appropriate acceptance.
+
+### Reconcile a gate observation
+
+First inspect `bin/selfsentry-run --inspect-journal`, retain a verified private export of
+`state/deployments.sqlite`, and obtain the attempt's kind/key. The separate observer uses
+`SELFSENTRY_STATE_DIR` for the same gate journal. A plan displays its original SHA-256,
+full container ID, daemon ID and a bounded current observation. It never prints inspect
+environment variables or raw Docker arguments.
+
+After reviewing that plan, the operator can record an observation explicitly:
+
+```bash
+.venv/bin/python deployment-gate/reconcile_action.py \
+  --kind action --key <full-attempt-key> \
+  --apply-original-sha256 <original-sha256-from-plan> \
+  --reviewed-by <human-label> --reason '<evidence-based-reason>'
+```
+
+Apply obtains the actual ownership flock (expiry alone never permits overriding an owner),
+re-reads the original and takes a fresh Docker observation before one SQLite transaction.
+The returned observation may differ from the earlier plan because the host can change.
+The original hash binds intent, not Docker state. The decision is
+`accepted_current_observation`, not `command_succeeded`. `action_reconciliations` keeps one
+append-only JSON audit per kind/key, including reviewer/reason/timestamp, original hash
+and observed state. Conflicting/repeated decisions refuse replacement. Original attempts,
+queued registrations and health counters are untouched; the ledger is local and not yet
+mirrored to backend audit/UI. A failed Docker call cannot establish absence. A successful
+complete listing can observe absence at that moment, without proving historical removal.
+No automatic retry, remediation, orphan-ID guessing or false health clearance exists.
+
+### Independent held-out window accounting
+
+Baseline input is the existing baseline JSON shape. Validation is one JSON object per
+line: `{"label":"benign"|"attack","feature_vector":<complete FeatureVector dictionary>}`.
+The dictionary includes matching container ID, timezone-aware `window_start/window_end`
+and all eight nonnegative integer counts in `FEATURE_NAMES`. Declare labels independently
+of the model's prediction. Training is frozen; validation must follow it, with no repeated
+or overlapping training/validation windows. Keep failed cases in the input/output.
+
+```bash
+.venv/bin/python evaluation/evaluate_holdout.py \
+  --baseline /private/frozen-baseline.json \
+  --validation /private/independently-labeled-validation.jsonl \
+  --expected-windows <declared-number> --output /private/new-holdout-result.json
+```
+
+Output is exclusive/private and contains corpus hashes, default model/threshold, fit and
+scoring times, predictions, confusion counts, scored-class denominators and unscored counts.
+A partial or one-class run exits nonzero with retained results; rates conditional on scored
+windows must never be presented as full-corpus accuracy. Synthetic test fixtures do not
+establish detection quality, independence of real labels, benignness or representative attack
+coverage. This tool does not accept the anomaly-only synthesis/native re-fire chain.
+
+## Native retirement continuation — 23 October 2026
+
+Native retirement is implemented behind `SELFSENTRY_NATIVE_RETIREMENT_ENABLED=false` by
+default. The existing `/rules/{id}/deprecate` remains the database-only operation. The new
+`GET /rules/{id}/native-retirement-plan` reads file/rule hashes and any retained receipt.
+It does not initialize the retirement journal or change native rules. The write route is
+`POST /rules/{id}/retire-native`, protected by the app's existing bearer-token middleware.
+
+The write body requires `reviewed_by`, a nonblank `reason`, `expected_file_sha256`,
+`expected_rule_sha256`, strict boolean `confirm_native_unload: true`, and an explicit
+`action` of `retire` (default) or `rollback`. It requires a retained `RULE_DEPLOYED` audit.
+Actor labels remain supplied identities; no per-person authentication is claimed.
+
+Before enabling it on a disposable host, verify the exact Falco 0.45 configuration and
+binary. The ordered configured rule inventory must include the generated-rules file exactly
+once; runtime overrides must be supported by the existing inventory guard. A unique exact
+rule definition is required; changed, duplicate, overridden, missing, symlinked or hard-linked
+targets are refused. Prevalidation runs the actual configured Falco executable with ordered
+`-V` files, substituting a temporary candidate without editing the live file.
+
+The host must explicitly configure Falco's protected `reload_control` Unix socket and
+provide the backend account permission to use it. `FALCO_RELOAD_SOCKET` defaults to
+`/run/falco/control.sock`. The app does not enable or change Falco configuration itself,
+create the socket directory, grant privileges, restart Falco, or enable real isolation.
+Socket peer credentials must match the configured service's MainPID.
+
+The protocol was checked against Falco 0.45.0 source commit
+`05d5b3e363d5196c68c8ccea842ca57a2ef05562`, particularly `falco.yaml`,
+`userspace/falco/reload_control.cpp`, `webserver.cpp` and
+`app/actions/validate_rules_files.cpp`. A POST returns an instance/generation baseline;
+only a matching ready instance with a later applied generation beyond the rejected
+generation confirms completion. HTTP success alone is insufficient. A lost POST reply
+is never automatically repeated; only status observations are retried through reload outages.
+The protocol is version-specific and does not attest future Falco interfaces.
+
+### State and recovery contract
+
+The existing per-rule review lock spans DB commits and native work; the permanent inventory
+flock also serializes generated-file mutations with deployment. `retirement_pending` remains
+an active candidate state, cannot be overwritten by database-only deprecation, appears in
+the pending queue, and cannot use ordinary approve/retry controls. Native re-fire evidence
+is retained for this state as well as deployed/retired rules.
+
+`RULE_GUARD_STATE_DIR/retirements` is private. It retains the complete original file,
+private validation output, a SQLite latest-receipt table and append-only transition history.
+The original file and local intent are synced before DB approval/audit is committed. The DB
+is marked pending before the atomically replaced live file can trigger Falco's automatic
+watcher. The full ordered candidate was already prevalidated. The final receipt is durable
+before recording database retirement and a native-result audit.
+
+A known rejected reload permits corrective restoration of the exact original and a verified
+rollback reload. Transport ambiguity, interrupted publication, lost DB acknowledgement or
+failed result persistence retain pending state. An explicit human rollback revalidates the
+original against the current inventory, records recovery intent before restoration, and
+verifies its reload. Recovery refuses unrelated file edits, changed database YAML, duplicate
+native names, missing originals and unowned identities. No exception guesses that an
+uncertain action failed, and no failed/partial backup is deleted automatically.
+
+A durable applied receipt can complete an interrupted DB result without a second native
+reload only while file/rule hashes and the exact Falco instance/generations still match.
+A process change or subsequent reload requires reconciliation. Successful duplicate audit
+replay retains the first result/reviewer timestamp. The duplicate registry's protected
+history is never erased by retirement or rollback.
+
+The dashboard says **Native unload recorded**, rather than claiming perpetual current
+state, only for a matching successful native audit with a well-formed reload receipt.
+Pending/blocked outcomes remain explicit. Native controls have not been added to sample
+mode or to an automatic policy path.
+
+Local acceptance covers actual temporary files/SQLite/flock, process kill/recovery, actual
+API/journal/file round trips with a controlled native adapter, and controlled HTTP protocol
+responses. This host blocks AF_UNIX creation: three real-Unix-peer fixture tests are skipped
+with that reason. Those failures/skips are retained, not reported as native passes. Real
+Falco validation/socket/reload/re-fire and PostgreSQL/native review interleavings remain
+NOT VERIFIED until exercised on an authorized disposable host. Noncooperating external rule
+writers, remote/multiple backend hosts, filesystem/power-loss durability and a global
+request/shutdown deadline remain outside the guarantee.
+
+
+## Next acceptance runners — after VM checkpoint ed56643
+
+### Ten-minute workload
+
+Keep the existing managed services running. Isolation must remain disabled. The local
+alpine:3.20 image is scanned by immutable ID; a gate refusal is retained, never overridden.
+The runner creates and removes only its own restricted, labelled, network-none probe.
+
+```bash
+AUTO_ISOLATION_ENABLED=false .venv/bin/python evaluation/measure_workload.py --repo "$PWD" --executions 3000
+```
+
+It runs 3,000 /bin/true invocations plus 3,000 pacing sleeps at nominal five per second,
+with four concurrent HTTP readers and one-second process/RSS/queue/SQLite-WAL size samples.
+The generator deadline is 775 seconds; probe lifetime is bounded independently. Failed or
+partial output is retained and is never counted as completion. It records the same safety
+and model-status checks as the earlier bounded run. This is sustained observation of one
+paced probe, not representative fleet capacity, leak proof, complete disk accounting,
+model fit/inference timing or a zero-loss claim. No native drop counters are invented.
+
+## Before/unloaded/restored native rule behavior
+
+This explicitly exercises rule 5, whose reviewed SHA256 is
+`47216c322ce212dc121f1efd4170df764331f215a3ae2b41de4c02ae8138f25c`.
+It requires a human reviewer and the generated-file SHA already reviewed in this session.
+It refuses changed source, active/uncertain receipts, enabled isolation/auto-confirmation/
+candidate generation, missing listener and blocked deployment. No API token is printed.
+
+The helper enables only a temporary protected socket. It refuses a custom current Falco
+command or an existing override, and restores the original service if activation fails.
+It uses the directory-group correction verified on this VM. It briefly restarts Falco.
+Backend opt-in is separate and scoped to the managed processes, without editing .env.
+
+```bash
+sudo bash scripts/retirement_test_socket.sh enable sl0thh &&
+SELFSENTRY_NATIVE_RETIREMENT_ENABLED=true FALCO_RELOAD_SOCKET=/run/selfsentry-falco-control/control.sock AUTO_ISOLATION_ENABLED=false bash bin/selfsentry restart &&
+FALCO_RELOAD_SOCKET=/run/selfsentry-falco-control/control.sock .venv/bin/python evaluation/verify_retirement_behavior.py --repo "$PWD" --approve-rule-5-retire-and-restore --reviewed-by guna --expected-file-sha256 8aad4c534cb1b96bb06e9cf5a48840c0acf33034db791378f761feac723d2b65
+```
+
+The native runner creates one owned restricted Alpine probe through the gate, with an
+executable disposable /tmp tmpfs. Three 20-second windows require a baseline process
+witness matching container, process validation-true and parent sh. It expects a native
+match before retirement, no native match while unloaded, and a native match after the
+explicit restore. Kernel/container dispatch may make the renamed harmless binary exit
+nonzero; its process exit is retained and a matching native baseline witness is required.
+This is a process-name detection test, not a claim that an attack succeeded.
+
+Falco event times must agree with host times and a stable host boot/monotonic clock.
+Log rotation, truncation, partial records, missing baseline evidence and oversized logs
+invalidate the trial rather than becoming false negatives. Absence is only the observed
+window, not a permanent proof. The runner uses the existing protected client and endpoint.
+Known applied retirement is explicitly restored even if the unloaded observation fails.
+An uncertain write is never retried; native journals and runner requests are retained.
+No unapproved existing rule is touched. A hard process kill can require manual recovery;
+the owned probe name/full ID/ownership token and operation records are retained for review.
+
+If native_recovery_required is true or a request times out, stop and inspect the receipt;
+do not rerun the test, overwrite rules manually, or blindly repeat either POST.
+A failed preparation before mutation is a failed attempt, not native acceptance.
+
+After a confirmed successful restore, disable the endpoint and remove the temporary socket:
+
+```bash
+SELFSENTRY_NATIVE_RETIREMENT_ENABLED=false AUTO_ISOLATION_ENABLED=false bash bin/selfsentry restart &&
+sudo bash scripts/retirement_test_socket.sh disable sl0thh
+```
+
+The disable helper removes only an override with its expected contents. Retain all evidence.
+
+## Remaining acceptance boundaries
+
+These tools require real VM execution. Their local adapter tests are not native passes.
+The next batch does not close the independent representative benign/attack holdout study,
+anomaly-only confirmation/backtest/approval/refire loop (process-parent and file-write),
+whole-application coordinated restore, fresh supported Linux installation, remaining
+native failure/interleaving cases, live browser matrix, lifecycle clock recurrence,
+owner-approved retention cutoff/cleanup or real isolation. Real isolation stays disabled
+unless separately authorized for a named isolated environment. Fresh-host testing needs
+an actual clean supported host. Detection evaluation needs an independently labelled,
+separated corpus and declared coverage/denominators; synthetic fixtures cannot replace it.
+
+## Validation performed here
+
+Root Python suite: 1,185 passed + 104 subtests, 3 explicit AF_UNIX policy skips.
+Focused runner tests: 49 passed. Full lint and type checks passed (95 source files).
+Socket helper: bash syntax validated; no local service mutation/native execution.
+No frontend source changed, so prior VM build/frontend evidence remains scoped to that code.
+
+
+## Coordinated durable-state restore — next acceptance batch
+
+### Execute on the existing VM
+
+Keep the stack running initially and do not run other gate/review/baseline commands during
+capture. The source must have a healthy managed monitor, a ready baseline, no separately
+owned mutation locks, the verified local PostgreSQL cluster and adequate private disk space.
+Existing application configuration and credentials are read locally. No .env file is copied.
+Do not run this against an unreviewed remote PostgreSQL installation.
+
+The flag explicitly authorizes a brief pause of the three managed application processes.
+Docker, PostgreSQL, Falco and existing container workloads continue running. The monitor
+will catch up from its original checkpoint when resumed; inputs keep accumulating in the
+Falco log. Retirements and automatic isolation are kept disabled on resume.
+
+```bash
+cd ~/selfsentry &&
+sudo -v &&
+AUTO_ISOLATION_ENABLED=false SELFSENTRY_NATIVE_RETIREMENT_ENABLED=false \
+  .venv/bin/python evaluation/verify_coordinated_restore.py \
+  --repo "$PWD" --approve-managed-pause
+```
+
+Default private work location: ~/selfsentry-recovery-checks/coordinated-restore-TIMESTAMP.
+Failed or partial captures are retained for review and are never accepted as valid backups.
+If any step fails, inspect the report and original application status before retrying.
+A hard kill, host outage or failed original-app startup can require manual recovery;
+`bash bin/selfsentry start` is the existing operator recovery command. The runner never
+repeats an uncertain database create/restore operation automatically.
+
+## What the check verifies
+
+1. All three managed source process identities are present and the healthy monitor reports
+   automatic isolation disabled. Native PostgreSQL backup tools must match the server major
+   version, and the administrator socket must identify the same source cluster.
+2. A stopped-process check and actual lifecycle/monitor/rule-guard/operation flocks protect
+   the capture. An expired deadline is not evidence that an actual ownership lock is free.
+   Tree membership and logical/byte fingerprints must remain stable across capture. These
+   checks assume no concurrent operator writes; they are not a global distributed transaction.
+3. A single exported read-only PostgreSQL snapshot is dumped. Public application table rows
+   and sequence state are compared again before source processes resume. Source database
+   writes/restores, role changes, service stops and live schema migrations are never issued.
+4. All nonvolatile monitor/baseline/rule-guard/rule files and the deployment journal are copied.
+   SQLite backup includes committed WAL data, uses bounded typed row/schema readback and
+   checks integrity. Symlinks, hardlinks, oversized files and changing source state refuse.
+   Runtime lock files, status/PID snapshots and SQLite WAL/SHM companions are excluded from
+   recovery inputs; WAL content is merged through SQLite backup, not discarded.
+5. A bounded prefix of the actual Falco log is retained. The saved checkpoint inode and
+   offset must identify that log generation and fit within the prefix. A missing old log
+   generation or rotation mismatch fails rather than silently inventing replay coverage.
+6. The managed app resumes before disposable restore work begins. The resume attempt does
+   not depend on writable evidence storage, so a disk-full capture error cannot suppress it.
+7. PostgreSQL is restored only into a newly created, ownership-recorded ss_accept_*_restore
+   database. Application rows, schema and sequence values must match the captured source.
+   Only a confirmed owned database is eligible for automated cleanup.
+8. All copied artifact hashes are verified. The ordered copied Falco rules are validated with
+   the native binary. Restored journal/archive payloads must remain readable. A tailer is
+   reopened against the verified cloned log after explicitly mapping its clone-only inode;
+   the original checkpoint and log are never rewritten.
+9. Previously ready models are rebuilt using the real pipeline, validated copied baseline
+   JSON and unchanged default algorithm. This is model restore/readiness, not detection
+   quality. No pickle import, live API delivery or Docker action is performed by that pipeline.
+10. The original private capture remains unchanged after mutable-copy replay/model tests.
+    Final original-app health, owned-database cleanup and every named acceptance check are
+    required. The private filesystem work is retained rather than automatically deleted.
+
+The report records source commit, dirty state and runner hashes. Private dumps, models,
+checkpoint keys, raw events, rule backup files, manifests and command logs stay outside Git.
+Share only the sanitized final summary and evidence path; do not upload the private folder.
+
+## Scope boundaries
+
+This demonstrates coordinated durable-state capture and same-host disposable component
+recovery. It does not by itself establish a fresh Linux install, live failover, restored
+container/network runtime, service reattachment on another host, restoration of PostgreSQL
+roles/ACLs or secrets, or recovery with pending work when the source queues were empty.
+The restored pipeline is exercised offline without starting a second live monitor/backend.
+A full host/application takeover still needs a separately isolated destination and its own
+operator review. The active production paths/database are never restore destinations.
+
+Independent representative detection evaluation, the anomaly-only human-reviewed rule loop,
+remaining native failure cases, live browser matrix, lifecycle clock recurrence and owner
+retention/cleanup decisions retain their previous acceptance boundaries. Real isolation
+continues to require explicit approval in a named isolated test environment.

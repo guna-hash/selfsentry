@@ -1,5 +1,12 @@
 # SelfSentry academic roadmap
 
+> Current 23 October follow-up: see the [current repository assessment](docs/repository-audit/report.md)
+> and [committed VM verification record](docs/repository-audit/vm-verification-20261023.md).
+> Native migration/restore/concurrency, gate/shell and bounded workload/export passes are recorded;
+> private raw VM evidence has not been inspected in this checkout. Current source checks do not
+> establish full native acceptance or fresh-host/production readiness.
+
+
 > Engineering review: [22 October repository audit](docs/repository-audit/report.md). Historical checked items below apply only to their recorded source/configuration; they are not acceptance of the audit patch.
 
 > Current status: [21 October academic handoff](docs/academic_handoff_20261021.md). It records the latest rule workflow, benign false positive and clock recurrence. Historical entries below retain their original scope.
@@ -40,3 +47,10 @@ results, not production or unseen-workload guarantees.
 Future academic research: more representative baselines; independent live comparisons;
 live acceptance of the literal-witness anomaly-only extension; measured stage timings and
 controlled fault recovery. No automatic generated-rule deployment is proposed.
+
+## 23 October native retirement source continuation
+
+The opt-in human-reviewed native unload/recovery workflow and dashboard state are now
+implemented and locally checked. It stays disabled until disposable Falco acceptance.
+Current counts and the three blocked AF_UNIX tests are recorded in the audit validation.
+The remaining native, fresh-host, independent-study and owner approvals are still open.

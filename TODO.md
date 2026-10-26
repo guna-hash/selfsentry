@@ -1,5 +1,12 @@
 # SelfSentry release checklist
 
+> Current 23 October follow-up: see the [current repository assessment](docs/repository-audit/report.md)
+> and [committed VM verification record](docs/repository-audit/vm-verification-20261023.md).
+> Native migration/restore/concurrency, gate/shell and bounded workload/export passes are recorded;
+> private raw VM evidence has not been inspected in this checkout. Current source checks do not
+> establish full native acceptance or fresh-host/production readiness.
+
+
 > Engineering review: [22 October repository audit](docs/repository-audit/report.md). Historical checked items below apply only to their recorded source/configuration; they are not acceptance of the audit patch.
 
 > Current status: [21 October academic handoff](docs/academic_handoff_20261021.md). It records the latest rule workflow, benign false positive and clock recurrence. Historical entries below retain their original scope.
@@ -160,3 +167,31 @@ a production false-positive-rate measurement; default algorithm and thresholds r
 
 See docs/academic_evidence_pack.md. No SVM default change, autonomous rule deployment,
 production CWPP, fleet or Kubernetes expansion is part of this academic work.
+
+## Remaining-work source follow-up — 23 October 2026
+
+- [x] Reconcile ten missing paths and current additions; retain a concrete proposed-removal manifest.
+- [x] Recover original native acceptance/workload/export source and provenance; run local safety tests.
+- [x] Integrate manual archive-aware retention/export; no live cutoff or relocation applied.
+- [x] Add explicit full-ID operator observations preserving original outcomes and local audit history.
+- [x] Add independent holdout accounting without changing default model or claiming quality results.
+- [ ] Inspect private VM evidence before independent native verification labels.
+- [x] Implement opt-in human-reviewed native retirement/reload/recovery source and local regressions.
+- [ ] Verify native retirement on disposable Falco and resolve unknown-create identity.
+- [ ] Validate native outages/crashes, whole-app restore/grants/sequences and shutdown bounds.
+- [ ] Complete fresh-host, live browser, representative detection/rule-loop/clock and sustained workloads.
+- [ ] Obtain approval for specific proposed file removals and any live archival cutoff.
+- [ ] Authorize a named isolated environment before real isolation/recovery; keep automation off.
+- [ ] Review and merge follow-up/main only after maintainer acceptance; no push performed here.
+
+- [x] Final remote recheck: PR #6 merged the original audit integration into main (`16ac05b`), with the same source tree as `a25fca0`. This continuation remains unmerged.
+
+## Current acceptance update — 26 October 2026
+
+- [x] Inspect operator release output: 1,268 Python tests, 104 subtests, 168 frontend tests, lint/types/build/whitespace passed.
+- [x] Inspect seven disposable audit and five real-monitor replay checks; retain synthetic/native boundaries.
+- [x] Record both supervised default-IF rule loops and verified native test-rule cleanup.
+- [x] Record existing separate-host recovery, without relabeling it as clean installation.
+- [ ] Complete current ten-criterion closure items in docs/repository-audit/report.md.
+
+These entries supersede corresponding older open items only within the stated tested scope.

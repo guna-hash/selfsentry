@@ -32,8 +32,18 @@ def create_database_engine(database_url: str) -> Engine:
             raise ValueError(
                 "PostgreSQL connect_timeout must be a positive whole number"
             ) from None
+        options = url.query.get("options", "")
+        if not isinstance(options, str):
+            raise ValueError("PostgreSQL connection options must be a single string")
+        # Naive timestamp columns and API serialization use UTC. Set it in the
+        # startup packet, before even the first transaction, rather than a SET
+        # statement that a pool reset/rollback could undo. Preserve other libpq
+        # options, but make our timezone the last assignment. PGOPTIONS and a
+        # host/database default must not change the meaning of stored timestamps.
+        options = (options + " -c timezone=UTC").strip()
         return create_engine(
-            url, pool_pre_ping=True, pool_timeout=5, connect_args={"connect_timeout": timeout}
+            url, pool_pre_ping=True, pool_timeout=5,
+            connect_args={"connect_timeout": timeout, "options": options},
         )
     return create_engine(url)
 

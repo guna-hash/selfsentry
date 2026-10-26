@@ -344,3 +344,53 @@ without echoing input. The existing audit clients retain HTTP 409 in their pendi
 changed content is not treated as delivered or automatically dropped. Such conflicts need
 operator/caller review and may block ordered replay. This is server-side identity validation,
 not cryptographic response binding or native PostgreSQL race verification.
+
+## Follow-up state boundaries — 23 October 2026
+
+`journal_archive.seen_event` checks live and archived baseline keys. Historical telemetry
+readers use `event_rows`; direct `events` SQL covers only live payloads after an approved
+archive operation. Archive indices preserve identity/body hashes and closed windows remain
+live. Missing/changed archives fail evidence readback. Startup adds empty metadata tables;
+only explicit offline archival can move rows. Export must include all referenced files.
+
+`reconcile_action` is a local explicit observation interface, not a backend deployment-success
+or action-retry endpoint. An append-only `action_reconciliations` entry binds the original
+intent hash, full container ID, daemon observation and human label/reason. It does not update
+original outcomes, enqueue deployments or clear monitor attention. Original unknown/failed
+outcomes stay unknown/failed. Unknown creation identity remains unsupported.
+
+The committed VM note records bounded native PostgreSQL outcome/advisory-lock checks. Raw
+logs were not inspected in this follow-up; full review/deployment/crash interleavings remain
+open. Earlier paragraphs describing the original local-test-only boundary are historical for
+those recorded checks. Native unloading remains unimplemented and `native_rule_unloaded`
+continues to be false for database retirement.
+
+### Explicit native retirement continuation
+
+The opt-in POST `/rules/{id}/retire-native` requires a strict confirmation, human label/reason,
+reviewed file/rule SHA-256 values and a retained deployment audit. `action=rollback` is an
+explicit recovery operation. A GET `/rules/{id}/native-retirement-plan` supplies current
+hashes/retained receipt without claiming current native success. Neither route bypasses
+the normal write-token or per-rule review gates. The native mutation flag defaults off.
+
+`retirement_pending` is active and surfaced in the pending queue; it cannot be approved or
+database-deprecated over an uncertain native action. Result/blocked/recovery audits and
+observed re-fires remain linked. A successful native result is recorded only after verified
+reload generations; completed duplicates do not repeat native reloads or rewrite first-result
+review timestamps. DB-only deprecate still reports false for unloading performed by that
+DB-only call. Earlier unimplemented-native statements describe the prior checkpoint; live
+Falco acceptance remains NOT VERIFIED. See the developer guide for exact recovery limits.
+
+### Idle backend readiness
+
+`GET /health/ready` requires the configured bearer token and executes only `SELECT 1`.
+It returns `{"ready": true}` after the authenticated database check; missing credentials,
+incorrect credentials and database failures remain non-success responses. It does not
+create audit records or confirm a pending write outcome.
+
+The control worker probes this endpoint at startup and every 15 seconds, with a client
+timeout capped at two seconds and redirects disabled. Falco ingestion never performs
+the probe. A successful probe can resolve an idle startup's unknown backend state;
+it does not clear rejected or retrying audit-delivery outcomes. A failed probe makes
+old delivery success unavailable until readiness recovers. Fresh control/heartbeat
+requirements still apply. Queue depth alone does not establish backend readiness.

@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
-import { MemoryRouter } from 'react-router-dom'
+import { StaticRouter } from 'react-router-dom'
 import { HealthNotice } from './HealthBanner.jsx'
 const render = (status, error) => renderToStaticMarkup(
-  <MemoryRouter><HealthNotice status={status} error={error} /></MemoryRouter>,
+  <StaticRouter location="/"><HealthNotice status={status} error={error} /></StaticRouter>,
 )
 describe('global health notices', () => {
   it('shows no warning for connecting or healthy monitors', () => {

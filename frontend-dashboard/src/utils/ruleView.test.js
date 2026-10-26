@@ -48,3 +48,20 @@ it('summarizes only recorded single-line conditions without executing or inventi
   expect(recordedCondition('condition: >\n  multi line')).toBeNull()
   expect(recordedCondition('condition:\nnext: value')).toBeNull()
 })
+
+const nativeReceipt = {event_type:'RULE_NATIVE_RETIRED',detail:{rule_id:4,native_rule_unloaded:true,phase:'applied',reload_status:{instance_id:'falco-instance',started_generation:2,applied_generation:2,rejected_generation:0,ready:true}}}
+it('labels a recorded native unload without claiming continuous current host state',()=>{
+  const rule={id:4,status:'retired',lifecycle_events:[nativeReceipt]}
+  expect(ruleStatus(rule.status,rule)).toBe('Retired · native unload recorded')
+  expect(deploymentSummary(rule)).toMatchObject({label:'Native unload recorded'})
+  expect(deploymentSummary(rule).detail).toContain('live check')
+})
+it('does not promote malformed, mismatched or superseded native receipts',()=>{
+  for (const detail of [{...nativeReceipt.detail,rule_id:5},{...nativeReceipt.detail,native_rule_unloaded:false},{...nativeReceipt.detail,reload_status:{...nativeReceipt.detail.reload_status,ready:false}}])
+    expect(deploymentSummary({id:4,status:'retired',lifecycle_events:[{event_type:'RULE_NATIVE_RETIRED',detail}]}).label).toBe('Native state unverified')
+  const rule={id:4,status:'retired',lifecycle_events:[nativeReceipt,{event_type:'RULE_NATIVE_RETIREMENT_BLOCKED',detail:{rule_id:4}}]}
+  expect(deploymentSummary(rule).label).toBe('Native state unverified')
+})
+it('shows unresolved retirement instead of an earlier successful deployment',()=>{
+  expect(deploymentSummary({id:4,status:'retirement_pending',lifecycle_events:[nativeReceipt]})).toMatchObject({label:'Native outcome unresolved',tone:'critical'})
+})

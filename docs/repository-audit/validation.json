@@ -2827,5 +2827,377 @@
     },
     "report": "Ordered closure workflow in report.md; previous acceptance statuses retained",
     "commit_push_deployment": false
+  },
+  "current_followup_20261023": {
+    "date_client": "2026-10-23",
+    "timezone": "Asia/Kolkata",
+    "base_commit": "a25fca0cc22974cda692a4dd8410de99b06fc37e",
+    "branch": "followup/remaining-work-20261023",
+    "status": "SOURCE_FOLLOWUP_CHECKED; NATIVE_ACCEPTANCE_INCOMPLETE",
+    "release": {
+      "started_at": "2026-10-23T14:46:55.767091+00:00",
+      "checks": [
+        {
+          "name": "python-tests",
+          "returncode": 0,
+          "passed": true,
+          "log": "state/evaluation/final-checks-20261023T144655Z/python-tests.log"
+        },
+        {
+          "name": "lint",
+          "returncode": 0,
+          "passed": true,
+          "log": "state/evaluation/final-checks-20261023T144655Z/lint.log"
+        },
+        {
+          "name": "types",
+          "returncode": 0,
+          "passed": true,
+          "log": "state/evaluation/final-checks-20261023T144655Z/types.log"
+        },
+        {
+          "name": "frontend-tests",
+          "returncode": 0,
+          "passed": true,
+          "log": "state/evaluation/final-checks-20261023T144655Z/frontend-tests.log"
+        },
+        {
+          "name": "frontend-build",
+          "returncode": 0,
+          "passed": true,
+          "log": "state/evaluation/final-checks-20261023T144655Z/frontend-build.log"
+        }
+      ],
+      "source_commit": "a25fca0cc22974cda692a4dd8410de99b06fc37e",
+      "source_status": "M CHANGELOG.md\n M README.md\n M ROADMAP.md\n M TODO.md\n M docs/interfaces.md\n M docs/known_limitations.md\n M docs/monitor_operations.md\n M docs/repository-audit/developer-guide.md\n M docs/repository-audit/file_inventory.csv\n M docs/repository-audit/final-tree.txt\n M docs/repository-audit/report.md\n M evaluation/export_layer_evidence.py\n M evaluation/run_svm_benign.py\n M monitor-service/behavior_pipeline.py\n?? deployment-gate/reconcile_action.py\n?? docs/journal_retention.md\n?? docs/repository-audit/deletion-manifest.json\n?? docs/repository-audit/lockfile-sbom.spdx.json\n?? docs/repository-audit/recovered-runners.json\n?? evaluation/evaluate_holdout.py\n?? evaluation/measure_workload.py\n?? evaluation/postgres_support.py\n?? evaluation/source-hashes.json\n?? evaluation/verify_archive_copy.py\n?? evaluation/verify_postgres_acceptance.py\n?? evaluation/verify_postgres_concurrency.py\n?? monitor-service/journal_archive.py\n?? scripts/archive_journal.py\n?? scripts/export_monitor_journal.py\n?? scripts/lockfile_sbom.py\n?? scripts/refresh_audit_inventory.py\n?? tests/test_archive_copy_runner.py\n?? tests/test_export_monitor_journal.py\n?? tests/test_gate_reconciliation.py\n?? tests/test_holdout_evaluation.py\n?? tests/test_journal_archive.py\n?? tests/test_native_postgres_acceptance_runner.py\n?? tests/test_native_postgres_concurrency_runner.py\n?? tests/test_native_workload_runner.py",
+      "python": "3.12.14 (main, Aug 25 2026, 14:00:49) [Clang 22.1.3 ]",
+      "packages": {
+        "docker": "7.2.0",
+        "scikit-learn": "1.9.1",
+        "fastapi": "0.158.0",
+        "sqlalchemy": "2.1.6",
+        "pytest": "9.1.1",
+        "flake8": "7.4.1"
+      },
+      "node": "v24.19.0",
+      "npm": "11.9.0",
+      "passed": true
+    },
+    "release_results": "state/evaluation/final-checks-20261023T144655Z/results.json",
+    "python_summary": "1120 passed, 104 subtests passed in 31.81s",
+    "root_summary": "1120 passed, 104 subtests passed in 30.72s",
+    "types_summary": "Success: no issues found in 93 source files",
+    "commands": [
+      "python3 -m venv .venv",
+      ".venv/bin/python -m pip install -r requirements.lock",
+      "npm ci (frontend-dashboard)",
+      "AUTO_ISOLATION_ENABLED=false .venv/bin/python scripts/verify_final_checks.py",
+      "env -u OPENAI_API_KEY -u GROQ_API_KEY AUTO_ISOLATION_ENABLED=false .venv/bin/python -m pytest -q",
+      ".venv/bin/python -m pip check",
+      "npm audit --json (frontend-dashboard)",
+      "state/security-tools/bin/python -m pip_audit -r requirements.lock --no-deps --disable-pip --format json",
+      "state/security-tools/bin/python -m bandit -r backend-api monitor-service deployment-gate response-engine rule-synthesis-engine evaluation scripts -f json"
+    ],
+    "versions": {
+      "python": "3.12.14 (main, Aug 25 2026, 14:00:49) [Clang 22.1.3 ]",
+      "node": "v24.19.0",
+      "npm": "11.9.0",
+      "packages": {
+        "docker": "7.2.0",
+        "scikit-learn": "1.9.1",
+        "fastapi": "0.158.0",
+        "sqlalchemy": "2.1.6",
+        "pytest": "9.1.1",
+        "flake8": "7.4.1"
+      }
+    },
+    "scope": "No native services; actual disposable SQLite/files/locks/models/processes, controlled transport and mocks; no representative detection measurements",
+    "native_record": "Recorded in committed VM note; raw evidence not inspected",
+    "safety": {
+      "real_isolation_executed": false,
+      "live_archival_executed": false,
+      "deletions": [],
+      "commit_push_main_merge_deploy": false
+    },
+    "security": {
+      "npm_known_advisories": 0,
+      "python_lock_known_advisories": 0,
+      "pip_check": "passed",
+      "bandit": {
+        "high": 3,
+        "medium": 10,
+        "low": 93,
+        "total": 106
+      },
+      "limits": "Time-specific declared-lock advisories only; distribution hashes/OS/native privilege provenance not established; static flags triaged in report"
+    },
+    "failures_preserved": [
+      "Initial recovered-runner layout script stopped on package-local manifest paths; no native action; corrected layout",
+      "Focused initial types: dynamic report annotations/import spec narrowing needed; corrected without disabling type checks",
+      "First full follow-up release: Python passed; lint failed on newly added annotation alignment and inventory formatting; corrected",
+      "Initial standalone reconciliation CLI failed importing backend_auth because tests supplied import paths; corrected CLI bootstrap and added real subprocess regression",
+      "Initial inventory refresh emitted CRLF and diff whitespace findings; generator changed to LF; final diff clean"
+    ],
+    "acceptance": [
+      {
+        "criterion": 1,
+        "result": "PASS",
+        "scope": "See individual current report row"
+      },
+      {
+        "criterion": 2,
+        "result": "PASS",
+        "scope": "See individual current report row"
+      },
+      {
+        "criterion": 3,
+        "result": "NOT VERIFIED",
+        "scope": "See individual current report row"
+      },
+      {
+        "criterion": 4,
+        "result": "PASS",
+        "scope": "See individual current report row"
+      },
+      {
+        "criterion": 5,
+        "result": "PASS",
+        "scope": "See individual current report row"
+      },
+      {
+        "criterion": 6,
+        "result": "PASS",
+        "scope": "See individual current report row"
+      },
+      {
+        "criterion": 7,
+        "result": "NOT VERIFIED",
+        "scope": "See individual current report row"
+      },
+      {
+        "criterion": 8,
+        "result": "PASS",
+        "scope": "See individual current report row"
+      },
+      {
+        "criterion": 9,
+        "result": "PASS",
+        "scope": "See individual current report row"
+      },
+      {
+        "criterion": 10,
+        "result": "PASS",
+        "scope": "See individual current report row"
+      }
+    ],
+    "remaining": "Native retirement, unknown-create identity, native fault/full-restore/grants/sequences, fresh-host, live browser, representative detection/rule-loop/clock and sustained workloads; approvals for proposed removals/runtime archival and named real-response environment"
+  },
+  "native_retirement_continuation_20261023": {
+    "status": "SOURCE_IMPLEMENTED_AND_LOCALLY_CHECKED; NATIVE_ACCEPTANCE_NOT_VERIFIED",
+    "source_commit": "a25fca0cc22974cda692a4dd8410de99b06fc37e",
+    "release": {
+      "started_at": "2026-10-23T16:28:16.582400+00:00",
+      "checks": [
+        {
+          "name": "python-tests",
+          "returncode": 0,
+          "passed": true,
+          "log": "state/evaluation/final-checks-20261023T162816Z/python-tests.log"
+        },
+        {
+          "name": "lint",
+          "returncode": 0,
+          "passed": true,
+          "log": "state/evaluation/final-checks-20261023T162816Z/lint.log"
+        },
+        {
+          "name": "types",
+          "returncode": 0,
+          "passed": true,
+          "log": "state/evaluation/final-checks-20261023T162816Z/types.log"
+        },
+        {
+          "name": "frontend-tests",
+          "returncode": 0,
+          "passed": true,
+          "log": "state/evaluation/final-checks-20261023T162816Z/frontend-tests.log"
+        },
+        {
+          "name": "frontend-build",
+          "returncode": 0,
+          "passed": true,
+          "log": "state/evaluation/final-checks-20261023T162816Z/frontend-build.log"
+        }
+      ],
+      "source_commit": "a25fca0cc22974cda692a4dd8410de99b06fc37e",
+      "source_status": "M .env.example\n M CHANGELOG.md\n M README.md\n M ROADMAP.md\n M TODO.md\n M backend-api/routes/rules.py\n M docs/interfaces.md\n M docs/known_limitations.md\n M docs/monitor_operations.md\n M docs/repository-audit/developer-guide.md\n M docs/repository-audit/file_inventory.csv\n M docs/repository-audit/final-tree.txt\n M docs/repository-audit/report.md\n M docs/repository-audit/validation.json\n M evaluation/export_layer_evidence.py\n M evaluation/run_svm_benign.py\n M frontend-dashboard/src/components/RuleReviewDialog.jsx\n M frontend-dashboard/src/pages/RuleReviewQueue.jsx\n M frontend-dashboard/src/utils/ruleView.js\n M frontend-dashboard/src/utils/ruleView.test.js\n M monitor-service/behavior_pipeline.py\n M rule-synthesis-engine/rule_deduplicator.py\n?? deployment-gate/reconcile_action.py\n?? docs/journal_retention.md\n?? docs/repository-audit/deletion-manifest.json\n?? docs/repository-audit/lockfile-sbom.spdx.json\n?? docs/repository-audit/recovered-runners.json\n?? evaluation/evaluate_holdout.py\n?? evaluation/measure_workload.py\n?? evaluation/postgres_support.py\n?? evaluation/source-hashes.json\n?? evaluation/verify_archive_copy.py\n?? evaluation/verify_postgres_acceptance.py\n?? evaluation/verify_postgres_concurrency.py\n?? monitor-service/journal_archive.py\n?? rule-synthesis-engine/native_retirement.py\n?? scripts/archive_journal.py\n?? scripts/export_monitor_journal.py\n?? scripts/lockfile_sbom.py\n?? scripts/refresh_audit_inventory.py\n?? tests/test_archive_copy_runner.py\n?? tests/test_export_monitor_journal.py\n?? tests/test_gate_reconciliation.py\n?? tests/test_holdout_evaluation.py\n?? tests/test_journal_archive.py\n?? tests/test_native_postgres_acceptance_runner.py\n?? tests/test_native_postgres_concurrency_runner.py\n?? tests/test_native_retirement.py\n?? tests/test_native_retirement_api.py\n?? tests/test_native_workload_runner.py\n?? tests/test_reload_protocol.py",
+      "python": "3.12.14 (main, Aug 25 2026, 14:00:49) [Clang 22.1.3 ]",
+      "packages": {
+        "docker": "7.2.0",
+        "scikit-learn": "1.9.1",
+        "fastapi": "0.158.0",
+        "sqlalchemy": "2.1.6",
+        "pytest": "9.1.1",
+        "flake8": "7.4.1"
+      },
+      "node": "v24.19.0",
+      "npm": "11.9.0",
+      "passed": true
+    },
+    "release_results": "state/evaluation/final-checks-20261023T162816Z/results.json",
+    "python_summary": "1159 passed, 3 skipped, 104 subtests passed in 33.51s",
+    "root_summary": "1159 passed, 3 skipped, 104 subtests passed in 34.85s",
+    "frontend": "168 tests / 34 files passed; build passed; chart warning retained",
+    "types": "94 source files passed",
+    "source_protocol_reference": {
+      "repository": "https://github.com/falcosecurity/falco",
+      "tag": "0.45.0",
+      "commit": "05d5b3e363d5196c68c8ccea842ca57a2ef05562"
+    },
+    "native_operations_executed": false,
+    "real_isolation_executed": false,
+    "live_pruning_executed": false,
+    "controlled_evidence": [
+      "Actual temporary files/SQLite/flock",
+      "Actual route-to-journal/file/recovery round trip with controlled Falco adapter",
+      "Real worker SIGKILL with retained published intent and explicit recovery",
+      "Competing review and global inventory locks",
+      "Controlled HTTP request/receipt/generation/peer identity, not a Falco server"
+    ],
+    "skips": {
+      "count": 3,
+      "reason": "Execution host policy blocks AF_UNIX creation; real Unix peer fixture tests unverified"
+    },
+    "failures_preserved": [
+      "Initial validator test was still using its no-op fixture; corrected to call the actual validator with a controlled subprocess",
+      "Initial API tests used the wrong callback positions; corrected test harness",
+      "Initial real AF_UNIX fixture creation raised PermissionError; retained and now explicitly skipped only under that host restriction",
+      "An intermediate recovery signature mismatch and long-line lint failures were corrected; raw logs retained",
+      "First release failed a single test line-length check after Python passed; corrected and full release rerun"
+    ],
+    "bandit": {
+      "total": 115,
+      "high": 3,
+      "medium": 10,
+      "low": 102,
+      "new_flags": "Trusted-argv subprocess imports/calls; no shell, no new high-severity flags; review in report"
+    },
+    "approval": "Native retirement disabled by default; explicit host configuration, token, reviewer/reason, hashes, deployment audit and confirmation required. No activation performed.",
+    "source_scope": "A11 source workflow implemented; unknown-create, native lifecycle/failure/restore/quality/UI/fresh-host acceptance and real-response authorization remain open",
+    "commit_push_deploy": false,
+    "final_remote_checkpoint": {
+      "main": "16ac05bdf145b5b31914b281a9589949374a5d9c",
+      "integration": "a25fca0cc22974cda692a4dd8410de99b06fc37e",
+      "same_source_tree": true,
+      "main_integration": "PR #6 merged the original audit integration branch",
+      "followup_status": "Uncommitted local source continuation; not merged or pushed",
+      "our_actions": "Read-only remote inspection/fetch; no main merge performed by this agent"
+    }
+  },
+  "completion_validation_20261025": {
+    "source_base": "229c236d325013e9249069affdf8b4c38e83e923",
+    "status": "SOURCE_CHECKS_PASSED; NATIVE_AND_DATA_DEPENDENT_ACCEPTANCE_PENDING",
+    "python": {
+      "passed": 1229,
+      "subtests": 104,
+      "skipped": 3,
+      "seconds": 31.02,
+      "log_sha256": "3d70ab75a6c0fb41b255c53bc8e84d2d6ca02d33faf28d33c41766a3874c4313"
+    },
+    "frontend": {
+      "passed": 168,
+      "build": "PASS"
+    },
+    "lint": "PASS",
+    "types": {
+      "status": "PASS",
+      "source_files": 99
+    },
+    "native_fault_runner": "Prepared; Docker/PostgreSQL unavailable in this workspace; NOT EXECUTED",
+    "native_rule_loop": "Read-only verifier prepared; both template API chains tested with native reload mocked",
+    "private_recovery_evidence_included": false,
+    "live_services_changed": false,
+    "committed": false,
+    "pushed": false,
+    "remaining": [
+      "Native fault-runner execution",
+      "Independent representative labeled validation corpus",
+      "Human-approved native anomaly-only process/parent and file-write chains",
+      "Clean-host installation",
+      "Pending-work crash/replay schedules and remaining live browser permutations",
+      "Explicit owner decisions for destructive cleanup or real automatic response"
+    ]
+  },
+  "current_acceptance_20261026": {
+    "source_commit": "229c236d325013e9249069affdf8b4c38e83e923",
+    "source_state": "uncommitted cumulative follow-up changes; no push authorized",
+    "evidence_basis": "operator-supplied terminal output inspected; not independently executed on VM",
+    "release": {
+      "python_passed": 1268,
+      "subtests_passed": 104,
+      "frontend_passed": 168,
+      "frontend_files": 34,
+      "typed_files": 99,
+      "lint": "PASS",
+      "build": "PASS",
+      "diff_check": "PASS",
+      "evidence": "state/evaluation/final-checks-20261026T064610Z"
+    },
+    "replay": {
+      "passed": true,
+      "checks": 12,
+      "evidence": "~/selfsentry-private-evidence/monitor-replay-20261026T064051Z",
+      "native_postgres": true,
+      "real_monitor_api": true,
+      "synthetic_telemetry": true,
+      "native_falco_lifecycle": false,
+      "postgres_commit_ack_loss": false,
+      "live_monitor_after_healthy": true,
+      "live_incident_outbox_after": 0,
+      "disposable_final_incident_outbox": 1
+    },
+    "rule_loops": [
+      {
+        "template": "file_write",
+        "source": 220,
+        "rule": 24,
+        "refire": 223
+      },
+      {
+        "template": "spawned_process",
+        "source": 224,
+        "rule": 25,
+        "refire": 226
+      }
+    ],
+    "rule_loop_scope": "controlled synthetic workload; 36 usable benign events per template; not representative accuracy",
+    "fresh_host_setup_verified": false,
+    "private_runtime_evidence_included": false,
+    "criterion_results": [
+      "PASS_SCOPED",
+      "PASS_SCOPED",
+      "PARTIAL",
+      "PASS",
+      "PASS",
+      "PARTIAL",
+      "NOT_VERIFIED",
+      "PARTIAL",
+      "PASS_SCOPED",
+      "PASS"
+    ],
+    "no_original_files_removed": true,
+    "no_commit_or_push": true,
+    "uploaded_diff_review": {
+      "base_commit": "229c236d325013e9249069affdf8b4c38e83e923",
+      "changed_files": 30,
+      "inventory_paths": 387,
+      "missing_paths": [],
+      "extra_paths": [],
+      "populated_hash_mismatches": [],
+      "independent_focused_tests_passed": 123,
+      "diff_check": "PASS",
+      "application_changes_required": false,
+      "scope": "Reconstructed uploaded diff and five untracked source/test files; no fresh native execution"
+    }
   }
 }

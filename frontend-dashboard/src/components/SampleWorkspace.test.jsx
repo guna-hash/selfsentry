@@ -4,6 +4,17 @@ import {createRoot} from 'react-dom/client'
 import {afterEach,beforeEach,expect,it,vi} from 'vitest'
 import App from '../App.jsx'
 vi.mock('./OverviewCharts.jsx',()=>({default:()=> <section>Learning-loop chart</section>,OpenSparkline:()=>null}))
+const loadPage = {
+  overview: () => import('../pages/Overview.jsx'),
+  alerts: () => import('../pages/Alerts.jsx'),
+  rules: () => import('../pages/RuleReviewQueue.jsx'),
+  containers: () => import('../pages/Containers.jsx'),
+  deployments: () => import('../pages/Deployments.jsx'),
+  audit: () => import('../pages/AuditLog.jsx'),
+  monitor: () => import('../pages/Monitor.jsx'),
+  models: () => import('../pages/Models.jsx'),
+  evidence: () => import('../pages/Evidence.jsx'),
+}
 let root,host,fetch
 beforeEach(()=>{
   globalThis.IS_REACT_ACT_ENVIRONMENT=true
@@ -20,10 +31,10 @@ it.each([
 ])('renders %s through the real shell and data hooks without live network traffic',async(url,heading)=>{
   history.replaceState({},'',url)
   await act(async()=>root.render(<App/>))
-  await vi.waitFor(async () => {
-    await act(async () => {
-      await new Promise(resolve => setTimeout(resolve, 10))
-    })
+  // Settle the real lazy page after mounting; cold transforms are not DOM readiness.
+  const page = new URL(url, window.location.origin).pathname.split('/').pop()
+  await act(async () => { await loadPage[page]() })
+  await vi.waitFor(() => {
     const title = host.querySelector('.page-header h2')
     expect(title, `Missing page heading for ${url}`).not.toBeNull()
     expect(title.textContent.toLowerCase()).toContain(heading.toLowerCase())
@@ -34,4 +45,4 @@ it.each([
   if(url.includes('present=1')) {expect(host.querySelector('.sidebar').hidden).toBe(true);expect(host.textContent).toContain('Incident #9001');expect(host.textContent).toContain('Learning-loop chart')}
   if(url.includes('/alerts')) {expect(document.querySelector('dialog')).not.toBeNull();expect([...document.querySelectorAll('dialog button')].find(b=>b.textContent==='Confirm incident')?.disabled).toBe(true)}
   if(url.includes('/rules')) {const approve=[...document.querySelectorAll('dialog button')].find(b=>b.textContent==='Review & approve');expect(approve?.disabled).toBe(true)}
-})
+}, 15000)

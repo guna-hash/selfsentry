@@ -69,6 +69,26 @@ class AuditClient:
         self._rejected_path = self._spool_path.with_name("audit_rejected.jsonl")
         self._timeout = timeout_seconds
         self.last_outcome: str | None = None  # "ok" | "retry" | "rejected"
+        self.backend_probe_outcome: str | None = None
+
+    def check_backend(self) -> bool:
+        """Observe API/database/token readiness without sending or changing audit events.
+
+        Called only by the control worker. Probe results do not replace delivery
+        outcomes: rejected or pending audit work must remain visible as degraded.
+        """
+        try:
+            response = requests.get(
+                f"{self._backend_url}/health/ready",
+                headers=backend_headers(), timeout=min(self._timeout, 2.0),
+                allow_redirects=False,
+            )
+            body = response.json() if response.status_code == 200 else None
+            ready = isinstance(body, dict) and body.get("ready") is True
+        except (requests.RequestException, ValueError):
+            ready = False
+        self.backend_probe_outcome = "ok" if ready else "retry"
+        return ready
 
     def emit(
         self,

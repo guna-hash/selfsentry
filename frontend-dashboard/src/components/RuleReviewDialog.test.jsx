@@ -17,11 +17,14 @@ beforeEach(()=>{
   changed=vi.fn();notice=vi.fn();closed=vi.fn();writeTokenAvailable.mockReturnValue(true)
 })
 afterEach(async()=>{await act(async()=>root.unmount());host.remove();vi.resetAllMocks();delete HTMLDialogElement.prototype.showModal;delete HTMLDialogElement.prototype.close;delete globalThis.IS_REACT_ACT_ENVIRONMENT})
-const render=(extra={})=>act(async()=>root.render(<MemoryRouter><RuleReviewDialog rule={rule} onClose={closed} onChanged={changed} onNotice={notice} {...extra}/></MemoryRouter>))
+// Rendering and controlled input events are synchronous. Reserve async act for
+// interactions that can settle the mocked review request, rather than yielding
+// to the scheduler for every keystroke on a resource-constrained test host.
+const render=(extra={})=>act(()=>root.render(<MemoryRouter><RuleReviewDialog rule={rule} onClose={closed} onChanged={changed} onNotice={notice} {...extra}/></MemoryRouter>))
 const dialog=()=>document.querySelector('dialog')
 const button=(name)=>[...dialog().querySelectorAll('button')].find(b=>b.textContent===name)
 const click=(target)=>act(async()=>target.click())
-async function enter(selector,value){await act(async()=>{const input=dialog().querySelector(selector);Object.getOwnPropertyDescriptor(input.tagName==='TEXTAREA'?HTMLTextAreaElement.prototype:HTMLInputElement.prototype,'value').set.call(input,value);input.dispatchEvent(new Event('input',{bubbles:true}))})}
+function enter(selector,value){act(()=>{const input=dialog().querySelector(selector);Object.getOwnPropertyDescriptor(input.tagName==='TEXTAREA'?HTMLTextAreaElement.prototype:HTMLInputElement.prototype,'value').set.call(input,value);input.dispatchEvent(new Event('input',{bubbles:true}))})}
 it('does not deploy when a review is opened; requires a human name and explicit submit',async()=>{
   reviewRule.mockResolvedValue({rule_id:3,status:'deployed'})
   await render();await click(button('Review & approve'))

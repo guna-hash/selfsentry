@@ -22,6 +22,7 @@ sys.path[:0] = [str(ROOT / "evaluation"), str(ROOT / "monitor-service")]
 from clock_guard import AlertTail, judge_events, run_preflight  # noqa: E402
 from monitor_config import load_config  # noqa: E402
 from scenarios import SCENARIOS  # noqa: E402
+from journal_archive import event_rows  # noqa: E402
 
 
 def scenario_command(name: str) -> str:
@@ -84,10 +85,7 @@ def checked_environment(pid):
 def pipeline_evidence(path, cid, bucket):
     with closing(sqlite3.connect(path.resolve().as_uri() + "?mode=ro", uri=True)) as db:
         kinds = Counter(
-            row[0]
-            for row in db.execute(
-                "SELECT kind FROM events WHERE container=? AND bucket=?", (cid, bucket)
-            )
+            row[2] for row in event_rows(db, cid, bucket, bucket)
         )
         closed = bool(
             db.execute(

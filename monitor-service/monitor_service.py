@@ -243,6 +243,11 @@ class MonitorService:
         if self._pump is not None:
             self._status.set_component("docker", self._pump.state, self._pump.last_error)
         outcome = self._audit.last_outcome
+        probe = getattr(self._audit, "backend_probe_outcome", None)
+        # An unavailable readiness probe overrides old delivery success. A healthy
+        # probe resolves idle startup, but never hides a failed delivery outcome.
+        if probe == "retry" or outcome is None:
+            outcome = probe or outcome
         backend_state = {"ok": "ok", "retry": "unavailable", "rejected": "degraded"}.get(
             outcome, "unknown"
         )
