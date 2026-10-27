@@ -1943,3 +1943,35 @@ Four regressions cover fresh/delayed/future events, warning replacement,
 status persistence and checkpoint replay. Operator release passed 1,278 Python
 tests plus 104 subtests, 168 frontend tests, lint, types, build and whitespace.
 Evidence: state/evaluation/final-checks-20261027T104226Z.
+
+## Completed controlled holdout study — 27 October 2026
+
+Frozen 20-window training was evaluated against eight subsequent benign
+windows and four later controlled-deviation windows, without overlap,
+missing windows or threshold tuning.
+
+At the model flag threshold of 0.5, all eight benign and all four deviation
+windows flagged. At the configured monitor threshold of 0.8, three of eight
+benign windows and three of four deviation windows qualified. This is an
+adverse quality finding, not a production accuracy or attack-recall claim.
+The evaluator's positive label denotes added uname activity and /dev/null
+opens, not malicious attacks. Each deviation window contained 59–60 uname
+records. Qualification is an offline assessment, not proof of API incident
+delivery for every window.
+
+The complete deviation capture retained one Falco instance, zero kernel
+and output-queue drop-counter deltas, maximum matching-event gap 1.11 s,
+and maximum receipt/event difference 134 ms. These bounded observations
+do not prove end-to-end losslessness. Earlier invalid attempts remain
+preserved and excluded.
+
+The owned study container was stopped. Metrics were preserved privately,
+the temporary study-metrics override was removed, and Falco was active
+after restart. The baseline, default model and thresholds remain unchanged.
+
+Private evidence:
+~/selfsentry-private-evidence/model-study-55306e8084b8/
+deviation-instrumented-1793118060645859744/combined-evaluation.json
+
+The controlled study is complete; representative model-quality validation
+and a separately evaluated improvement remain open.
