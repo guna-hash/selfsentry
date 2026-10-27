@@ -1975,3 +1975,28 @@ deviation-instrumented-1793118060645859744/combined-evaluation.json
 
 The controlled study is complete; representative model-quality validation
 and a separately evaluated improvement remain open.
+
+## Candidate model rejection — 27 October 2026
+
+A fixed scaled LOF candidate flagged zero of eight routine development
+windows but only two of four controlled-deviation windows. Adding a signal
+for changes to constant training features produced zero/eight benign flags
+and four/four deviation flags on already-inspected development data.
+
+The candidate policy was then frozen before two new windows of explicitly
+approved date activity. LOF flagged one/two benign windows; the combined
+rule flagged both. The combined rule is rejected as a replacement incident
+classifier. Structural novelty does not establish maliciousness.
+
+Aggregate process/file counts do not preserve the identity or approval
+context needed to distinguish these legitimate changes from the controlled
+deviation. Any future candidate needs representative approved activity,
+separate calibration and untouched validation. No live algorithm, baseline
+or response threshold was changed.
+
+Private evidence:
+~/selfsentry-private-evidence/model-study-55306e8084b8/
+fresh-legitimate-1793122011168844726/candidate-evaluation.json
+
+The owned study container remains stopped. Development results and this
+negative fresh validation remain retained.
