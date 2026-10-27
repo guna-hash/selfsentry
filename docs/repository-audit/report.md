@@ -2000,3 +2000,27 @@ fresh-legitimate-1793122011168844726/candidate-evaluation.json
 
 The owned study container remains stopped. Development results and this
 negative fresh validation remain retained.
+
+## Prospective calibrated LOF study — 27 October 2026
+
+A new synthetic native workload supplied 24 training windows and six
+separate calibration windows. The LOF decision boundary was frozen at
+0.47411045071039704 before validation collection.
+
+On subsequent validation windows, calibrated LOF flagged zero of six
+approved routine windows, two of two structural-deviation windows and
+two of two volume-deviation windows. The unchanged Isolation Forest
+comparison, trained on the same study training data and evaluated at
+0.8, qualified five of six benign windows and all four deviation windows.
+
+All five capture stages passed their guards. Maximum reported receipt
+skew was below 0.136 seconds. Each stage stopped the owned container
+and reported a healthy live monitor with empty incident and audit queues.
+The disposable study container remains stopped.
+
+These small synthetic results support further independent evaluation.
+They do not establish production accuracy, malicious-attack recall,
+zero native drops or a reliable false-positive rate. Structural novelty
+was reported separately. The live model and configuration were unchanged.
+
+Private evidence: ~/selfsentry-private-evidence/workload-study-v2
