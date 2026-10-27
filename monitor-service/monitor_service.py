@@ -169,6 +169,25 @@ class MonitorService:
             return
         self._status.incr("falco_lines_processed")
         self._status.set_value("last_event_at", _now())
+        # Receipt freshness and event-time freshness describe different things.
+        # Replay/backlog and clock faults can all produce a large difference.
+        event_time = datetime.fromisoformat(
+            classified.event["timestamp"].replace("Z", "+00:00")
+        )
+        received_at = datetime.now(timezone.utc)
+        lag = (received_at - event_time).total_seconds()
+        self._status.set_value("event_time_observation", {
+            "event_timestamp": classified.event["timestamp"],
+            "received_at": received_at.isoformat(),
+            "receipt_minus_event_seconds": lag,
+            "warning": abs(lag) > 30,
+            "interpretation": (
+                "Clock skew or delivery delay; historical replay may explain lag"
+                if abs(lag) > 30 else
+                "Latest processed event timestamp is within 30 seconds of receipt"
+            ),
+            "scope": "Latest successfully processed container event only",
+        })
 
     def _set_ingest_state(self, ok: bool, detail: str | None = None) -> None:
         previous = self._ingest_ok

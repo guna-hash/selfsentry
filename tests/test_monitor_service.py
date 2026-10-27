@@ -370,3 +370,54 @@ class TestCorruptAuditSpool(ServiceTestCase):
         self.assertEqual(snapshot['audit_spool_size'], 0)
         self.assertEqual(snapshot['components']['audit_spool']['state'], 'ok')
         self.assertEqual(backup.read_bytes(), original)
+
+
+class TestEventTimeObservation(ServiceTestCase):
+    def observe(self, lag, second=1):
+        from datetime import datetime, timedelta, timezone
+
+        stamp = datetime(2026, 10, 9, 10, 0, second, tzinfo=timezone.utc)
+        event = json.loads(falco_line(second=second))
+        event["time"] = stamp.isoformat()
+        received = stamp + timedelta(seconds=lag)
+        self.write_lines(json.dumps(event))
+        with patch("monitor_service.datetime", wraps=datetime) as clock:
+            clock.now.return_value = received
+            self.service.run_once()
+        return self.status.snapshot()["event_time_observation"]
+
+    def test_fresh_event_reports_receipt_difference(self):
+        observation = self.observe(0.25)
+        self.assertAlmostEqual(observation["receipt_minus_event_seconds"], 0.25)
+        self.assertFalse(observation["warning"])
+        self.assertEqual(len(self.sink.alerts), 1)
+
+    def test_delayed_and_future_events_warn_without_losing_evidence(self):
+        for second, lag in ((1, 793), (2, -60)):
+            observation = self.observe(lag, second)
+            self.assertEqual(observation["receipt_minus_event_seconds"], lag)
+            self.assertTrue(observation["warning"])
+            self.assertIn("delivery delay", observation["interpretation"])
+            self.assertIn("historical replay", observation["interpretation"])
+        self.assertEqual(len(self.sink.alerts), 2)
+
+    def test_fresh_event_replaces_previous_warning(self):
+        self.assertTrue(self.observe(793, 1)["warning"])
+        self.assertFalse(self.observe(0.1, 2)["warning"])
+
+    def test_observation_survives_status_readback_and_checkpoint_replay(self):
+        from monitor_status import read_status, describe_status
+
+        observation = self.observe(793)
+        self.status.write()
+        saved = read_status(self.dir / "status.json")
+        self.assertEqual(saved["event_time_observation"], observation)
+        self.assertEqual(
+            describe_status(saved)["event_time_observation"], observation
+        )
+        restarted = self.make_service()
+        restarted.run_once()
+        self.assertEqual(len(self.sink.alerts), 1)
+        self.assertEqual(
+            self.status.snapshot()["event_time_observation"], observation
+        )

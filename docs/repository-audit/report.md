@@ -1924,3 +1924,22 @@ Private evidence:
 
 This study does not establish a false-positive improvement from varied
 training or the discovery-window admission change.
+
+## Event timestamp observation — 27 October 2026
+
+Monitor status exposes event_time_observation after a successfully processed
+container event: event_timestamp, received_at, signed
+receipt_minus_event_seconds, warning, interpretation and scope.
+
+warning is true when the absolute receipt/event difference exceeds 30 seconds.
+A positive difference may reflect historical replay, backlog, delivery delay
+or clock skew; it does not diagnose the cause. A negative difference indicates
+an event timestamp ahead of receipt. The observation describes the latest
+processed container event and remains unchanged while no new event arrives.
+It does not alter aggregate health, discard evidence, change checkpoints,
+repair timestamps or add a dashboard banner.
+
+Four regressions cover fresh/delayed/future events, warning replacement,
+status persistence and checkpoint replay. Operator release passed 1,278 Python
+tests plus 104 subtests, 168 frontend tests, lint, types, build and whitespace.
+Evidence: state/evaluation/final-checks-20261027T104226Z.
