@@ -1893,3 +1893,34 @@ Evidence: state/evaluation/final-checks-20261026T154456Z.
 This improves training admission. It does not establish observation
 continuity during later outages or resolve the recorded routine-workload
 false positives; independent model-quality validation remains open.
+
+## Varied routine workload and recurring event-clock fault — 27 October 2026
+
+A new cyclic routine workload trained the unchanged Isolation Forest on
+20 admitted windows. Training was frozen before validation, SHA-256:
+8d477dc0a4befa93c66c093cbb6d0108943abaf880fd9c74d1a9feec2d6e7b9d.
+
+Eight subsequent full benign windows passed capture clock/freshness guards,
+with no missing windows. All eight triggered the model flag at 0.5;
+three qualified at the configured monitor threshold of 0.8. Validation
+feature ranges lay within training ranges. This is a controlled benign
+quality failure, not a representative production false-positive rate.
+No threshold, model or saved baseline was changed to suppress the result.
+
+Earlier captures were incomplete or timestamp-invalid and remain retained.
+Fresh appended events showed approximately 60,224 seconds of timestamp skew.
+Falco restart temporarily restored 21–77 ms receipt differences. A later
+controlled-deviation attempt aborted on approximately 793 seconds of skew.
+Deviation detection and recall remain unmeasured. The owned study container
+was explicitly stopped; its filesystem and private evidence were retained.
+
+Host BOOTTIME-minus-MONOTONIC did not explain the earlier skew. Subsequent
+NTP status showed an approximately 76 ms offset; queried time-sync/kernel
+logs supplied no matching clock-step evidence. Permanent cause is unresolved.
+A healthy monitor heartbeat does not attest event timestamp correctness.
+
+Private evidence:
+~/selfsentry-private-evidence/model-study-55306e8084b8/
+
+This study does not establish a false-positive improvement from varied
+training or the discovery-window admission change.
