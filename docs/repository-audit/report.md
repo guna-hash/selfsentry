@@ -2083,3 +2083,17 @@ graceful completion deadline for stalled external calls or running jobs.
 
 Private evidence:
 ~/selfsentry-private-evidence/normal-shutdown-4a5811a3f103
+
+## Managed stop timeout verification — 28 October 2026
+
+On commit 8d34839, the production CLI stop function was exercised against
+one private process configured to ignore SIGTERM. It returned an explicit
+failure after 15.024 seconds, retained the original PID records unchanged
+and did not force-kill the process or claim successful shutdown.
+
+The test harness subsequently killed and reaped its owned process.
+The live monitor remained healthy. This verifies CLI timeout reporting
+and record retention, not bounded completion of stalled monitor workers.
+
+Private evidence:
+~/selfsentry-private-evidence/shutdown-timeout-11cba6c49416
