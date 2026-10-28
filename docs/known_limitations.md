@@ -6,6 +6,9 @@ This section supersedes older current-status lists within the scopes below.
 Historical results, failed attempts and their limitations remain intact.
 
 Completed and recorded:
+- Independent fresh Ubuntu installation passed within the scope in
+  docs/repository-audit/clean-install-20261028.md, including operator
+  browser checks. Broader production acceptance remains unclaimed.
 - Genuine PostgreSQL wire-level COMMIT-reply loss passed for the keyed
   audit endpoint, including uncertain-write reporting and retry deduplication.
 - Latest operator release passed 1,278 Python tests plus 104 subtests,
@@ -30,7 +33,6 @@ Completed and recorded:
   permanent fix for the recurring clock fault.
 
 Still open:
-- Independent clean supported-Linux installation.
 - Broader independent model validation, including legitimate behavior
   changes; no experimental candidate has replaced the live model.
 - Remaining explicitly untested review/deployment fault interleavings

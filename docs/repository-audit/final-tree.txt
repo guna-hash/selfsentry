@@ -97,6 +97,7 @@ docs/phase6_rule_synthesis.md
 docs/release_validation_20261012.md
 docs/reliability_acceptance_20261013.md
 docs/remaining_work_20261020.md
+docs/repository-audit/clean-install-20261028.md
 docs/repository-audit/deletion-manifest.json
 docs/repository-audit/developer-guide.md
 docs/repository-audit/file_inventory.csv
