@@ -2127,3 +2127,24 @@ host power-loss recovery or WAL/storage-device durability.
 
 Private evidence:
 ~/selfsentry-private-evidence/commit-ack-20261028T074216Z
+
+## Rule-review process crash verification — 28 October 2026
+
+On commit c33dab8, production review routes were exercised against a
+disposable real PostgreSQL database with a separate request process killed
+by SIGKILL at two controlled boundaries: before and after a private
+deployment-adapter file effect.
+
+All six acceptance checks passed. Competing approval/rejection requests
+were blocked while the review lock was held. After each process death,
+the lock could be reacquired and the committed approval remained intact,
+without a deployed status or deployment audit claim. Seven helper tests
+also passed. The owned database container was removed; the live monitor
+was subsequently checked healthy with automatic actions disabled.
+
+Backtest, duplicate-registry and deployment behavior used controlled
+adapters. This does not establish native Falco publication/reload recovery,
+host power-loss durability, or safe automatic deployment retry. The native
+effect-before-final-database-status crash boundary remains open.
+
+Private evidence: review-crash-20261028T104551Z/results.json.
