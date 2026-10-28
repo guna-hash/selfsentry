@@ -2066,3 +2066,20 @@ zero native drops or a reliable false-positive rate. Structural novelty
 was reported separately. The live model and configuration were unchanged.
 
 Private evidence: ~/selfsentry-private-evidence/workload-study-v2
+
+## Normal managed shutdown — 28 October 2026
+
+On commit 840f00e, one normal managed stop completed successfully in
+0.393 seconds. Managed startup then recovered a healthy monitor with
+empty incident and audit delivery queues; automatic isolation remained
+disabled. The 49 targeted shutdown/control/monitor tests also passed.
+
+The CLI sends SIGTERM, waits up to 15 seconds and retains PID records
+when a managed process remains alive. Monitor cleanup waits for running
+background work while retaining its instance lock.
+
+This verifies one normal stop/start cycle. It does not establish a
+graceful completion deadline for stalled external calls or running jobs.
+
+Private evidence:
+~/selfsentry-private-evidence/normal-shutdown-4a5811a3f103
