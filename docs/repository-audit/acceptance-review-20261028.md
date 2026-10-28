@@ -16,12 +16,12 @@ output; no independent access to the operator databases or raw evidence is claim
 | 5. Build | Pass for recorded release | Fresh Node 24.21.0/npm 11.19.0 build; chart-size warning remains non-blocking, not performance acceptance. |
 | 6. Security findings resolved or documented | Pass within that wording | Risks and defaults are documented. This does not mean every finding is repaired, all current advisories were refreshed or the deployment is certified. |
 | 7. Reproducible setup | Pass on one supported environment | Independent fresh Ubuntu 24.04.4 installation, new secrets/database, migration/schema match, locked installs, native telemetry and operator browser checks. Manual corrections were necessary; no unattended installer, other-OS or reboot guarantee is implied. |
-| 8. Accurate current docs | Partial | Authoritative status and historical labels are reconciled here. Root README and other operational documents still need a focused wording/setup review; they were not included in this archive. |
+| 8. Accurate current docs | Pass within reviewed scope | README, configuration-template comments, monitor/gate operations and developer guide were subsequently reviewed against recorded behavior. A fresh-Ubuntu setup guide records verified corrections. This is not a semantic review of every historical document. |
 | 9. Final diff reviewed | Pass within recorded diff scopes | Prior uploaded source diff reviews and subsequent operator checks are retained; this pass reviews the supplied documentation changes only. It is not a new review of every application path. |
 | 10. Limitations documented | Pass | Accuracy, clocks, storage, worker shutdown, privilege and incomplete fault coverage remain explicit. |
 
 This does not establish ten unconditional passes or complete original-prompt closure.
-Criteria 3 and 8 remain partial. Recorded passes retain the boundaries above.
+Criterion 3 remains partial. Recorded passes retain the boundaries above.
 
 ## Completed checks that must not be repeated solely because an old table is stale
 
@@ -53,9 +53,10 @@ Criteria 3 and 8 remain partial. Recorded passes retain the boundaries above.
 4. **Worker shutdown/resources/history:** CLI timeout does not bound a running
    worker's completion. Thirty-minute measurements do not establish capacity,
    memory-leak absence, long-duration storage bounds or a safe archival cutoff.
-5. **Documentation/provenance:** review the current README/setup instructions and
-   remaining source findings against this status. Preserve failures and distinguish
-   original-host results from fresh-host results and differing tool versions.
+5. **Provenance and future changes:** the current README/setup/operations wording was
+   reconciled in the subsequent documentation pass. Preserve failures and distinguish
+   original-host results from fresh-host results and differing tool versions. Installed
+   artifact/OS supply-chain verification is not established by lockfiles or this review.
 
 The remaining tests require concrete protocols, bounded owned resources and stated
 outcomes. Do not demand every possible fault or repeatedly rerun passing checks.
@@ -73,3 +74,14 @@ outcomes. Do not demand every possible fault or repeatedly rerun passing checks.
 
 Automatic isolation, confirmation, rule candidates and native retirement remain
 disabled in the clean-install evidence. None is enabled by this documentation pass.
+
+## Setup-document follow-up
+
+The subsequent setup-document review used the archive from `c9d2551`. It corrected
+stale native retirement, PostgreSQL locking, migration and COMMIT-reply-loss wording;
+recorded manual Ubuntu setup, Docker group activation and the Falco additive-list fix;
+and clarified conservative configuration examples. No application code, active template
+settings, private .env, live service or algorithm was changed. Shell/Python syntax,
+patch applicability, changed-base refusal and whitespace checks were performed locally.
+The procedure's native evidence is the already recorded fresh VM run, not a newly
+executed second installation of this prose. Remaining feature gaps retain their scope.

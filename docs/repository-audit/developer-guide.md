@@ -1,5 +1,11 @@
 # SelfSentry developer understanding guide
 
+Current evidence: [acceptance review](acceptance-review-20261028.md),
+[fresh-install record](clean-install-20261028.md), and
+[manual setup guide](../fresh-ubuntu-install.md). Source-time and historical runner
+sections below describe their own tests and prerequisites, not a blanket current
+NOT VERIFIED label or authorization to repeat a disruptive native test.
+
 Read this alongside the audit report. This guide explains the implementation; it does
 not certify live operation or eliminate the review gaps recorded in the inventory.
 
@@ -32,8 +38,11 @@ container. Exact ID and label ownership are verified before restart/removal. A l
 response remains unknown and is not retried; inspect the retained name if reported.
 Results retain partial successful checks and cleanup failures without connection secrets.
 
-The post-commit case proves uniqueness/durability at a controlled boundary. It does not
-simulate a lost TCP commit acknowledgement. This suite does not accept monitor queue
+The post-commit case in this tracked runner proves uniqueness at a controlled boundary;
+it does not simulate lost PostgreSQL wire replies. A separate private acceptance later
+withheld an actual COMMIT CommandComplete reply and exercised the production keyed audit
+path through 503 uncertainty, duplicate retry and changed-content refusal. That evidence
+is recorded in the audit; it does not broaden this runner's own checks. This suite does not accept monitor queue
 replay, application process crashes, multi-service failure or automatic containment.
 
 ### Anomaly-only process and file-write loop evidence
@@ -121,9 +130,10 @@ remain separate evidence requirements. Never mark them passed merely because the
     generated-rules file and reloads Falco. A later native rule match is linked to the
     deployed rule. A match is not automatically a true positive. The audit explains the
     per-rule review lock held across commits and deployment. Competing review requests
-    return 409. Native PostgreSQL locking remains unverified here. Retirement is audited
-    database status only; it does not unload Falco rules, and later native matches are
-    still recorded even when the database status is retired.
+    return 409. Scoped native PostgreSQL locking across commits and exceptions is recorded;
+    broader deployment/crash interleavings remain open. Database-only deprecation does not
+    unload Falco rules. A separate opt-in, human-reviewed native retirement/rollback workflow
+    exists and has recorded bounded native acceptance; it remains disabled in ordinary use.
 
 ## State ownership
 
@@ -661,7 +671,7 @@ writers, remote/multiple backend hosts, filesystem/power-loss durability and a g
 request/shutdown deadline remain outside the guarantee.
 
 
-## Next acceptance runners — after VM checkpoint ed56643
+## Historical acceptance runners — VM checkpoint ed56643
 
 ### Ten-minute workload
 
@@ -681,7 +691,12 @@ and model-status checks as the earlier bounded run. This is sustained observatio
 paced probe, not representative fleet capacity, leak proof, complete disk accounting,
 model fit/inference timing or a zero-loss claim. No native drop counters are invented.
 
-## Before/unloaded/restored native rule behavior
+## Historical before/unloaded/restored native rule behavior
+
+This example is specific to the original VM and its reviewed rule/file hashes.
+Do not run it on a fresh installation merely because the guide contains a command.
+Recorded native retirement/rollback and subsequent test-rule cleanup are in the
+current audit; uncertain operation records still require inspection before retries.
 
 This explicitly exercises rule 5, whose reviewed SHA256 is
 `47216c322ce212dc121f1efd4170df764331f215a3ae2b41de4c02ae8138f25c`.
@@ -730,7 +745,7 @@ sudo bash scripts/retirement_test_socket.sh disable sl0thh
 
 The disable helper removes only an override with its expected contents. Retain all evidence.
 
-## Remaining acceptance boundaries
+## Historical acceptance boundaries — runner preparation
 
 These tools require real VM execution. Their local adapter tests are not native passes.
 The next batch does not close the independent representative benign/attack holdout study,
@@ -742,7 +757,7 @@ unless separately authorized for a named isolated environment. Fresh-host testin
 an actual clean supported host. Detection evaluation needs an independently labelled,
 separated corpus and declared coverage/denominators; synthetic fixtures cannot replace it.
 
-## Validation performed here
+## Historical validation — runner preparation
 
 Root Python suite: 1,185 passed + 104 subtests, 3 explicit AF_UNIX policy skips.
 Focused runner tests: 49 passed. Full lint and type checks passed (95 source files).
@@ -750,7 +765,7 @@ Socket helper: bash syntax validated; no local service mutation/native execution
 No frontend source changed, so prior VM build/frontend evidence remains scoped to that code.
 
 
-## Coordinated durable-state restore — next acceptance batch
+## Coordinated durable-state restore — recorded protocol
 
 ### Execute on the existing VM
 

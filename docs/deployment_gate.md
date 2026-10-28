@@ -1,5 +1,10 @@
 # Pre-deployment gate (selfsentry-run)
 
+Current acceptance: [review](repository-audit/acceptance-review-20261028.md).
+Controlled start/create/remove interruption and explicit observation reconciliation passed;
+original uncertain outcomes were preserved. These checks do not establish full scan/policy
+crash acceptance, cancellation of an already accepted daemon command or automatic orphan recovery.
+
 ## Usage
 ```bash
 bin/selfsentry-run [--override-reason "why"] -- <docker run arguments, without -d>
@@ -117,5 +122,6 @@ is still running, and inspect current Docker state using the exact known full ID
 creation ID cannot safely identify an orphan by guessing a name or short ID. Compare deployment
 and audit history with local evidence before deciding on a new action; do not infer a previous
 scan/policy approval from current runtime state. This command supplies evidence, not automatic
-reconciliation or approval. Reviewed resolution records, retention, native crash recovery and
-safe remediation workflows remain open work.
+reconciliation or approval. Reviewed current-state observations are available through the
+tracked reconciliation tools and preserve the original outcome. Retention, broader native
+crash recovery and automated safe remediation remain open work.

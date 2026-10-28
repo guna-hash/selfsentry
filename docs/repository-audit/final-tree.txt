@@ -71,6 +71,7 @@ docs/deployment_gate.md
 docs/falco_rule_matching.md
 docs/final_completion_notes.md
 docs/followup_vm_verification_20261023.md
+docs/fresh-ubuntu-install.md
 docs/handoff/file_tree.txt
 docs/handoff/git_log.txt
 docs/handoff/pytest_summary.txt

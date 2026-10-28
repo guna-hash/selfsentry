@@ -1,5 +1,10 @@
 # SelfSentry continuous monitor: setup and operation
 
+For a fresh host, use [the verified Ubuntu setup procedure](fresh-ubuntu-install.md).
+Current evidence and open boundaries are in the [acceptance review](repository-audit/acceptance-review-20261028.md).
+Source-time unit-test descriptions below retain their original scope; later native
+checks are credited only to the specific cases in the audit and clean-install record.
+
 ## Database timezone contract
 
 The backend stores naive timestamps as UTC; the dashboard interprets them as UTC.
@@ -57,7 +62,10 @@ operator-validated benign JSONL corpus at MONITOR_BENIGN_LOG_PATH. Disabling can
 permits operation without a corpus, with the adaptation path explicitly disabled.
 
 Falco must use json_output=true, time_format_iso_8601=true, rule_matching=all, and file_output
-pointing at FALCO_LOG_PATH. rules_files must include the repo's baseline-capture-rules.yaml
+pointing at FALCO_LOG_PATH. In the verified Falco package, config.d rules_files entries
+append to the base list: place only additional repository paths in the override, not
+another copy of the base default rule paths. Verify the actual loaded order with
+`sudo falco --dry-run -o engine.kind=modern_ebpf`. rules_files must include the repo's baseline-capture-rules.yaml
 and auto-generated-rules.yaml, alongside Falco's default rules/macros. The CLI checks falco.yaml
 and config.d/*.yaml settings on disk and the active unit; this is not proof of the runtime's
 loaded configuration or zero dropped kernel events. Keep service command-line/config overrides
@@ -353,7 +361,7 @@ Do not compare unit-test counts to attack detection percentages. See monitor_eva
 real controlled-trial collection and aggregation. Native VM acceptance and measured full-run/retrospective comparison are recorded in
 monitor_final_review.md. Independent live variants and separate layer timings remain unmeasured.
 
-## Current operating decisions and final verification
+## Historical operating decisions and verification
 
 Normal demo operation keeps AUTO_ISOLATION_ENABLED=false explicitly in the monitor command.
 Environment variables take precedence over .env. If you changed .env but a process uses an old
@@ -556,7 +564,9 @@ Only after a matching comparison, backup validation and operator review, adopt t
 ```
 
 Stamping writes revision metadata; it does not change application tables or prove their
-contents. This procedure has not been executed against the user's PostgreSQL installation.
+contents. Scoped native migration/adoption/restore acceptance is recorded in the audit;
+fresh-database migration and schema comparison also passed on the independent Ubuntu host.
+Neither result authorizes stamping or migrating a different existing database without review.
 The current head includes a unique constraint on `rule_performance.rule_id`, matching
 the previously documented Phase 6 database fix. Existing installations that already have
 that constraint need no application-table change. Do not stamp only the initial revision
@@ -677,14 +687,17 @@ For operator recovery, preserve a consistent backup of the SQLite file and WAL, 
 writers, inspect `deployment_actions` and reconcile the full ID against Docker inspection/events
 and backend audit evidence. Never invoke `finish_action` merely to silence health warnings:
 it can enqueue a deployment. No automatic action executor, mutation/recovery UI or automatic
-Docker replay exists. A reviewed reconciliation/retention workflow remains future work.
+Docker replay exists. Explicit reviewed current-state reconciliation is implemented; see
+[tracked follow-up tools](#tracked-follow-up-tools). It preserves the original uncertain
+outcome and does not silently retry Docker commands. Retention policy remains open.
 
 Creation now has its own `creation_attempts` intent before Docker runs. An unfinished create
 retains a null container ID because no trustworthy result was durably recorded. A successful
 create persists its full returned ID before inspection/scanning. A crash during later inspection
 or scanning can still leave an unstarted orphan; its successful creation record is not proof of
-gate completion. Docker and SQLite are not atomic. Native crash/filesystem durability and host
-reconciliation acceptance remain NOT VERIFIED.
+gate completion. Docker and SQLite are not atomic. Controlled start/create/remove
+interruption and explicit current-state reconciliation passed in the recorded private tests.
+That does not establish arbitrary daemon/host crashes or filesystem durability.
 
 
 ### Gate Docker timeout recovery
@@ -696,7 +709,8 @@ or a completed deployment delivery. Inspect timeout can attempt a separately jou
 of the known, unstarted created container. Create timeout has no authoritative returned ID;
 no guessed container is removed. Use authoritative Docker/event evidence and preserve history
 before retrying. A timeout exits the CLI with code 2. Real daemon/helper-process cancellation
-and fresh-host acceptance remain unverified.
+remain unverified. Independent fresh-host setup passed separately; it does not
+verify daemon cancellation or all timeout outcomes.
 
 
 ### Response transport failures and uncertain daemon state
@@ -718,9 +732,11 @@ with a failure audit. Container listing transport failure returns 503 and closes
 Best-effort pause is not proof of containment when the daemon is unreachable. A process crash
 or forced kill after unpause can still leave a running workload; Docker operations and local
 records cannot be atomic. Recovery currently unpauses before reconnecting saved networks.
-Native daemon outage/restart, process termination and multi-process response acceptance remain
-NOT VERIFIED. Tests use fake Docker with real temporary recovery files and real local flock
-contention between two threads, including different identifiers for the same container.
+Recorded native checks cover direct isolation/resume and explicit retry after SIGKILL
+between acknowledged unpause and network restoration. That interval left the disposable
+workload running and disconnected; continuous containment is not claimed. Broader daemon
+outage/restart and multi-process cases remain open. The original unit tests use fake Docker
+with real temporary recovery files and local flock contention between two threads.
 
 
 ### Creation intent and unknown identity
@@ -859,9 +875,12 @@ injected error in the commit-then-error experiment; disk durability is not teste
 This handler does not catch every SQLAlchemy exception or change existing validation/route HTTP
 errors. ProgrammingError/IntegrityError retain existing handling. Some dialects classify query
 or configuration problems as OperationalError, so 503 is not a diagnosis of the underlying
-cause. Startup/create_all failures remain fail-fast outside request handling. Full PostgreSQL
-outage, transaction cancellation, established-socket loss and real commit-ack uncertainty still
-require isolated native acceptance; full-request/SQL deadlines remain unresolved.
+cause. Startup/create_all failures remain fail-fast outside request handling. Scoped native PostgreSQL outage, connection and recovery checks are recorded separately.
+The keyed audit endpoint also passed real wire-level COMMIT reply loss: PostgreSQL's actual
+COMMIT reply was withheld, a committed row was independently observed, 503 reported write
+uncertainty, and identical retry preserved one original row while changed replay returned 409.
+This is not blanket endpoint idempotency, power-loss recovery or every cancellation scenario.
+Full-request/SQL deadlines remain unresolved.
 
 ### Audit delivery failures
 

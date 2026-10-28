@@ -22,7 +22,8 @@ for current review coverage, executed checks and unresolved findings.
   supply behavioral telemetry; the project does not run an independent eBPF collector.
 - **Behavioral detection:** container-specific JSON baselines feed Isolation Forest.
   Learning, unavailable and invalid-model states remain explicit. Scores are rankings,
-  not calibrated probabilities. One-Class SVM is experimental.
+  not calibrated probabilities. One-Class SVM is experimental. A calibrated LOF
+  candidate was evaluated offline; it is not a live algorithm option or an approved replacement.
 - **Response:** automatic isolation defaults off. The durable monitor requires qualifying
   dual-layer evidence, freshness and protection checks before attempting it. Manual isolation
   and recovery require the backend operator token. Recovery restores saved network membership
@@ -70,6 +71,12 @@ unit/SQLite tests can run without the host security services. Runtime compatibil
 with other versions must be checked separately.
 
 ## Install and configure
+
+For a new Ubuntu host, follow the [verified manual setup guide](docs/fresh-ubuntu-install.md).
+It covers host packages, Docker group activation, fresh private credentials/database,
+Alembic migration order and Falco list-merge/log permissions. Python and npm installation
+alone do not install or configure those services. The [clean-install record](docs/repository-audit/clean-install-20261028.md)
+documents the tested versions and scope; it is not an unattended installation guarantee.
 
 ```bash
 git clone https://github.com/guna-hash/selfsentry.git
@@ -139,7 +146,9 @@ concurrency, real containment, restoration or detection accuracy. Optional live 
 
 ## Evidence, limitations and next work
 
-Start with the [academic handoff](docs/academic_handoff_20261021.md),
+Start with the [current acceptance review](docs/repository-audit/acceptance-review-20261028.md)
+and [clean-install verification](docs/repository-audit/clean-install-20261028.md).
+Earlier academic context is in the [academic handoff](docs/academic_handoff_20261021.md),
 [case matrix](docs/academic_case_matrix.md), [demo](docs/demo_script.md), and
 [known limitations](docs/known_limitations.md). Historical controlled measurements remain
 in their original reports; they do not establish production accuracy or added coverage
@@ -147,14 +156,17 @@ beyond Falco. Screenshots and their synthetic/live provenance are documented in 
 [screenshot guide](docs/dashboard_screenshots.md).
 
 Current engineering limits include shared-token rather than per-person authorization,
-PostgreSQL migration/adoption passes recorded in the committed VM note (raw logs not inspected here),
-unbounded total retained history, a documented
-unread-log rotation loss boundary, and incomplete live failure/load validation. The audit
-also records bounded native PostgreSQL locking passes, with full review/deployment interleavings
-and native rule retirement still open. Manual archive/export and recorded operator observations
-are documented in [operations](docs/monitor_operations.md#tracked-follow-up-tools). Priorities are durable
-state integrity, migration/recovery coverage and representative live evaluation before
-expanding automation. Do not infer health solely from a fresh monitor heartbeat.
+unbounded total retained history, an unread-log rotation loss boundary, recurring event-clock
+skew without a permanent fix, and incomplete representative model/load and failure validation.
+Recorded native checks include PostgreSQL migration/restore/concurrency, keyed audit COMMIT
+reply loss, bounded review locking, direct response and interruption recovery, and controlled
+rule retirement/rollback and supervised re-fire. These passes do not cover every endpoint,
+crash interleaving or production workload. Fresh Ubuntu setup and basic operator browser checks
+also passed within the linked installation record; no data or secrets were copied from the
+original host. Manual archive/export and explicit current-state observations are documented
+in [operations](docs/monitor_operations.md#tracked-follow-up-tools). Keep automatic response
+disabled during ordinary observation. Do not infer event-time freshness or detection quality
+solely from a healthy monitor heartbeat.
 
 <!-- redesign-gallery:start -->
 <!-- redesign-gallery:end -->
