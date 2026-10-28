@@ -1,5 +1,47 @@
 # Current follow-up assessment — 23 October 2026
 
+## Current acceptance reconciliation — 28 October 2026
+
+This section supersedes older current-status lists within the scopes below.
+Historical results, failed attempts and their limitations remain intact.
+
+Completed and recorded:
+- Latest operator release passed 1,278 Python tests plus 104 subtests,
+  168 frontend tests, lint, scoped types, build and whitespace checks.
+- Native disposable isolation/resume and interrupted resume recovery passed.
+  The interruption test required explicit retry; continuous containment
+  across a crash was not established.
+- Controlled gate start/create/remove interruption tests passed within
+  their recorded acknowledgement and persistence boundaries.
+- Separate native Falco capture/checkpoint/log-replacement checks passed.
+- A 30-minute synthetic workload measurement completed, with resource,
+  queue, journal-growth and native drop-counter observations recorded.
+  Completion was not performance acceptance; adverse findings remain.
+- Prospective LOF evaluation used 24 training and six calibration windows.
+  With calibration frozen before validation, LOF flagged 0/6 routine,
+  2/2 structural-deviation and 2/2 volume-deviation windows. The unchanged
+  Isolation Forest comparison qualified 5/6 routine and all four deviation
+  windows at 0.8. These are small synthetic results, not production accuracy.
+- After restart and bridged-network configuration, an owned fresh-event
+  probe passed: 150 events, maximum absolute receipt lag 0.0742 seconds.
+  The probe was removed. This is current timestamp evidence, not a
+  permanent fix for the recurring clock fault.
+
+Still open:
+- Independent clean supported-Linux installation.
+- Broader independent model validation, including legitimate behavior
+  changes; no experimental candidate has replaced the live model.
+- Remaining explicitly untested review/deployment fault interleavings,
+  genuine PostgreSQL COMMIT-acknowledgement loss and shutdown bounds.
+- Representative capacity, storage-retention and longer-duration behavior.
+- Recurring Falco event-clock fault root cause and durable remediation.
+- Owner license decision and any outstanding artifact/OS provenance review.
+- Final reconciliation against the original master-prompt criteria.
+
+Automatic isolation remains disabled. Proposed file removals, live archival
+and demo recording remain deferred; they are not silently marked complete.
+
+
 ## Consolidated acceptance status — 26 October 2026
 
 This section supersedes older current-status statements only within the
