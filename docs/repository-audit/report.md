@@ -1,4 +1,7 @@
-# Current follow-up assessment — 23 October 2026
+# Repository audit — current status and evidence history
+
+Authoritative ten-criterion review: [acceptance review](acceptance-review-20261028.md).
+Earlier dated assessments below are historical evidence, not current blanket blockers.
 
 ## Current acceptance reconciliation — 28 October 2026
 
@@ -46,7 +49,7 @@ Automatic isolation remains disabled. Proposed file removals, live archival
 and demo recording remain deferred; they are not silently marked complete.
 
 
-## Consolidated acceptance status — 26 October 2026
+## Historical consolidated acceptance status — 26 October 2026
 
 This section supersedes older current-status statements only within the
 evidence scopes below. Historical results and failed attempts remain intact.
@@ -105,7 +108,7 @@ was performed by this agent. A final remote recheck found main at
 Its source tree exactly matches integration `a25fca0`, so that original release-integration
 step is now credited as complete. This new follow-up is still uncommitted and unmerged. Default Isolation Forest, human rule approval and response safety gates remain.
 
-## Current changes and evidence hierarchy
+## Historical changes and evidence hierarchy — 23 October 2026
 
 - Recovered the original PostgreSQL backup/migration, PostgreSQL concurrency, bounded workload
   and journal export/archive packages. `recovered-runners.json` preserves package/source hashes
@@ -247,7 +250,7 @@ closure, rejection/instance changes/timeouts and the single-POST rule. Test harn
 failures from intermediate iterations remain retained. No test, type or security warning
 was broadly suppressed, and no real native or isolation action was executed.
 
-## Current ten-criterion acceptance
+## Historical ten-criterion acceptance — 23 October 2026
 
 Each result applies to its explicit evidence, not to production approval.
 
@@ -264,7 +267,7 @@ Each result applies to its explicit evidence, not to production approval.
 | 9. Reviewed final diff | PASS | Source/contract/diff/whitespace and installer applicability reviewed; uncommitted for maintainer review |
 | 10. Documented limitations | PASS | Individually scoped blockers below and known_limitations.md; no overall completion claim |
 
-## Actionable access and owner blockers
+## Historical access and owner blockers — 23 October 2026
 
 1. **Disposable VM/host access and private evidence:** provide an authorized local environment or
    run the documented tracked runners there. Inspect original raw logs before independently
@@ -1689,7 +1692,7 @@ reference to Batch 23 was corrected to Batch 25. Closure metadata and package in
 checked separately. Missing native executables were rechecked without installing software,
 starting services, accessing production state or performing response actions.
 
-## Current acceptance update — 26 October 2026
+## Historical acceptance update — 26 October 2026
 
 The following supersedes older current-status wording only. Dated historical results,
 failed trials and scope boundaries remain unchanged. Evidence was inspected from supplied
@@ -1710,7 +1713,7 @@ Private replay evidence directory: `~/selfsentry-private-evidence/monitor-replay
 The terminal report is inspected evidence, not an independent execution on the operator VM.
 No credentials, original logs, baselines or database exports are included here.
 
-### Current ten-criterion assessment
+### Historical ten-criterion assessment — 26 October 2026
 
 | Criterion | Result | Evidence / remaining boundary |
 | --- | --- | --- |

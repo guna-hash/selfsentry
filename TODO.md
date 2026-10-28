@@ -1,5 +1,8 @@
 # SelfSentry release checklist
 
+Authoritative ten-criterion review: [acceptance review](docs/repository-audit/acceptance-review-20261028.md).
+Earlier dated assessments below are historical evidence, not current blanket blockers.
+
 ## Current acceptance reconciliation — 28 October 2026
 
 This section supersedes older current-status lists within the scopes below.
@@ -46,7 +49,7 @@ Automatic isolation remains disabled. Proposed file removals, live archival
 and demo recording remain deferred; they are not silently marked complete.
 
 
-## Consolidated acceptance status — 26 October 2026
+## Historical consolidated acceptance status — 26 October 2026
 
 This section supersedes older current-status statements only within the
 evidence scopes below. Historical results and failed attempts remain intact.
@@ -281,7 +284,7 @@ production CWPP, fleet or Kubernetes expansion is part of this academic work.
 
 - [x] Final remote recheck: PR #6 merged the original audit integration into main (`16ac05b`), with the same source tree as `a25fca0`. This continuation remains unmerged.
 
-## Current acceptance update — 26 October 2026
+## Historical acceptance update — 26 October 2026
 
 - [x] Inspect operator release output: 1,268 Python tests, 104 subtests, 168 frontend tests, lint/types/build/whitespace passed.
 - [x] Inspect seven disposable audit and five real-monitor replay checks; retain synthetic/native boundaries.

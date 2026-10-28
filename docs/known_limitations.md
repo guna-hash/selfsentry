@@ -1,5 +1,8 @@
 # Known limitations and evidence history
 
+Authoritative ten-criterion review: [acceptance review](repository-audit/acceptance-review-20261028.md).
+Earlier dated assessments below are historical evidence, not current blanket blockers.
+
 ## Current acceptance reconciliation — 28 October 2026
 
 This section supersedes older current-status lists within the scopes below.
@@ -46,7 +49,7 @@ Automatic isolation remains disabled. Proposed file removals, live archival
 and demo recording remain deferred; they are not silently marked complete.
 
 
-## Consolidated acceptance status — 26 October 2026
+## Historical consolidated acceptance status — 26 October 2026
 
 This section supersedes older current-status statements only within the
 evidence scopes below. Historical results and failed attempts remain intact.
@@ -207,7 +210,7 @@ SelfSentry is a hybrid container runtime security system that combines Falco rul
   mentioned in older documents are outside the present thesis, not requirements.
 
 
-## Current release gaps
+## Historical release gaps — 13 October 2026
 
 - A1/A2 operator VM acceptance passed on 2026-10-12; see TODO.md for report names.
 - Automatic-response attempts 185–187 were correctly declined by existing policy.
@@ -415,7 +418,7 @@ The acknowledgement body is not cryptographically bound to the key/content. Keyl
 producer key selection, ordered backlog handling after a conflict, retention and native
 PostgreSQL race/crash/network validation remain limitations. Existing records are not rewritten.
 
-## Current acceptance update — 26 October 2026
+## Historical acceptance update — 26 October 2026
 
 The following supersedes older current-status wording only. Dated historical results,
 failed trials and scope boundaries remain unchanged. Evidence was inspected from supplied
