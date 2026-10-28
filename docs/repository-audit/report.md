@@ -6,6 +6,8 @@ This section supersedes older current-status lists within the scopes below.
 Historical results, failed attempts and their limitations remain intact.
 
 Completed and recorded:
+- Genuine PostgreSQL wire-level COMMIT-reply loss passed for the keyed
+  audit endpoint, including uncertain-write reporting and retry deduplication.
 - Latest operator release passed 1,278 Python tests plus 104 subtests,
   168 frontend tests, lint, scoped types, build and whitespace checks.
 - Native disposable isolation/resume and interrupted resume recovery passed.
@@ -31,8 +33,8 @@ Still open:
 - Independent clean supported-Linux installation.
 - Broader independent model validation, including legitimate behavior
   changes; no experimental candidate has replaced the live model.
-- Remaining explicitly untested review/deployment fault interleavings,
-  genuine PostgreSQL COMMIT-acknowledgement loss and shutdown bounds.
+- Remaining explicitly untested review/deployment fault interleavings
+  and stalled-worker shutdown completion bounds.
 - Representative capacity, storage-retention and longer-duration behavior.
 - Recurring Falco event-clock fault root cause and durable remediation.
 - Owner license decision and any outstanding artifact/OS provenance review.
@@ -2097,3 +2099,26 @@ and record retention, not bounded completion of stalled monitor workers.
 
 Private evidence:
 ~/selfsentry-private-evidence/shutdown-timeout-11cba6c49416
+
+## Native PostgreSQL COMMIT reply loss — 28 October 2026
+
+On commit 4d0ca6a, five checks passed using the production FastAPI audit
+path in-process and one disposable PostgreSQL 18 container.
+
+A protocol proxy forwarded COMMIT and withheld PostgreSQL's actual
+COMMIT CommandComplete reply. Independent inspection verified the row
+was committed while the application request still awaited its outcome.
+Closing the connection produced HTTP 503 with explicit write uncertainty.
+An identical keyed retry acknowledged the original row without duplication;
+changed-content replay returned HTTP 409.
+
+All five proxy unit tests also passed. The owned database container was
+removed, and the live monitor was subsequently verified healthy with
+automatic isolation disabled.
+
+This closes the recorded wire-level COMMIT-reply-loss gap for the keyed
+audit endpoint. It does not establish blanket endpoint idempotency,
+host power-loss recovery or WAL/storage-device durability.
+
+Private evidence:
+~/selfsentry-private-evidence/commit-ack-20261028T074216Z

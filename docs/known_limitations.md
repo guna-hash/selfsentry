@@ -6,6 +6,8 @@ This section supersedes older current-status lists within the scopes below.
 Historical results, failed attempts and their limitations remain intact.
 
 Completed and recorded:
+- Genuine PostgreSQL wire-level COMMIT-reply loss passed for the keyed
+  audit endpoint, including uncertain-write reporting and retry deduplication.
 - Latest operator release passed 1,278 Python tests plus 104 subtests,
   168 frontend tests, lint, scoped types, build and whitespace checks.
 - Native disposable isolation/resume and interrupted resume recovery passed.
@@ -31,8 +33,8 @@ Still open:
 - Independent clean supported-Linux installation.
 - Broader independent model validation, including legitimate behavior
   changes; no experimental candidate has replaced the live model.
-- Remaining explicitly untested review/deployment fault interleavings,
-  genuine PostgreSQL COMMIT-acknowledgement loss and shutdown bounds.
+- Remaining explicitly untested review/deployment fault interleavings
+  and stalled-worker shutdown completion bounds.
 - Representative capacity, storage-retention and longer-duration behavior.
 - Recurring Falco event-clock fault root cause and durable remediation.
 - Owner license decision and any outstanding artifact/OS provenance review.
