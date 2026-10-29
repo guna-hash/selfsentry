@@ -2177,3 +2177,28 @@ false-positive rate or zero-drop guarantee is claimed. Live monitoring
 may retain probe evidence; cleanup was not a production retirement test.
 
 Private evidence: native-deployment-crash-20261029T041642Z/results.json.
+
+## Controlled stalled-worker shutdown — 29 October 2026
+
+On commit e29c71e, a separate private monitor process exercised production
+main, signal handling, shutdown, instance locking, ControlWorker.stop and
+CLI stop with deliberately stalled control work.
+
+All six acceptance checks and six helper tests passed. The CLI returned
+an explicit timeout after 15.006 seconds, retaining PID records and the
+active owner's lock. Shutdown remained stopping without premature sink
+closure. A separate competing monitor was refused without changing the
+owner's lock contents.
+
+Releasing the controlled worker allowed orderly shutdown in 0.268 seconds.
+Private PID-record cleanup and a fresh private monitor iteration succeeded.
+All owned processes were reaped. The live monitor retained PID 5012,
+remained healthy and reported empty incident and audit queues.
+
+ControlWorker.run, ingestion/pump wiring and the sink used controlled
+adapters. This verifies the tested stall/release recovery behavior, not an
+actual hung network/model/LLM request or a completion deadline for permanently
+blocked workers. No live monitor was signalled, and Docker, PostgreSQL and
+Falco were not changed by this check.
+
+Private evidence: stalled-worker-20261029T043133Z/results.json.
