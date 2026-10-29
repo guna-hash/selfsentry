@@ -2148,3 +2148,32 @@ host power-loss durability, or safe automatic deployment retry. The native
 effect-before-final-database-status crash boundary remains open.
 
 Private evidence: review-crash-20261028T104551Z/results.json.
+
+## Native deployment-before-status crash verification — 29 October 2026
+
+On commit 1e7976c, the production approval route, backtester, duplicate
+guard and deployer were exercised with real PostgreSQL and native Falco.
+A separate approval process was killed after the native deployer returned
+and before the final deployed-status database commit.
+
+All six acceptance checks and ten helper tests passed. Competing reviews
+were blocked. After SIGKILL, committed approval remained and the review
+lock was released. Seven native rule matches were observed while the
+database still recorded approved. One explicit approval retry committed
+deployed status and one deployment audit without appending duplicate
+rule bytes; five further native matches were observed.
+
+Cleanup restored the original generated-rule bytes and reloaded Falco.
+Eleven subsequent target-write witnesses produced zero test-rule matches.
+Owned containers were removed without cleanup errors. The live monitor
+was healthy with empty incident and audit queues. Maximum observed
+absolute event/receipt lag was 0.072 seconds.
+
+This closes the tested request-owner crash boundary, not host power-loss,
+WAL/device failure or all deployment failure cases. The candidate row and
+database were disposable, the guard registry was private, and the benign
+backtest contained only eleven usable native events. No representative
+false-positive rate or zero-drop guarantee is claimed. Live monitoring
+may retain probe evidence; cleanup was not a production retirement test.
+
+Private evidence: native-deployment-crash-20261029T041642Z/results.json.
