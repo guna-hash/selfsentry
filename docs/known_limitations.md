@@ -1,5 +1,37 @@
 # Known limitations and evidence history
 
+## Acceptance follow-up — 29 October 2026
+
+The recorded review/deployment crash cases have now been exercised.
+Controlled approval-process termination before and after a private adapter
+effect passed. A separate native Falco test passed termination after the
+deployer returned but before final deployed-status commit, competing review
+exclusion, preserved approval, explicit retry without duplicate append, and
+restoration with positive/negative native witnesses.
+
+Controlled stalled-worker verification passed CLI timeout/PID retention,
+continued ownership, competing-monitor refusal, orderly shutdown after
+release and private restart. This does not impose a completion deadline on
+a permanently stalled production worker or reproduce a hung external call.
+
+The first four-hour soak attempt did not complete. Its last resource sample
+was at 300.862 seconds; the runner detected host-clock discontinuity and
+approximately 17,826 seconds of native event/receipt skew. The owned
+container was removed. The monitor was unhealthy immediately afterward
+and recovered in a subsequent operator status check. Preserve this failed
+attempt; it is not four-hour performance acceptance.
+
+Evidence directories under ~/selfsentry-private-evidence:
+- native-deployment-crash-20261029T041642Z
+- stalled-worker-20261029T043133Z
+- soak-20261029T044301Z
+
+Remaining work includes the deferred uninterrupted soak, clock-fault
+investigation, broader independent model validation and scoped provenance
+review. Licensing remains an owner decision. Historical failures and
+limitations remain intact; no model or automatic-response setting changes.
+
+
 Authoritative ten-criterion review: [acceptance review](repository-audit/acceptance-review-20261028.md).
 Earlier dated assessments below are historical evidence, not current blanket blockers.
 
