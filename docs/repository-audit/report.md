@@ -2261,3 +2261,22 @@ It does not independently verify repository signing-key provenance,
 installation-media authenticity, all installed files, Node/npm/Python
 dependencies, or absence of vulnerabilities. Cached APT candidates are
 not a claim about the latest available upstream releases.
+
+## Frozen candidate cross-VM validation — 30 October 2026
+
+The corrected external runner used /usr/bin/uptime and preserved the
+earlier failed attempt. Original training, calibration and LOF cutoff
+0.47411045071039704 remained unchanged.
+
+All four stages supplied six complete windows. LOF flagged 0/6 routine
+benign, 6/6 approved uptime, 6/6 controlled process-deviation and 6/6
+controlled volume-deviation windows. The offline Isolation Forest
+comparison qualified all six windows in every stage at 0.8.
+
+The candidate is not accepted for live promotion: approved new activity
+still produced six false positives. Controlled deviations are not malicious
+attacks. This synthetic cross-VM study does not establish production
+accuracy or lossless capture; native drop counters were not collected.
+All captures passed their guards, retained the owned container stopped,
+and reported a healthy monitor with empty delivery queues afterward.
+Live model and response configuration were unchanged.
