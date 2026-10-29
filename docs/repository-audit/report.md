@@ -2234,3 +2234,30 @@ blocked workers. No live monitor was signalled, and Docker, PostgreSQL and
 Falco were not changed by this check.
 
 Private evidence: stalled-worker-20261029T043133Z/results.json.
+
+## Installed package review — 29 October 2026
+
+On source commit a2b3e99, eight selected system packages were installed:
+Falco, Trivy, Docker Engine/CLI, containerd, PostgreSQL 16, Python 3.12
+and the running kernel package. Installed versions matched candidates
+in the locally cached APT metadata.
+
+Root-level dpkg verification reported only the Falcoctl configuration
+difference. The kernel entry from the unprivileged check disappeared
+with root access; its file permissions were root:root 0600.
+
+Comparison with the downloaded installed-version Falco package showed
+YAML formatting/order changes and falcoVersions renamed to falcoversions,
+with the displayed values unchanged. Behavioral equivalence of these
+key spellings was not established. Falcoctl reported version 0.14.2;
+falcoctl-artifact-follow.service was inactive at inspection.
+
+No package, configuration or service was changed by this review.
+Evidence: ~/selfsentry-private-evidence/package-provenance-20261029T100002Z,
+supplemented by operator-supplied root verification and package diff.
+
+This completes the selected-package inventory/local integrity inspection.
+It does not independently verify repository signing-key provenance,
+installation-media authenticity, all installed files, Node/npm/Python
+dependencies, or absence of vulnerabilities. Cached APT candidates are
+not a claim about the latest available upstream releases.
