@@ -74,9 +74,10 @@ The earlier standalone `selfsentry-journal-export/export_journal.py` only copies
 one SQLite file. It remains valid for the pre-archive snapshot already verified
 on 2026-10-23, but must not be used as a complete journal export after archiving.
 The current exporter pins one live snapshot, copies its referenced archive files,
-then checks all row identities and payloads from the copied set. It limits exports
-to 100 archives, 512 MiB of archive files and a 512 MiB live journal; larger stores
-require a reviewed export strategy rather than silently omitting files.
+then checks all row identities and payloads from the copied set. By default it limits exports
+to 100 archives, 512 MiB of archive files, a 512 MiB live journal and 100,000
+rows per table. Larger stores require explicit bounded options; no rows or
+archives are silently omitted. See the larger-export procedure below.
 
 Keep exports private. Copying or restoring `pipeline.sqlite` alone after archiving
 is insufficient: keep its referenced `journal-archives` files beside it. Restore
@@ -98,3 +99,39 @@ still grow. Owner-selected hot/cold budgets, archive lifetime, archive health
 reporting, coordinated log rotation, long-running load and disk-exhaustion
 acceptance remain open. This change preserves replay and historical reads during
 manual baseline archival; it does not close the whole A12/A19 scale finding.
+
+
+## Explicit larger exports
+
+For the measured test journal (592 MiB, 280,669 live events), use explicit
+limits without changing the conservative defaults:
+
+    .venv/bin/python scripts/export_monitor_journal.py \
+      --max-database-mib 1024 --max-table-rows 500000 --deadline-seconds 600
+
+The byte limit applies separately to the live database and the combined
+referenced archives. Overrides are capped at 2048 MiB, 1,000,000 rows per
+table and 900 seconds per export snapshot. The 4 MiB SQLite cell limit,
+100-archive cap, exclusive publication, source read-only transaction,
+free-space checks, typed row fingerprints, duplicate accounting, integrity
+check and health/PID checks remain in force. Each manifest records its limits.
+Overrides are scoped to one operation; later default runs retain original limits.
+
+Row fingerprints retain one SHA-256 digest per row before sorting. This bounds
+rather than eliminates memory growth; larger exports consume more memory, I/O
+and WAL retention while the source snapshot remains open. The snapshot deadline
+is not a hard whole-process deadline: final file hashing/fsync and service calls
+have their existing boundaries. Do not overlap an export with a timed study.
+
+After a successful export, test archival only on its disposable copy:
+
+    .venv/bin/python evaluation/verify_archive_copy.py \
+      --snapshot /absolute/path/to/verified/export-directory \
+      --max-database-mib 1024 --max-table-rows 500000 --deadline-seconds 600
+
+The verifier records these limits and applies them to row fingerprints and its
+archive-aware re-export. Its deadline option governs that re-export snapshot,
+not the complete verification process. Live event rows and the source export
+are preserved. Exporting and disposable-copy validation do not authorize live
+archival or deletion, shrink files, choose an age cutoff or close total-disk
+retention bounds. Keep the source export and manifest private and intact.

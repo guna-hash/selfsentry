@@ -79,7 +79,7 @@ output; no independent access to the operator databases or raw evidence is claim
 
 | Criterion | Current assessment | Evidence and boundary |
 | --- | --- | --- |
-| 1. Inventory | Recorded pass within scope | The 28 October review listed 388 paths; the latest inventory refresh lists 390, with no removals. This documentation-only archive cannot independently rehash every application file or prove equal semantic review depth. |
+| 1. Inventory | Recorded pass within scope | The 28 October review listed 388 paths; the latest inventory refresh lists 391, with no removals. This documentation-only archive cannot independently rehash every application file or prove equal semantic review depth. |
 | 2. Justified removals | Pass within scope | No original files removed; four proposals remain retained. Deletion is not needed to satisfy this criterion. |
 | 3. Critical feature flow | Partial | Native gate/Falco, two supervised default-IF rule loops, direct response/recovery and bounded interruption/replay checks are recorded. Representative model quality remains open; specified review/deployment crash cases subsequently passed, while other fault schedules remain untested. |
 | 4. Tests executed | Pass for recorded release | Fresh VM: 1,278 Python tests, 104 subtests, 168 frontend tests, lint and scoped types. Later changes covered by this review are documentation only. |

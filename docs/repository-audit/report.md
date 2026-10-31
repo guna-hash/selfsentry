@@ -2305,3 +2305,50 @@ workload, not production capacity, leak-absence, model-quality or lossless
 capture acceptance. No native drop counters were collected. Storage growth
 includes shared host activity; retention planning remains necessary.
 Recurring timestamp faults outside this guarded run remain unresolved.
+
+## Falco boot synchronization mitigation — 31 October 2026
+
+The test VM uses this drop-in:
+ /etc/systemd/system/falco-modern-bpf.service.d/20-wait-for-clock.conf
+
+Its Unit section contains:
+ Wants=time-sync.target
+ Requires=systemd-time-wait-sync.service
+ After=time-sync.target systemd-time-wait-sync.service
+
+After reboot, synchronization completed at monotonic 63.267307s and Falco
+started at 63.346806s. The subsequent 60.498-second probe observed 431 native
+events with maximum absolute receipt skew 0.076712s. Cleanup succeeded;
+the monitor finished healthy with empty delivery queues.
+Evidence: postboot-clock-20261031T092722Z.
+
+This verifies one reboot, not a permanent fix for all timestamp faults or
+later host suspension. Unavailable NTP can delay Falco startup.
+This host configuration is not installed automatically by cloning the repo.
+Rollback: remove only this named drop-in and run sudo systemctl daemon-reload.
+Models, thresholds and automatic-response settings remain unchanged.
+
+## Larger journal export acceptance — 31 October 2026
+
+Explicit bounded export options retain the original conservative defaults.
+The test VM exported 620,752,896 bytes containing 280,669 event rows with
+SQLite integrity and complete typed-row readback verified. Monitor health
+and PID were preserved. Selected limits: 1024 MiB, 500,000 rows per table,
+600 seconds per export snapshot.
+
+All 13 disposable-copy archive checks passed, including preserved logical
+events/replay keys, unchanged protected records, missing-archive refusal,
+reopening, archive-aware re-export and source checksum preservation.
+One thousand rows were archived only on the temporary copy.
+No live archival, pruning, vacuum or model/configuration change was applied.
+
+Full release verification passed: 1,292 Python tests plus 104 subtests,
+168 frontend tests, lint, types over 99 source files and production build.
+The existing chart-size warning remains non-blocking.
+Evidence: state/evaluation/final-checks-20261031T095639Z;
+state/evaluation/journal-archive-check-20261031T095337730189Z.json.
+Private export: 20261031T094904653111Z-b112f5df.
+
+This resolves export-tool limits for the measured journal. It does not
+establish automatic retention, reduced disk usage, a live archive cutoff
+or whole-application restore acceptance.

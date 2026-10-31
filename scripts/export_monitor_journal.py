@@ -1,7 +1,9 @@
 """Export a verified journal snapshot and every referenced baseline archive."""
 
 import argparse
-from contextlib import closing
+from contextlib import closing, contextmanager
+from contextvars import ContextVar
+from dataclasses import dataclass
 from datetime import datetime, timezone
 import hashlib
 import json
@@ -34,6 +36,60 @@ def require(condition, message):
         raise ExportFailed(message)
 
 
+@dataclass(frozen=True)
+class ExportLimits:
+    database_bytes: int
+    table_rows: int
+    deadline_seconds: int
+
+    def __post_init__(self):
+        for value, maximum in ((self.database_bytes, 2048 * 2**20),
+                               (self.table_rows, 1000000),
+                               (self.deadline_seconds, 900)):
+            if type(value) is not int or not 1 <= value <= maximum:
+                raise ExportFailed("Export limits must be positive integers within "
+                                   "2048 MiB, 1000000 rows and 900 seconds")
+
+
+_selected_limits: ContextVar[ExportLimits | None] = ContextVar("export_limits", default=None)
+
+
+def current_limits():
+    return _selected_limits.get() or ExportLimits(
+        MAX_DATABASE_BYTES, MAX_TABLE_ROWS, DEADLINE_SECONDS)
+
+
+@contextmanager
+def export_limits(limits):
+    if not isinstance(limits, ExportLimits):
+        raise ExportFailed("Validated ExportLimits required")
+    token = _selected_limits.set(limits)
+    try:
+        yield
+    finally:
+        _selected_limits.reset(token)
+
+
+def add_limit_arguments(parser):
+    parser.add_argument("--max-database-mib", type=int, default=512,
+                        help="Live DB and separate archive-total limit, MiB (1..2048; default 512)")
+    parser.add_argument("--max-table-rows", type=int, default=100000,
+                        help="Rows per table (1..1000000; default 100000)")
+    parser.add_argument("--deadline-seconds", type=int, default=120,
+                        help="Snapshot copy/readback deadline (1..900; default 120)")
+
+
+def limits_from_args(args):
+    return ExportLimits(args.max_database_mib * 2**20,
+                        args.max_table_rows, args.deadline_seconds)
+
+
+def limit_record():
+    limits = current_limits()
+    return {"database_bytes": limits.database_bytes, "table_rows": limits.table_rows,
+            "cell_bytes": MAX_CELL_BYTES, "deadline_seconds": limits.deadline_seconds}
+
+
 def cell(value):
     # Preserve SQLite value types, including duplicate rows and float/int differences.
     if value is None:
@@ -54,7 +110,8 @@ def digest_rows(rows, deadline=None):
     for row in rows:
         require(deadline is None or time.monotonic() <= deadline,
                 "Row verification exceeded its export deadline")
-        require(len(hashes) < MAX_TABLE_ROWS, "A table exceeds the reviewed export row limit")
+        require(len(hashes) < current_limits().table_rows,
+                "A table exceeds the reviewed export row limit")
         encoded = json.dumps([cell(value) for value in row], ensure_ascii=True,
                              separators=(",", ":")).encode()
         hashes.append(hashlib.sha256(encoded).digest())
@@ -120,14 +177,15 @@ def snapshot(source_path, destination):
     require(source_path.resolve() != destination.resolve(), "Source cannot be its export target")
     require(source_path.is_file(), "Source journal does not exist")
     require(not destination.exists() and not destination.is_symlink(), "Export target exists")
-    deadline = time.monotonic() + DEADLINE_SECONDS
+    deadline = time.monotonic() + current_limits().deadline_seconds
     with closing(readonly(source_path, deadline)) as source:
         source.execute("BEGIN")
         try:
             page_size = source.execute("PRAGMA page_size").fetchone()[0]
             pages = source.execute("PRAGMA page_count").fetchone()[0]
             logical_bytes = page_size * pages
-            require(logical_bytes <= MAX_DATABASE_BYTES, "Journal exceeds the reviewed size limit")
+            require(logical_bytes <= current_limits().database_bytes,
+                    "Journal exceeds the reviewed size limit")
             require(shutil.disk_usage(destination.parent).free > logical_bytes * 3 + 50 * 2**20,
                     "Insufficient free space for a verified journal export")
             print("Fingerprinting the held read-only journal snapshot...", flush=True)
@@ -174,7 +232,8 @@ def copy_archives(source, folder, deadline):
         verified_archive(source, name)
         live = source_path_for_archive(source, name)
         total += live.stat().st_size
-        require(total <= MAX_DATABASE_BYTES, "Referenced archives exceed 512 MiB")
+        require(total <= current_limits().database_bytes,
+                "Referenced archives exceed selected byte limit")
         require(shutil.disk_usage(folder).free > live.stat().st_size * 3 + 50 * 2**20,
                 "Insufficient free space for archived journal evidence")
         directory = folder / "journal-archives"
@@ -232,8 +291,7 @@ def run(root, output_root):
               "source": str(source_path.resolve()), "errors": [],
               "monitor_pid_before": before["pid"],
               "scope": "journal and referenced archives; no application-wide restore claim",
-              "limits": {"database_bytes": MAX_DATABASE_BYTES, "table_rows": MAX_TABLE_ROWS,
-                         "cell_bytes": MAX_CELL_BYTES, "deadline_seconds": DEADLINE_SECONDS}}
+              "limits": limit_record()}
     try:
         report.update(snapshot(source_path, folder / "pipeline.sqlite"))
         after = monitor_status()
@@ -281,10 +339,13 @@ def main():
     parser.add_argument("--repo", type=Path, default=Path.home() / "selfsentry")
     parser.add_argument("--output-root", type=Path,
                         default=Path.home() / "selfsentry-journal-exports")
+    add_limit_arguments(parser)
     args = parser.parse_args()
+    limits = limits_from_args(args)
     previous_umask = os.umask(0o077)
     try:
-        return run(args.repo.expanduser().resolve(), args.output_root.expanduser().resolve())
+        with export_limits(limits):
+            return run(args.repo.expanduser().resolve(), args.output_root.expanduser().resolve())
     finally:
         os.umask(previous_umask)
 

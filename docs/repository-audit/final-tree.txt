@@ -356,6 +356,7 @@ tests/test_evaluation_measure_results.py
 tests/test_evaluation_run_schedule.py
 tests/test_event_classifier.py
 tests/test_event_router.py
+tests/test_export_limits.py
 tests/test_export_monitor_journal.py
 tests/test_falco_ingest.py
 tests/test_falco_integration.py

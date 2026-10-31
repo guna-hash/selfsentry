@@ -30,9 +30,20 @@ def main():
     parser.add_argument("--snapshot", type=Path, required=True,
                         help="Private pre-archive export directory with manifest.json")
     parser.add_argument("--offline", action="store_true", help="Local fixture validation only")
+    parser.add_argument("--max-database-mib", type=int, default=512)
+    parser.add_argument("--max-table-rows", type=int, default=100000)
+    parser.add_argument("--deadline-seconds", type=int, default=120,
+                        help="Export snapshot deadline; not a whole-verifier deadline")
     args = parser.parse_args()
     root, original = args.repo.expanduser().resolve(), args.snapshot.expanduser().resolve()
     sys.path[:0] = [str(root / "monitor-service"), str(root / "scripts")]
+    import export_monitor_journal as exporter
+    limits = exporter.limits_from_args(args)
+    with exporter.export_limits(limits):
+        return verify(root, original, args.offline)
+
+
+def verify(root, original, offline):
     from journal_archive import (SCHEMA, ArchiveError, archive_batch, candidates,
                                  event_rows, seen_event)
     from export_monitor_journal import fingerprint, digest_rows, snapshot
@@ -43,14 +54,18 @@ def main():
 
     manifest = json.loads((original / "manifest.json").read_text())
     source = original / "pipeline.sqlite"
+    from export_monitor_journal import current_limits, limit_record
+    if source.stat().st_size > current_limits().database_bytes:
+        raise ValueError("Source export exceeds selected byte limit")
     with source.open("rb") as stream:
         original_sha = hashlib.file_digest(stream, "sha256").hexdigest()
     require(manifest.get("passed") is True and manifest.get("data_verified") is True,
             "An already verified export is required")
     require(original_sha == manifest.get("export_sha256"), "Source export checksum differs")
-    before = {} if args.offline else status()
+    before = {} if offline else status()
     report: dict[str, Any] = {
         "passed": False, "checks": {}, "errors": [],
+        "export_limits": limit_record(),
         "source_export_sha256": original_sha, "live_rows_changed": False,
         "scope": "disposable-copy archive/readback; no live retention applied"}
 
@@ -125,7 +140,7 @@ def main():
         with source.open("rb") as stream:
             report["checks"]["source_snapshot_unchanged"] = (
                 hashlib.file_digest(stream, "sha256").hexdigest() == original_sha)
-        if not args.offline:
+        if not offline:
             after = status()
             report["checks"]["monitor_healthy_after"] = after.get("healthy") is True
             report["checks"]["monitor_not_restarted"] = after.get("pid") == before.get("pid")
