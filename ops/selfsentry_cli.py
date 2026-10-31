@@ -64,9 +64,13 @@ def check_prerequisites():
         raise StartupError("Set SELFSENTRY_API_TOKEN in .env (required for backend reads/writes).")
     url = os.environ.get("DATABASE_URL", "")
     try:
-        if make_url(url).get_backend_name() != "postgresql":
+        parsed = make_url(url)
+        if parsed.get_backend_name() != "postgresql":
             raise StartupError("DATABASE_URL must use PostgreSQL for host operation.")
-        engine = create_engine(url, connect_args={"connect_timeout": 5})
+        # Match the backend: SQLAlchemy 2.1 otherwise defaults to undeclared psycopg 3.
+        if parsed.drivername == "postgresql":
+            parsed = parsed.set(drivername="postgresql+psycopg2")
+        engine = create_engine(parsed, connect_args={"connect_timeout": 5})
         try:
             with engine.connect() as connection:
                 connection.execute(text("SELECT 1"))
