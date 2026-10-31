@@ -163,12 +163,13 @@ concurrency, real containment, restoration or detection accuracy. Optional live 
 
 ## Evidence, limitations and next work
 
-Start with the [current acceptance review](docs/repository-audit/acceptance-review-20261028.md)
+Start with the [current limitations](docs/known_limitations.md),
+[current acceptance review](docs/repository-audit/acceptance-review-20261028.md)
 and [clean-install verification](docs/repository-audit/clean-install-20261028.md).
 Earlier academic context is in the [academic handoff](docs/academic_handoff_20261021.md),
 [case matrix](docs/academic_case_matrix.md), [demo](docs/demo_script.md), and
-[known limitations](docs/known_limitations.md). Historical controlled measurements remain
-in their original reports; they do not establish production accuracy or added coverage
+[historical limitations](docs/archive/known_limitations_history.md). Historical
+controlled measurements remain in their original reports; they do not establish production accuracy or added coverage
 beyond Falco. Screenshots and their synthetic/live provenance are documented in the
 [screenshot guide](docs/dashboard_screenshots.md).
 
