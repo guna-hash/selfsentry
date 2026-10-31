@@ -1,4 +1,3 @@
-import { isSampleMode } from '../utils/demoMode.js'
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Copy } from 'lucide-react'
@@ -138,8 +137,7 @@ export default function IncidentDrawer({ id, paused, onClose, onChanged, onNotic
       </section>
       <section className="incident-detail-section" aria-label="Incident actions">
         <h3>Actions</h3>
-        {isSampleMode() && <p role="status">Sample data mode is read-only; incident actions are disabled.</p>}
-        {!isSampleMode() && !tokenPresent && <p role="status">Operator token missing. Configure it in <Link to="/monitor">Monitor → Session credentials</Link> to enable write actions.</p>}
+        {!tokenPresent && <p role="status">Operator token missing. Configure it in <Link to="/monitor">Monitor → Session credentials</Link> to enable write actions.</p>}
         {benign && <p>This incident is marked benign. Confirmation and candidate actions are disabled.</p>}
         <div className="incident-actions">
           <button type="button" className="btn btn-primary" disabled={busy || !tokenPresent || benign || !!incident.confirmation} onClick={() => openForm('confirm')}>Confirm incident</button>

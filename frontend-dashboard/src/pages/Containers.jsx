@@ -1,5 +1,4 @@
 import { Link } from 'react-router-dom'
-import { isSampleMode } from '../utils/demoMode.js'
 import { useState } from 'react'
 import { DataTable, Drawer, PageHeader, StatusBadge } from '../components/ui.jsx'
 import RefreshControls from '../components/RefreshControls.jsx'
@@ -31,8 +30,8 @@ export default function Containers() {
         <h3>Response error</h3><pre className="rule-yaml">{JSON.stringify(current.isolation_error ?? 'Not recorded', null, 2)}</pre><h3>Risk explanation</h3><pre className="rule-yaml">{JSON.stringify(current.risk_explanation ?? 'Not recorded', null, 2)}</pre>
         {/svm/i.test(current.isolation_reason || '') && <p>Experimental SVM response: review the recorded reason.</p>}
         <p>Response history records action, time, actor, and outcome in the read-only audit log.</p><Link to={`/audit?container_id=${encodeURIComponent(current.full_id || current.id)}&legacy_container_id=${encodeURIComponent(current.id)}`}>View response history</Link>
-        <div className="table-toolbar"><button className="shell-button" disabled={isSampleMode() || !live || !!data.error || data.loading || recoveryUnavailable || current.isolated || current.protected !== false} onClick={() => setAction('isolate')}>Isolate</button>
-        <button className="shell-button" disabled={isSampleMode() || !live || !!data.error || data.loading || recoveryUnavailable || !current.isolated} onClick={() => setAction('resume')}>Resume / restore networks</button></div>
+        <div className="table-toolbar"><button className="shell-button" disabled={!live || !!data.error || data.loading || recoveryUnavailable || current.isolated || current.protected !== false} onClick={() => setAction('isolate')}>Isolate</button>
+        <button className="shell-button" disabled={!live || !!data.error || data.loading || recoveryUnavailable || !current.isolated} onClick={() => setAction('resume')}>Resume / restore networks</button></div>
         {!live && <p>Container is absent from the current inventory. Refresh before taking action.</p>}
         {current.protected && <p>Protected workload: manual isolation is disabled.</p>}</>}
     </Drawer>

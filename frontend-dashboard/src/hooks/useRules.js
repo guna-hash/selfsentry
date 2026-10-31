@@ -1,4 +1,3 @@
-import { dashboardNow } from '../utils/demoMode.js'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { requestJson } from '../utils/requests.js'
 import { mergeRuleSources } from '../utils/ruleView.js'
@@ -27,7 +26,7 @@ export default function useRules() {
       if(results[0].status==='rejected')errors.history=results[0].reason
       if(results[1].status==='rejected')errors.pending=results[1].reason
       setValue(old=>({rules:mergeRuleSources(history,pending),history,pending,errors,loading:false,refreshing:false,
-        updatedAt:Object.keys(errors).length?old.updatedAt:dashboardNow()}))
+        updatedAt:Object.keys(errors).length?old.updatedAt:Date.now()}))
     }
     refreshRef.current=refresh;refresh()
     const timer=setInterval(()=>{if(!pauseRef.current)refresh()},RULE_REFRESH_MS)

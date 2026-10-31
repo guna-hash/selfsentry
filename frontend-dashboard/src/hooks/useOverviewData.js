@@ -1,4 +1,3 @@
-import { dashboardNow } from '../utils/demoMode.js'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { API, apiFetch, describeFailure } from '../api.js'
 
@@ -8,7 +7,7 @@ const SOURCES = { incidents: '/incidents/?limit=500', containers: '/containers/'
 export default function useOverviewData() {
   const [snapshot, setSnapshot] = useState({
     data: { incidents: null, containers: null, rules: null, pending: null },
-    errors: {}, loading: true, refreshing: false, updatedAt: null, asOf: dashboardNow(),
+    errors: {}, loading: true, refreshing: false, updatedAt: null, asOf: Date.now(),
   })
   const [paused, setPaused] = useState(false)
   const pausedRef = useRef(false)
@@ -51,7 +50,7 @@ export default function useOverviewData() {
         if (result.status === 'fulfilled') data[key] = result.value
         else { data[key] = null; errors[key] = { message: result.reason?.message || 'Request failed', status: result.reason?.status } }
       })
-      const now = dashboardNow()
+      const now = Date.now()
       // Failed sources become unavailable; cached records are never presented as live measurements.
       setSnapshot((old) => ({ data, errors, loading: false, refreshing: false, asOf: now,
         updatedAt: Object.keys(errors).length ? old.updatedAt : now }))

@@ -6,7 +6,24 @@
     "evaluation/clock_guard.py.before-clock-followup",
     "frontend-dashboard/src/components/RiskExplanation.jsx.before-clock-followup",
     "tests/test_evaluation_clock_guard.py.before-clock-followup",
-    "image-scanner/TODO.md"
+    "image-scanner/TODO.md",
+    "docs/screenshots/redesign-capture-report.json",
+    "docs/screenshots/redesign-incident-dark.png",
+    "docs/screenshots/redesign-incident-light.png",
+    "docs/screenshots/redesign-overview-dark.png",
+    "docs/screenshots/redesign-overview-light.png",
+    "docs/screenshots/redesign-presentation-dark.png",
+    "docs/screenshots/redesign-presentation-light.png",
+    "docs/screenshots/redesign-rule-review-dark.png",
+    "docs/screenshots/redesign-rule-review-light.png",
+    "frontend-dashboard/scripts/capture-dashboard.mjs",
+    "frontend-dashboard/scripts/capture-dashboard.test.js",
+    "frontend-dashboard/src/components/DemoControls.jsx",
+    "frontend-dashboard/src/components/DemoControls.test.jsx",
+    "frontend-dashboard/src/components/SampleWorkspace.test.jsx",
+    "frontend-dashboard/src/data/sampleData.js",
+    "frontend-dashboard/src/utils/demoMode.js",
+    "frontend-dashboard/src/utils/demoMode.test.js"
   ],
   "entries": [
     {
@@ -63,9 +80,197 @@
       "reference_review": "Only historical file-tree and inventory references found; no runtime use",
       "action": "REMOVE",
       "removed": true
+    },
+    {
+      "path": "docs/screenshots/redesign-capture-report.json",
+      "size_bytes": 1743,
+      "sha256": "81645faeb84e28bccf5194ad12c435746dc401e65ed1cabd244892a9f9e3dc11",
+      "git_blob": "6a9abfa18caa080cc07a4265d0921e8b45d90013",
+      "recover_from_commit": "e530d7c673e1e5a40468de661bdf2db155db9664",
+      "reason": "Retired bundled fixture workspace or its dedicated UI/capture artifact",
+      "reference_review": "Removed sample-only callers; live dashboard, real VM images and recorded evaluation reports retained",
+      "action": "REMOVE",
+      "removed": true
+    },
+    {
+      "path": "docs/screenshots/redesign-incident-dark.png",
+      "size_bytes": 205335,
+      "sha256": "96c4559d767701021cd4448d8f2db7a3d6245728ded616362bbb544316dee97c",
+      "git_blob": "bcd7f5418d2cdd65c6804f21c0e274c04ac60ff7",
+      "recover_from_commit": "e530d7c673e1e5a40468de661bdf2db155db9664",
+      "reason": "Retired bundled fixture workspace or its dedicated UI/capture artifact",
+      "reference_review": "Removed sample-only callers; live dashboard, real VM images and recorded evaluation reports retained",
+      "action": "REMOVE",
+      "removed": true
+    },
+    {
+      "path": "docs/screenshots/redesign-incident-light.png",
+      "size_bytes": 205197,
+      "sha256": "58f6966600d7726811201deb65b63b131d0a758d87fb5a3fc3e9022ccbea405c",
+      "git_blob": "03b969c247746dd589d0243097b6d46c12dfb360",
+      "recover_from_commit": "e530d7c673e1e5a40468de661bdf2db155db9664",
+      "reason": "Retired bundled fixture workspace or its dedicated UI/capture artifact",
+      "reference_review": "Removed sample-only callers; live dashboard, real VM images and recorded evaluation reports retained",
+      "action": "REMOVE",
+      "removed": true
+    },
+    {
+      "path": "docs/screenshots/redesign-overview-dark.png",
+      "size_bytes": 313261,
+      "sha256": "536389702216ca5e7320e9f72822a70d39db68fb5a1f2e8d7521336d16baad67",
+      "git_blob": "c8ab270a0dd064b9659357ebaabaa69eb2a87348",
+      "recover_from_commit": "e530d7c673e1e5a40468de661bdf2db155db9664",
+      "reason": "Retired bundled fixture workspace or its dedicated UI/capture artifact",
+      "reference_review": "Removed sample-only callers; live dashboard, real VM images and recorded evaluation reports retained",
+      "action": "REMOVE",
+      "removed": true
+    },
+    {
+      "path": "docs/screenshots/redesign-overview-light.png",
+      "size_bytes": 309279,
+      "sha256": "f5161d08f56eb91dce60d2763d7072844b0b00c1a3bfc6ebb3960e45b2466223",
+      "git_blob": "4a94ad121051d76eae39061d5a9eae519e6fa810",
+      "recover_from_commit": "e530d7c673e1e5a40468de661bdf2db155db9664",
+      "reason": "Retired bundled fixture workspace or its dedicated UI/capture artifact",
+      "reference_review": "Removed sample-only callers; live dashboard, real VM images and recorded evaluation reports retained",
+      "action": "REMOVE",
+      "removed": true
+    },
+    {
+      "path": "docs/screenshots/redesign-presentation-dark.png",
+      "size_bytes": 290321,
+      "sha256": "4a166fe077f14af453f95a9239a7219c63bf3e0c47b3b379d0171bffb3dfb992",
+      "git_blob": "d317594eb30cc0db0a9fa9d6d2456f0b3ac0a4c0",
+      "recover_from_commit": "e530d7c673e1e5a40468de661bdf2db155db9664",
+      "reason": "Retired bundled fixture workspace or its dedicated UI/capture artifact",
+      "reference_review": "Removed sample-only callers; live dashboard, real VM images and recorded evaluation reports retained",
+      "action": "REMOVE",
+      "removed": true
+    },
+    {
+      "path": "docs/screenshots/redesign-presentation-light.png",
+      "size_bytes": 289747,
+      "sha256": "29b9520cd07751588803439688396d9304690665994e0b6fe88acc478a1371c7",
+      "git_blob": "0d09d6f5b6c7dec7eb585e15778be6530807303c",
+      "recover_from_commit": "e530d7c673e1e5a40468de661bdf2db155db9664",
+      "reason": "Retired bundled fixture workspace or its dedicated UI/capture artifact",
+      "reference_review": "Removed sample-only callers; live dashboard, real VM images and recorded evaluation reports retained",
+      "action": "REMOVE",
+      "removed": true
+    },
+    {
+      "path": "docs/screenshots/redesign-rule-review-dark.png",
+      "size_bytes": 204878,
+      "sha256": "01712c8d4ff6ae52014dc0ff355e39262461957a38570a63f4b5987d52205062",
+      "git_blob": "e563fd5b16ea23b305c5beda470bd30d8a1df26d",
+      "recover_from_commit": "e530d7c673e1e5a40468de661bdf2db155db9664",
+      "reason": "Retired bundled fixture workspace or its dedicated UI/capture artifact",
+      "reference_review": "Removed sample-only callers; live dashboard, real VM images and recorded evaluation reports retained",
+      "action": "REMOVE",
+      "removed": true
+    },
+    {
+      "path": "docs/screenshots/redesign-rule-review-light.png",
+      "size_bytes": 204651,
+      "sha256": "5e0fd7e35fc84c70eb9d49e746d7d041a3f687a1abecbb6cf5078955944be33e",
+      "git_blob": "b13160e082b35587f20c7f63c62610525c3f2e6c",
+      "recover_from_commit": "e530d7c673e1e5a40468de661bdf2db155db9664",
+      "reason": "Retired bundled fixture workspace or its dedicated UI/capture artifact",
+      "reference_review": "Removed sample-only callers; live dashboard, real VM images and recorded evaluation reports retained",
+      "action": "REMOVE",
+      "removed": true
+    },
+    {
+      "path": "frontend-dashboard/scripts/capture-dashboard.mjs",
+      "size_bytes": 9069,
+      "sha256": "8ed630fe4e1f24959c9ed77e4303ea9fd90d262177042df6ce0ae1511a4a964c",
+      "git_blob": "cbc20b6fad4a7e65cd8933eff4af244d9a193668",
+      "recover_from_commit": "e530d7c673e1e5a40468de661bdf2db155db9664",
+      "reason": "Retired bundled fixture workspace or its dedicated UI/capture artifact",
+      "reference_review": "Removed sample-only callers; live dashboard, real VM images and recorded evaluation reports retained",
+      "action": "REMOVE",
+      "removed": true
+    },
+    {
+      "path": "frontend-dashboard/scripts/capture-dashboard.test.js",
+      "size_bytes": 1509,
+      "sha256": "5ae08ed8bfb9b8477c575e468b7cb5da1b73e041405e9b0f5f94163a5701c752",
+      "git_blob": "5fef5ad5aca44fdc572a622deca274808b6448ff",
+      "recover_from_commit": "e530d7c673e1e5a40468de661bdf2db155db9664",
+      "reason": "Retired bundled fixture workspace or its dedicated UI/capture artifact",
+      "reference_review": "Removed sample-only callers; live dashboard, real VM images and recorded evaluation reports retained",
+      "action": "REMOVE",
+      "removed": true
+    },
+    {
+      "path": "frontend-dashboard/src/components/DemoControls.jsx",
+      "size_bytes": 976,
+      "sha256": "ddcc04c5bafa5bc59db5f46d442863d5a5f806475e4bb09811cb0043849b8f2a",
+      "git_blob": "482f4803489fc35f23710c5b055d8d7c6a873668",
+      "recover_from_commit": "e530d7c673e1e5a40468de661bdf2db155db9664",
+      "reason": "Retired bundled fixture workspace or its dedicated UI/capture artifact",
+      "reference_review": "Removed sample-only callers; live dashboard, real VM images and recorded evaluation reports retained",
+      "action": "REMOVE",
+      "removed": true
+    },
+    {
+      "path": "frontend-dashboard/src/components/DemoControls.test.jsx",
+      "size_bytes": 2664,
+      "sha256": "ecdd649f80461b54241fff611a55bc213f5b7874a6d49ce7d21162abf37bc39a",
+      "git_blob": "03ffe5dcd3db5501cae0d0d49c7fb2b77c70fe29",
+      "recover_from_commit": "e530d7c673e1e5a40468de661bdf2db155db9664",
+      "reason": "Retired bundled fixture workspace or its dedicated UI/capture artifact",
+      "reference_review": "Removed sample-only callers; live dashboard, real VM images and recorded evaluation reports retained",
+      "action": "REMOVE",
+      "removed": true
+    },
+    {
+      "path": "frontend-dashboard/src/components/SampleWorkspace.test.jsx",
+      "size_bytes": 3398,
+      "sha256": "d6c99980baa5b24b81ea70c153066aea51cd7ae5c6600776d85884bea7088d1c",
+      "git_blob": "5fa670655563736a177b3da795795c7b0818047f",
+      "recover_from_commit": "e530d7c673e1e5a40468de661bdf2db155db9664",
+      "reason": "Retired bundled fixture workspace or its dedicated UI/capture artifact",
+      "reference_review": "Removed sample-only callers; live dashboard, real VM images and recorded evaluation reports retained",
+      "action": "REMOVE",
+      "removed": true
+    },
+    {
+      "path": "frontend-dashboard/src/data/sampleData.js",
+      "size_bytes": 6017,
+      "sha256": "2847a882598d12c92669e31ab436b661a8a5184817ccbd3d3353d00fe57c7f52",
+      "git_blob": "e712ac579465eed1974d19e05dcc72d2be99fd33",
+      "recover_from_commit": "e530d7c673e1e5a40468de661bdf2db155db9664",
+      "reason": "Retired bundled fixture workspace or its dedicated UI/capture artifact",
+      "reference_review": "Removed sample-only callers; live dashboard, real VM images and recorded evaluation reports retained",
+      "action": "REMOVE",
+      "removed": true
+    },
+    {
+      "path": "frontend-dashboard/src/utils/demoMode.js",
+      "size_bytes": 590,
+      "sha256": "9e9e5fc1a5ae61d2c8a8eb5334df20dedb87e455177bc593cd1b08af3d46e9cb",
+      "git_blob": "8fafccdf9fe3a9fa5946b0e0ae1551fad52b47f5",
+      "recover_from_commit": "e530d7c673e1e5a40468de661bdf2db155db9664",
+      "reason": "Retired bundled fixture workspace or its dedicated UI/capture artifact",
+      "reference_review": "Removed sample-only callers; live dashboard, real VM images and recorded evaluation reports retained",
+      "action": "REMOVE",
+      "removed": true
+    },
+    {
+      "path": "frontend-dashboard/src/utils/demoMode.test.js",
+      "size_bytes": 3951,
+      "sha256": "25cdb498b9c2124533e5a1423d7cdd8c1963daa49c4627f78445ea7dd0b0f495",
+      "git_blob": "544c0deba3b0f7c8f969b1154ac9d873381010f3",
+      "recover_from_commit": "e530d7c673e1e5a40468de661bdf2db155db9664",
+      "reason": "Retired bundled fixture workspace or its dedicated UI/capture artifact",
+      "reference_review": "Removed sample-only callers; live dashboard, real VM images and recorded evaluation reports retained",
+      "action": "REMOVE",
+      "removed": true
     }
   ],
   "recovery": "git show COMMIT:PATH recovers exact bytes; use -- for the leading-hyphen filename in filesystem/git commands",
-  "approval_basis": "User requested completion of cleanup item 4: remove confirmed junk/backup files and replace obsolete project branding.",
-  "cleanup_base_commit": "0d40cbb62a63bee7a66fda9b4a8f9d8dc63010e8"
+  "approval_basis": "User requested cleanup item 4, then explicitly requested removal of the bundled sample-data part of the project.",
+  "cleanup_base_commit": "0d40cbb62a63bee7a66fda9b4a8f9d8dc63010e8",
+  "sample_workspace_removal_base_commit": "e530d7c673e1e5a40468de661bdf2db155db9664"
 }

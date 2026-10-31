@@ -1,4 +1,3 @@
-import { dashboardNow } from '../utils/demoMode.js'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { requestJson } from '../utils/requests.js'
 
@@ -33,7 +32,7 @@ export function useIncidents() {
         error: results[0].status === 'rejected' ? results[0].reason : null,
         inventoryError: results[1].status === 'rejected' ? results[1].reason : null,
         loading: false, refreshing: false,
-        updatedAt: results[0].status === 'fulfilled' ? dashboardNow() : old.updatedAt,
+        updatedAt: results[0].status === 'fulfilled' ? Date.now() : old.updatedAt,
       }))
     }
     refreshRef.current = refresh; refresh()

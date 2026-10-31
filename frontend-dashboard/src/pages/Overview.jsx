@@ -1,4 +1,3 @@
-import { dashboardNow } from '../utils/demoMode.js'
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Activity, Bell, BrainCircuit, Gauge, ListChecks, Pause, Play, RefreshCw } from 'lucide-react'
@@ -93,7 +92,7 @@ export default function Overview() {
       <KpiCard label="Pending rule reviews" value={pendingCount} comparisonLabel={snapshotComparison} tone={pendingCount ? 'medium' : 'neutral'} icon={ListChecks}
         detail={<><p>Host-wide queue · {formatNumber(waitingDeploy)} approved rules awaiting deployment.</p><Link to="/rules">Review queue</Link></>} />
       <KpiCard label="Monitor health" value={health.label} comparisonLabel={snapshotComparison} tone={health.tone} icon={Activity}
-        detail={<><p title={formatDate(utcEpoch(status?.last_event_at))}>Last event: {eventAge(status?.last_event_at, dashboardNow())}{monitorError && status ? ' (cached)' : ''}</p><Link to="/monitor">Check monitor</Link></>} />
+        detail={<><p title={formatDate(utcEpoch(status?.last_event_at))}>Last event: {eventAge(status?.last_event_at, Date.now())}{monitorError && status ? ' (cached)' : ''}</p><Link to="/monitor">Check monitor</Link></>} />
       <KpiCard label="Models ready" value={modelsReady} comparisonLabel={snapshotComparison} icon={BrainCircuit}
         detail={<><p>{formatNumber(protectedCount)} protected containers in current inventory (excluded from automatic isolation). Falco alerts still create incidents without a valid model. Model readiness does not imply complete detection coverage.</p><Link to="/monitor">Baselines and models</Link></>} />
     </div>}

@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { DataTable, EmptyState, ErrorState, KpiCard, PageHeader, Skeleton, StatusBadge } from '../components/ui.jsx'
-import { isSampleMode } from '../utils/demoMode.js'
 import { formatNumber } from '../utils/format.js'
 import './evidence.css'
 export const LIMITATION='controlled results, not production guarantees, not evidence of coverage beyond Falco.'
@@ -56,9 +55,8 @@ export function EvidenceContent({snapshot}) {
   </>
 }
 export default function Evidence() {
-  const sample=isSampleMode(), [value,setValue]=useState({loading:true,error:null,snapshot:null}), [revision,setRevision]=useState(0)
+  const [value,setValue]=useState({loading:true,error:null,snapshot:null}), [revision,setRevision]=useState(0)
   useEffect(()=>{
-    if(sample)return
     const controller=new AbortController();let active=true
     setValue({loading:true,error:null,snapshot:null})
     const timer=setTimeout(()=>controller.abort(),10000)
@@ -70,9 +68,9 @@ export default function Evidence() {
       return data
     }).then(snapshot=>{if(active)setValue({loading:false,error:null,snapshot})}).catch(error=>{if(active)setValue({loading:false,error:error.name==='AbortError'?'Evidence request timed out. Retry to load the snapshot.':error.message,snapshot:null})}).finally(()=>clearTimeout(timer))
     return()=>{active=false;controller.abort();clearTimeout(timer)}
-  },[sample,revision])
+  },[revision])
   return <div className="evidence-page"><PageHeader title="Evidence / evaluation">Read-only historical results for the academic defense.</PageHeader>
     <p className="evidence-limitation" role="note">{LIMITATION}</p>
-    {sample?<EmptyState title="Evaluation evidence is hidden in sample mode">Exit sample mode to inspect the recorded historical studies. Synthetic UI records are never used as evaluation results.</EmptyState>:value.loading?<Skeleton label="Loading recorded evidence…"/>:value.error?<ErrorState error={value.error} onRetry={()=>setRevision(v=>v+1)}/>:!value.snapshot?<EmptyState title="No evidence snapshot available">Run npm run evidence:sync or restore the source documents. Missing files do not produce invented numbers.</EmptyState>:<EvidenceContent snapshot={value.snapshot}/>}
+    {value.loading?<Skeleton label="Loading recorded evidence…"/>:value.error?<ErrorState error={value.error} onRetry={()=>setRevision(v=>v+1)}/>:!value.snapshot?<EmptyState title="No evidence snapshot available">Run npm run evidence:sync or restore the source documents. Missing files do not produce invented numbers.</EmptyState>:<EvidenceContent snapshot={value.snapshot}/>}
   </div>
 }

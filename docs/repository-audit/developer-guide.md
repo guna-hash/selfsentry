@@ -189,7 +189,7 @@ File/directory sync ordering is tested, but host power-loss durability remains u
   a rule; validate natively on the isolated lab host.
 - Database changes require an explicit migration and duplicate-data inspection. ORM
   `create_all` only creates missing tables. Do not run the historical SQL draft as a migration.
-- UI changes must retain sample/live separation, unavailable states, busy-action protection,
+- UI changes must retain unavailable states, busy-action protection,
   and explicit reviewer/confirmation dialogs. The backend must remain authoritative.
 
 ## Debugging
@@ -205,9 +205,9 @@ views refresh on three-second schedules; incident/overview/rule views use fiftee
 The incident view's inventory context follows its fifteen-second refresh. See the
 [transport contract](../interfaces.md#event-transport-and-dashboard-refresh).
 These schedules are UI behavior, not monitoring cadence or end-to-end latency guarantees.
-Pausing page refresh never pauses Falco or the monitor. Sample mode uses frozen fixtures and blocks writes locally; it proves interface
-behavior only. AI summaries are advisory; observed timelines and deterministic guidance remain
-the evidence source.
+Pausing page refresh never pauses Falco or the monitor. Dashboard views read the configured
+API; unavailable or empty responses must remain explicit. AI summaries are advisory;
+observed timelines and deterministic guidance remain the evidence source.
 
 ## Questions to prepare for a technical interview or viva
 

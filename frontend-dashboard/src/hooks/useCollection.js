@@ -1,4 +1,3 @@
-import { dashboardNow } from '../utils/demoMode.js'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { requestJson } from '../utils/requests.js'
 
@@ -20,7 +19,7 @@ export default function useCollection(path) {
       try {
         const rows = await requestJson(path, { signal: controller.signal })
         if (!Array.isArray(rows) || rows.some(row => !row || typeof row !== 'object')) throw new Error('Unexpected collection response.')
-        if (active) setState({ rows, loading: false, error: null, updatedAt: new Date(dashboardNow()) })
+        if (active) setState({ rows, loading: false, error: null, updatedAt: new Date(Date.now()) })
       } catch (error) {
         if (active) setState(old => ({ ...old, loading: false, error }))
       } finally { pending = false }

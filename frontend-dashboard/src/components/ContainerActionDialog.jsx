@@ -1,4 +1,3 @@
-import { isSampleMode } from '../utils/demoMode.js'
 import { useRef, useState } from 'react'
 import { Drawer, Notice } from './ui.jsx'
 import { requestJson, requireWriteToken } from '../utils/requests.js'
@@ -11,7 +10,7 @@ export default function ContainerActionDialog({ container, action, onClose, onCo
   const lock = useRef(false)
   const resume = action === 'resume'
   async function submit(event) {
-    event.preventDefault(); if (isSampleMode() || lock.current || busy || finished || uncertain) return
+    event.preventDefault(); if (lock.current || busy || finished || uncertain) return
     lock.current = true
     let retainLock = false
     setBusy(true); setNotice(null)
@@ -31,9 +30,9 @@ export default function ContainerActionDialog({ container, action, onClose, onCo
     <p>{container.name} · {container.id}</p>
     <p>{resume ? 'This unpauses the workload and reconnects its saved networks. Policy and behavior rechecks run after recovery; review their recorded outcomes.' : 'This pauses the workload and disconnects its networks. Protected workloads cannot be isolated.'}</p>
     <form onSubmit={submit}>
-      <label>Operator<input required value={actor} onChange={e => setActor(e.target.value)} disabled={isSampleMode() || busy || finished || uncertain} /></label>
-      {!resume && <label>Reason<textarea required value={reason} onChange={e => setReason(e.target.value)} disabled={isSampleMode() || busy || finished || uncertain} /></label>}
-      <button className="shell-button" disabled={isSampleMode() || busy || finished || uncertain || !actor.trim() || (!resume && !reason.trim())}>{busy ? 'Submitting…' : resume ? 'Confirm restore networks' : 'Confirm isolate'}</button>
+      <label>Operator<input required value={actor} onChange={e => setActor(e.target.value)} disabled={busy || finished || uncertain} /></label>
+      {!resume && <label>Reason<textarea required value={reason} onChange={e => setReason(e.target.value)} disabled={busy || finished || uncertain} /></label>}
+      <button className="shell-button" disabled={busy || finished || uncertain || !actor.trim() || (!resume && !reason.trim())}>{busy ? 'Submitting…' : resume ? 'Confirm restore networks' : 'Confirm isolate'}</button>
     </form>
     <Notice notice={notice} onDismiss={() => setNotice(null)} />
     {result && <><h3>Recorded response and rechecks</h3><pre className="rule-yaml">{JSON.stringify(result,null,2)}</pre></>}

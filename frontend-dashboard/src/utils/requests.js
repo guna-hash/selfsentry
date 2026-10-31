@@ -1,12 +1,9 @@
-import { isSampleMode, sampleWriteError } from './demoMode.js'
 import { API, apiFetch, describeFailure } from '../api.js'
 
 export function writeTokenAvailable() {
-  if (isSampleMode()) return false
   try { return !!sessionStorage.getItem('selfsentry-api-token')?.trim() } catch { return false }
 }
 export function requireWriteToken() {
-  if (isSampleMode()) throw sampleWriteError()
   if (!writeTokenAvailable()) {
     const error = new Error('Operator token missing. Add it in Monitor → Session credentials before writing.')
     error.status = 401
@@ -14,7 +11,6 @@ export function requireWriteToken() {
   }
 }
 export async function requestJson(path, { method = 'GET', body, signal, timeoutMs = 10000 } = {}) {
-  if (isSampleMode() && method.toUpperCase() !== 'GET') throw sampleWriteError()
   const controller = new AbortController()
   let timedOut = false
   const abort = () => controller.abort()

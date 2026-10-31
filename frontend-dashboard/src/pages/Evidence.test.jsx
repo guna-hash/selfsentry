@@ -12,11 +12,6 @@ it('always states the limitation and shows honest missing-file state',async()=>{
   expect(host.textContent).toContain(LIMITATION);expect(host.textContent).toContain('No evidence snapshot available')
   expect(host.textContent).not.toContain('100 / 100')
 })
-it('isolates evaluation evidence from synthetic sample mode without making any fetch',async()=>{
-  history.replaceState({},'','/sample/evidence');const fetch=vi.spyOn(globalThis,'fetch')
-  await act(async()=>root.render(<Evidence/>));expect(fetch).not.toHaveBeenCalled()
-  expect(host.textContent).toContain('Evaluation evidence is hidden in sample mode');expect(host.textContent).toContain(LIMITATION)
-})
 it('retries a failed static evidence load and escapes source material',async()=>{
   const fetch=vi.spyOn(globalThis,'fetch').mockRejectedValueOnce(new Error('offline')).mockResolvedValue({ok:true,json:async()=>({schema:1,benchmark:null,cases:[],mini:null,sources:[{path:'source.md',text:'<img src=x onerror=bad()>',sha256:'source-hash'}]})})
   await act(async()=>root.render(<Evidence/>));expect(host.textContent).toContain('offline')

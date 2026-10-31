@@ -1,4 +1,3 @@
-import { isSampleMode, dashboardNow } from '../utils/demoMode.js'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { DataTable, KpiCard, PageHeader, StatusBadge, Notice, ErrorState, Skeleton } from '../components/ui.jsx'
@@ -19,7 +18,6 @@ export default function Monitor() {
     ['control_event_queue_depth','Control event queue'],
   ].map(([key,name]) => ({id:key,name,value:status?.[key]}))
   function saveToken() {
-    if (isSampleMode()) return
     try {
       if (token.trim()) sessionStorage.setItem('selfsentry-api-token',token.trim())
       else sessionStorage.removeItem('selfsentry-api-token')
@@ -29,7 +27,7 @@ export default function Monitor() {
   return <><PageHeader title="Monitor">Service health and recorded pipeline telemetry. Global safety indicators continue updating when this page snapshot is paused.</PageHeader>
     <RefreshControls {...data} />{loading && <Skeleton label="Loading monitor…" />}{error && <ErrorState error={error} status={data.errorStatus} onRetry={data.refresh} />}
     <section className="health-panel"><div><h3><StatusBadge tone={state.tone}>{state.label}</StatusBadge></h3><p>{status?.health_reason || status?.reason || 'No additional service reason recorded'}</p></div>
-      <div>Last event: {eventAge(status?.last_event_at,dashboardNow())}<br />Snapshot: {formatDate(status?.updated_at)}<br />Heartbeat age: {formatNumber(status?.status_age_seconds, {maximumFractionDigits:0})} seconds<br />Control cycle age: {formatNumber(status?.control_status_age_seconds, {maximumFractionDigits:0})} seconds</div></section>
+      <div>Last event: {eventAge(status?.last_event_at,Date.now())}<br />Snapshot: {formatDate(status?.updated_at)}<br />Heartbeat age: {formatNumber(status?.status_age_seconds, {maximumFractionDigits:0})} seconds<br />Control cycle age: {formatNumber(status?.control_status_age_seconds, {maximumFractionDigits:0})} seconds</div></section>
     <div className="metrics-grid">{[['Failed responses',status?.failed_response_actions],['Pending incidents',status?.unconfirmed_incidents],['Containers tracked',status?.containers?.tracked],['Models ready',status?.models_ready]].map(([label,value]) => <KpiCard key={label} label={label} value={value} comparisonLabel="Historical comparison unavailable" />)}</div>
     <p>Rule matching: {matching ?? 'Not exposed by this API'}.</p>{matching != null && matching !== 'all' && <p className="error-state" role="alert">Rule matching is not “all”; multiple matching detections may be suppressed. Review Falco configuration.</p>}
     <p>Last error: {status?.last_error || 'Not exposed; inspect recorded connection details below.'}</p>
@@ -40,8 +38,8 @@ export default function Monitor() {
     <p>Only services reported by the backend are listed. Missing Falco journal, backend, or database status is unavailable, rather than proof of health.</p>
     <DataTable rows={queueRows} caption="Queue depths" loading={loading} error={error} onRetry={data.refresh} columns={[{key:'name',label:'Queue'},{key:'value',label:'Reported depth'}]} />
     <p><Link to="/models">View container baselines and models</Link></p>
-    {isSampleMode() ? <p>Sample mode is read-only; session credentials are not used or changed.</p> : <details className="credentials"><summary>Session credentials</summary><p>Operator token for API reads and writes in this browser tab. Blank clears the saved token.</p>
+    <details className="credentials"><summary>Session credentials</summary><p>Operator token for API reads and writes in this browser tab. Blank clears the saved token.</p>
       <label htmlFor="operator-token">Operator token</label><div className="token-form"><input id="operator-token" type="password" autoComplete="off" value={token} onChange={e => setToken(e.target.value)} /><button className="shell-button" onClick={saveToken}>Save token</button></div>
-      <Notice notice={notice} onDismiss={() => setNotice(null)} /></details>}
+      <Notice notice={notice} onDismiss={() => setNotice(null)} /></details>
   </>
 }

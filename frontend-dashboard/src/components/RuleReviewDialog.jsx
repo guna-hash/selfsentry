@@ -1,4 +1,3 @@
-import { isSampleMode } from '../utils/demoMode.js'
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Copy } from 'lucide-react'
@@ -89,8 +88,7 @@ export default function RuleReviewDialog({rule,onClose,onChanged,onNotice,writeU
     </section>
     <section className="rule-detail-section" aria-label="Human decision">
       <h3>Human decision</h3>
-      {isSampleMode() && <p>Sample data mode is read-only; approval, deployment and rejection are disabled.</p>}
-      {!isSampleMode() && !token && <p>Operator token missing. Configure it in <Link to="/monitor">Monitor → Session credentials</Link>.</p>}
+      {!token && <p>Operator token missing. Configure it in <Link to="/monitor">Monitor → Session credentials</Link>.</p>}
       {writeUnavailable && <p>Current pending-state verification is unavailable. Refresh the queue before submitting a decision.</p>}
       {!actionableRule(rule) && <p>This rule is not awaiting approval, deployment retry or rejection.</p>}
       <div className="rule-decision-buttons">

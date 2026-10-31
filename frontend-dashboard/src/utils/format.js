@@ -1,4 +1,3 @@
-import { dashboardNow } from './demoMode.js'
 // Null, missing and non-finite values remain unavailable, never measured zero.
 export const NOT_RECORDED = 'Not recorded'
 export function finiteNumber(value) {
@@ -18,7 +17,7 @@ export function formatDate(value, options = {}, locale) {
     dateStyle: 'medium', timeStyle: 'medium', ...options,
   }).format(date) : NOT_RECORDED
 }
-export function relativeTime(value, now = dashboardNow(), locale) {
+export function relativeTime(value, now = Date.now(), locale) {
   const date = recordedDate(value)
   if (!date) return NOT_RECORDED
   const seconds = (date.getTime() - now) / 1000

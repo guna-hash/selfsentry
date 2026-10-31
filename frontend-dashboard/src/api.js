@@ -1,4 +1,3 @@
-import { isSampleMode } from './utils/demoMode.js'
 export const API = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
 
 export const NOTICE_STYLES = {
@@ -16,19 +15,6 @@ export async function describeFailure(res) {
 }
 
 export async function apiFetch(url, options = {}) {
-  if (isSampleMode()) {
-    if (options.signal?.aborted) throw new DOMException('Request aborted', 'AbortError')
-    let result
-    if ((options.method || 'GET').toUpperCase() !== 'GET') result={status:403,body:{detail:'Sample data mode is read-only; no live API request was sent.'}}
-    else {
-      const { sampleResult } = await import('./data/sampleData.js')
-      const base = API.replace(/\/$/,'')
-      const path = String(url).startsWith(base + '/') ? String(url).slice(base.length) : '/unsupported-sample-request'
-      result=sampleResult(path)
-    }
-    if (options.signal?.aborted) throw new DOMException('Request aborted', 'AbortError')
-    return new Response(JSON.stringify(result.body),{status:result.status,headers:{'Content-Type':'application/json'}})
-  }
   let token = null
   try {
     token = sessionStorage.getItem('selfsentry-api-token')

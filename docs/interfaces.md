@@ -181,7 +181,8 @@ Only the fixed root service probe (`GET /`) and OPTIONS/preflight handling are p
 Missing configured credentials return 503; missing/incorrect request credentials return 401
 before route/database work. `/docs`, `/redoc` and `/openapi.json` are protected. Router-only test
 apps do not establish middleware behavior; actual-app tests cover private reads and writes.
-Frontend sample routes serve local fixtures and never forward API writes.
+Unknown dashboard URLs render a not-found page before starting API polling.
+Dashboard views use authenticated API data; no alternate fixture workspace is shipped.
 
 Incident history returns an array in descending ID order: `limit` defaults to 200,
 accepts 1–500, and `before_id` must be positive when supplied. The next page uses the last ID

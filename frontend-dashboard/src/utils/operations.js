@@ -1,4 +1,3 @@
-import { isSampleMode } from './demoMode.js'
 import { formatDate } from './format.js'
 import { utcEpoch } from './overviewModel.js'
 export const options = values => [...new Set(values.filter(v => v != null && v !== ''))].sort().map(value => ({ value: String(value), label: String(value) }))
@@ -21,9 +20,7 @@ export function csvText(rows, columns) {
   return '\uFEFF' + [columns.map(c => escape(c.label)).join(','), ...rows.map(row => columns.map(c => escape(c.value(row))).join(','))].join('\r\n')
 }
 export function auditExport(rows, columns) {
-  const sample = isSampleMode()
-  const exportColumns = sample ? [{label:'Data provenance',value:()=> 'Synthetic sample data; not evaluation evidence'}, ...columns] : columns
-  return {text:csvText(rows, exportColumns),filename:sample ? 'selfsentry-sample-audit.csv' : 'selfsentry-audit.csv'}
+  return {text:csvText(rows, columns),filename:'selfsentry-audit.csv'}
 }
 export function downloadCsv(rows, columns) {
   const file = auditExport(rows,columns)

@@ -4,6 +4,7 @@ import {
   Routes,
   Route,
   NavLink,
+  Link,
   useLocation,
 } from 'react-router-dom'
 import {
@@ -25,9 +26,8 @@ const AuditLog = lazy(() => import('./pages/AuditLog.jsx'))
 const Monitor = lazy(() => import('./pages/Monitor.jsx'))
 const Models = lazy(() => import('./pages/Models.jsx'))
 const Evidence = lazy(() => import('./pages/Evidence.jsx'))
-import { isSampleMode } from './utils/demoMode.js'
 import { PresentationProvider, usePresentation } from './hooks/usePresentation.jsx'
-import DemoControls from './components/DemoControls.jsx'
+import DisplayControls from './components/DisplayControls.jsx'
 import Skeleton from './components/Skeleton.jsx'
 import HealthBanner from './components/HealthBanner.jsx'
 import StatusBar from './components/StatusBar.jsx'
@@ -81,14 +81,14 @@ function Shell() {
         <div className="sidebar-footer">
           <ShieldCheck size={17} />
           <div>
-            SelfSentry<span>v0.9 · Demo</span>
+            SelfSentry<span>v0.9</span>
           </div>
         </div>
       </aside>
       <div className="workspace">
         <StatusBar navigationOpen={navigationOpen} onToggleNavigation={() => setNavigationOpen((open) => !open)} />
         <main id="main-content" className="main" tabIndex={-1}>
-          <DemoControls />
+          <DisplayControls />
           <HealthBanner />
           <motion.div
             key={pathname}
@@ -114,14 +114,16 @@ function Shell() {
     </div>
   )
 }
+function Workspace() {
+  const { pathname } = useLocation()
+  const route = pathname.replace(/\/+$/, '') || '/'
+  if (route !== '/' && !links.some(([path]) => path === route)) {
+    return <main className="main"><h1>Page not found</h1><p>This dashboard address is unavailable.</p><Link to="/overview">Open dashboard</Link></main>
+  }
+  return <MotionConfig reducedMotion="user">
+    <PresentationProvider><MonitorProvider><Shell /></MonitorProvider></PresentationProvider>
+  </MotionConfig>
+}
 export default function App() {
-  return (
-    <BrowserRouter basename={isSampleMode() ? '/sample' : '/'}>
-      <MotionConfig reducedMotion="user">
-        <PresentationProvider><MonitorProvider>
-          <Shell />
-        </MonitorProvider></PresentationProvider>
-      </MotionConfig>
-    </BrowserRouter>
-  )
+  return <BrowserRouter><Workspace /></BrowserRouter>
 }

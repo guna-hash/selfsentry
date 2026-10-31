@@ -36,8 +36,8 @@ for current review coverage, executed checks and unresolved findings.
   disabled. Controlled native retirement and two supervised rule loops are recorded in the
   current audit update; broader failure coverage remains incomplete. Database-only retirement remains distinct.
 - **Dashboard:** live inventory, incidents, audit, rule review, models and monitor health.
-  `/sample/overview` is explicitly synthetic and read-only. `/evidence` shows historical
-  reports, not current detection measurements.
+  Views load authenticated API data. `/evidence` shows historical reports, not current
+  detection measurements.
 
 ## Architecture
 
@@ -220,9 +220,6 @@ original host. Manual archive/export and explicit current-state observations are
 in [operations](docs/monitor_operations.md#tracked-follow-up-tools). Keep automatic response
 disabled during ordinary observation. Do not infer event-time freshness or detection quality
 solely from a healthy monitor heartbeat.
-
-<!-- redesign-gallery:start -->
-<!-- redesign-gallery:end -->
 
 ## License and attribution
 

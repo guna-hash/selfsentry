@@ -1,4 +1,3 @@
-import { dashboardNow } from '../utils/demoMode.js'
 import { createContext, useCallback, useContext, useEffect, useState } from 'react'
 import { requestJson } from '../utils/requests.js'
 const MonitorContext = createContext(null)
@@ -14,7 +13,7 @@ export function MonitorProvider({ children }) {
       pending = true
       try {
         const status = await requestJson('/monitor/status',{signal:controller.signal})
-        if (active) setValue({status,error:null,errorStatus:null,loading:false,updatedAt:new Date(dashboardNow())})
+        if (active) setValue({status,error:null,errorStatus:null,loading:false,updatedAt:new Date(Date.now())})
       } catch (err) {
         if (active) setValue(old => ({...old,error:err.message,errorStatus:err.status,loading:false}))
       } finally { pending = false }

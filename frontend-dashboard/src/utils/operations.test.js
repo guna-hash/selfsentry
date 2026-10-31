@@ -1,5 +1,5 @@
 import {expect,it,vi} from 'vitest'
-import {auditActor,auditInRange,auditVerification,csvText,modelLabel,containerAction,operationDate} from './operations.js'
+import {auditActor,auditInRange,auditVerification,auditExport,csvText,modelLabel,containerAction,operationDate} from './operations.js'
 it('finds only recorded actors without inventing a system identity',()=>{
   expect(auditActor({detail:{resumed_by:'Ada'}})).toBe('Ada')
   expect(auditActor({detail:{reason:'auto'}})).toBe('Not recorded')
@@ -50,4 +50,12 @@ it('sends one attributed write with encoded full ID and existing token precondit
   token.mockImplementation(()=>{throw new Error('Token missing')})
   await expect(containerAction({isolated:true},'resume','Ada','',request,token)).rejects.toThrow('Token missing')
   expect(request).toHaveBeenCalledOnce()
+})
+
+it('exports only recorded audit columns with the normal filename and safe CSV escaping', () => {
+  const rows=[{actor:'=FORMULA()'}], columns=[{label:'Actor',value:row=>row.actor}]
+  const file=auditExport(rows,columns)
+  expect(file.filename).toBe('selfsentry-audit.csv')
+  expect(file.text).toBe(csvText(rows,columns))
+  expect(file.text).not.toContain('Data provenance')
 })

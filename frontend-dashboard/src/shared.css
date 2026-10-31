@@ -37,9 +37,8 @@
 .drawer-content form textarea { min-height: 96px; }
 .drawer-content .rule-yaml { overflow-wrap: anywhere; white-space: pre-wrap; }
 
-.demo-controls { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; margin-bottom: var(--space-4); }
-.demo-controls span { margin-left: auto; color: var(--text-muted); }
-.sample-banner { padding: var(--space-4); margin-bottom: var(--space-4); border: 2px solid var(--sev-medium); border-radius: var(--radius); background: var(--panel); overflow-wrap: anywhere; }
+.display-controls { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; margin-bottom: var(--space-4); }
+.display-controls span { margin-left: auto; color: var(--text-muted); }
 .presentation-mode .sidebar, .presentation-mode [aria-label="Toggle navigation"] { display: none; }
 .presentation-mode .main { max-width: 1600px; font-size: 18px; }
 .presentation-mode .page-header h2 { font-size: 36px; }
