@@ -14,8 +14,8 @@ from pathlib import Path
 import sys
 from typing import Any
 
-import requests
 import yaml
+from safety import backend_json
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'rule-synthesis-engine'))
@@ -139,9 +139,7 @@ def main():
                 'Positive database identities required')
 
         def get(path):
-            response = requests.get('http://127.0.0.1:8000' + path, timeout=15)
-            response.raise_for_status()
-            return response.json()
+            return backend_json("http://127.0.0.1:8000", path)
 
         rules = get('/rules/history')
         rule = next(item for item in rules if item['id'] == args.rule)

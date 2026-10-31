@@ -17,6 +17,7 @@ import time
 import uuid
 
 import requests
+from safety import backend_headers
 from dotenv import load_dotenv
 
 API = "http://127.0.0.1:8000"
@@ -36,7 +37,7 @@ def require(condition, message):
 
 def status(session=None):
     getter = session.get if session else requests.get
-    response = getter(API + "/monitor/status", timeout=3)
+    response = getter(API + "/monitor/status", timeout=3, headers=backend_headers())
     response.raise_for_status()
     return response.json()
 
@@ -369,8 +370,10 @@ def run(root, executions=200):
         require(spec["State"]["Running"] is True and spec["Image"] == image,
                 "Probe is not running with the expected image")
         for _ in range(15):
-            response = requests.get(API + "/deployments/registration/" + container_id[:12],
-                                    headers=backend_headers(), timeout=3)
+            response = requests.get(
+                API + "/deployments/registration/" + container_id[:12],
+                headers=backend_headers(), timeout=3,
+            )
             response.raise_for_status()
             if response.json().get("registered") is True:
                 break

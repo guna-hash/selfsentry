@@ -101,7 +101,7 @@ recorded layer inputs; consumers must tolerate absent historical fields.
 
 | Route | Purpose |
 | --- | --- |
-| `GET /incidents/`, `GET /incidents/{id}` | Current serialization with confirmation, evidence and guidance |
+| `GET /incidents/?limit=200&before_id=...`, `GET /incidents/{id}` | Bounded newest-ID-first history or exact lookup, with confirmation, evidence and guidance |
 | `POST /incidents/{id}/confirm?confirmed_by=...` | Idempotent confirmation; returns integer `confirmed_incident_id` |
 | `POST /incidents/{id}/dismiss` | Marks monitor-backed incident benign; legacy rows without workflow return 409 |
 | `POST /monitor/incidents/{id}/workflow` | Merges confirmation, response, candidate, explanation or confirmation_policy |
@@ -176,9 +176,20 @@ an observed Falco match, not an automatically labeled true positive.
   snapshots `running` remains the reported boolean. Invalid individual component entries
   become explicit `unknown` reports while other recorded telemetry is retained.
 
-All writes to the actual app require `Authorization: Bearer <token>`. Reads are unauthenticated
-on the intended localhost boundary. Router-only test apps do not establish middleware behavior;
-use actual-app authentication tests as well. Frontend sample routes never forward API writes.
+All reads and writes to the actual app require `Authorization: Bearer <token>`.
+Only the fixed root service probe (`GET /`) and OPTIONS/preflight handling are public.
+Missing configured credentials return 503; missing/incorrect request credentials return 401
+before route/database work. `/docs`, `/redoc` and `/openapi.json` are protected. Router-only test
+apps do not establish middleware behavior; actual-app tests cover private reads and writes.
+Frontend sample routes serve local fixtures and never forward API writes.
+
+Incident history returns an array in descending ID order: `limit` defaults to 200,
+accepts 1–500, and `before_id` must be positive when supplied. The next page uses the last ID
+from the previous response; new higher IDs do not shift older cursor pages. An empty array
+ends history. A short page also ends that traversal at read time. These are separate request
+snapshots; updates/deletions can still affect returned records. Exact incident lookup bypasses
+the list window. Alerts filters/sorts only its loaded history batch; Overview explicitly
+limits incident metrics to its latest-500-record window.
 
 ## State and schema authority
 

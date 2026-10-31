@@ -112,6 +112,11 @@ def extract_pattern(confirmed_incident: dict) -> dict:
 
 if __name__ == "__main__":
     import argparse
+    import sys
+    from pathlib import Path
+
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "monitor-service"))
+    from backend_auth import backend_headers
     import json
 
     import requests
@@ -123,7 +128,10 @@ if __name__ == "__main__":
     parser.add_argument("--backend-url", default="http://localhost:8000")
     args = parser.parse_args()
 
-    resp = requests.get(f"{args.backend_url}/incidents/{args.incident_id}", timeout=10)
+    resp = requests.get(
+        f"{args.backend_url}/incidents/{args.incident_id}", timeout=10,
+        headers=backend_headers(),
+    )
     resp.raise_for_status()
     incident = resp.json()
 

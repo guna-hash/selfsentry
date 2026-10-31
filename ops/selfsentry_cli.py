@@ -61,7 +61,7 @@ def check_prerequisites():
         raise StartupError("Missing .env. Copy .env.example and configure DATABASE_URL and token.")
     cfg = load_config()
     if not os.environ.get("SELFSENTRY_API_TOKEN", "").strip():
-        raise StartupError("Set SELFSENTRY_API_TOKEN in .env (required for backend writes).")
+        raise StartupError("Set SELFSENTRY_API_TOKEN in .env (required for backend reads/writes).")
     url = os.environ.get("DATABASE_URL", "")
     try:
         if make_url(url).get_backend_name() != "postgresql":

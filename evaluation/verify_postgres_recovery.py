@@ -22,7 +22,7 @@ import sys
 import time
 import uuid
 import requests
-from safety import require_isolation_disabled
+from safety import backend_json, require_isolation_disabled
 from dotenv import dotenv_values
 
 UNIT = "postgresql@16-main"
@@ -44,9 +44,7 @@ def active():
 
 
 def get(path):
-    r = requests.get(BASE + path, timeout=10)
-    r.raise_for_status()
-    return r.json()
+    return backend_json(BASE, path)
 
 
 def queued(database, cid):

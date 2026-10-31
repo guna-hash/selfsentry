@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import requests
-from safety import require_isolation_disabled
+from safety import backend_json, require_isolation_disabled
 from dotenv import dotenv_values
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -52,9 +52,7 @@ def sha(path):
 
 
 def get(base, route):
-    response = requests.get(base + route, timeout=10)
-    response.raise_for_status()
-    return response.json()
+    return backend_json(base, route)
 
 
 def validate_status(status, cid):

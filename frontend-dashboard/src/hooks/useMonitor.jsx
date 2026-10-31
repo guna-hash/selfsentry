@@ -3,7 +3,7 @@ import { createContext, useCallback, useContext, useEffect, useState } from 'rea
 import { requestJson } from '../utils/requests.js'
 const MonitorContext = createContext(null)
 export function MonitorProvider({ children }) {
-  const [value,setValue] = useState({ status:null,error:null,loading:true,updatedAt:null })
+  const [value,setValue] = useState({ status:null,error:null,errorStatus:null,loading:true,updatedAt:null })
   const [version,setVersion] = useState(0)
   const refresh = useCallback(() => setVersion(v => v + 1), [])
   useEffect(() => {
@@ -14,9 +14,9 @@ export function MonitorProvider({ children }) {
       pending = true
       try {
         const status = await requestJson('/monitor/status',{signal:controller.signal})
-        if (active) setValue({status,error:null,loading:false,updatedAt:new Date(dashboardNow())})
+        if (active) setValue({status,error:null,errorStatus:null,loading:false,updatedAt:new Date(dashboardNow())})
       } catch (err) {
-        if (active) setValue(old => ({...old,error:err.message,loading:false}))
+        if (active) setValue(old => ({...old,error:err.message,errorStatus:err.status,loading:false}))
       } finally { pending = false }
     }
     load(); const timer = setInterval(load,3000)

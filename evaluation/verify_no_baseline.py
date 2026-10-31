@@ -11,8 +11,7 @@ import json
 import subprocess
 import time
 import uuid
-import requests
-from safety import require_isolation_disabled
+from safety import backend_json, require_isolation_disabled
 
 
 def docker(*args):
@@ -26,9 +25,7 @@ def main():
     base = "http://127.0.0.1:8000"
 
     def get(path):
-        r = requests.get(base + path, timeout=10)
-        r.raise_for_status()
-        return r.json()
+        return backend_json(base, path)
 
     before = get("/monitor/status")
     require_isolation_disabled(before)

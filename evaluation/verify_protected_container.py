@@ -30,9 +30,10 @@ def main():
     from monitor_config import MonitorConfig
     from monitor_status import StatusBoard
     import requests
+    from safety import backend_headers
     from safety import require_isolation_disabled
 
-    r = requests.get("http://127.0.0.1:8000/monitor/status", timeout=10)
+    r = requests.get("http://127.0.0.1:8000/monitor/status", timeout=10, headers=backend_headers())
     r.raise_for_status()
     status_before = r.json()
     require_isolation_disabled(status_before)

@@ -56,7 +56,10 @@ def main():
             pairs[proc, parent] += 1
     if not pairs:
         raise SystemExit("No usable process pairs; no request submitted.")
-    response = requests.get(cfg.backend_url + "/rules/history", timeout=10)
+    response = requests.get(
+        cfg.backend_url + "/rules/history", timeout=10,
+        headers=backend_headers(),
+    )
     response.raise_for_status()
     history = response.json()
     rejected = next((r for r in history if r["id"] == 19 and r["status"] == "rejected"), None)

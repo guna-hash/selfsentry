@@ -139,7 +139,8 @@ bin/selfsentry status
 # bin/selfsentry restart
 ```
 
-Open `http://127.0.0.1:5173`. Enter the write token on the Monitor page for operator actions.
+Open `http://127.0.0.1:5173`. Open Monitor → Session credentials and enter the configured operator token for
+API reads and writes. An empty or expired browser session cannot read live data.
 Managed startup validates prerequisites and refuses incomplete configuration. Stopping the
 application does not stop Falco, PostgreSQL, Docker or workload containers.
 Monitor shutdown waits for background work before releasing its instance lock. A blocked
@@ -149,6 +150,27 @@ For a gated deployment, use `bin/selfsentry-run -- <docker create arguments>`.
 See [gate operations](docs/deployment_gate.md) for policy and overrides. Diagnostic
 `correlation-engine/validate_pipeline.py` logs routing suggestions; it cannot isolate workloads.
 Actual automatic response belongs to the durable monitor.
+
+## API access and incident history
+
+All API reads and writes require `Authorization: Bearer <SELFSENTRY_API_TOKEN>`.
+The public `GET /` probe returns only a fixed service message; CORS preflights are
+also permitted without credentials. Missing backend token configuration returns
+503 on protected routes; absent/incorrect client credentials return 401. API
+documentation and OpenAPI JSON are protected too. This is one shared credential,
+not per-person authorization; keep the backend bound to localhost.
+
+`GET /incidents/` returns newest IDs first, with `limit=200` by default, a maximum
+of 500, and an optional positive `before_id` cursor. Fetch older pages using the
+last returned ID. `GET /incidents/{id}` still reads an exact record independently
+of the current page. Alerts provides history-batch navigation; search, filters and
+sorting apply to the loaded batch. Overview metrics cover only the latest 500
+incidents and are explicitly labeled as a bounded window.
+
+Repository evaluation tools authenticate through `backend_auth` and traverse
+incident pages explicitly. The shared collection reader refuses malformed pages,
+non-progressing cursors or more than 100 pages rather than silently truncating
+an evaluation. These reads are not a transactionally frozen database export.
 
 ## Validate
 
@@ -167,6 +189,12 @@ The release script records tests, whole-repository Python lint, scoped type chec
 Unit tests use mocks and isolated SQLite; they do not prove native Falco, PostgreSQL
 concurrency, real containment, restoration or detection accuracy. Optional live AI diagnostics
 `test_manual_check.py` and `test_timeline_check.py` run only when invoked directly.
+
+GitHub Actions runs the isolated Python tests, dependency checks, lint and scoped
+types on Python 3.12, plus frontend tests/build on Node 24, for pushes and pull
+requests. It does not run native Falco/Docker/PostgreSQL acceptance workloads or
+publish anything. A passing local run is not a completed hosted CI run; inspect
+the repository's Actions page after pushing.
 
 ## Evidence, limitations and next work
 

@@ -14,8 +14,8 @@ from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
 
-import requests
 from dotenv import dotenv_values
+from safety import backend_json
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path[:0] = [str(ROOT / "evaluation"), str(ROOT / "monitor-service")]
@@ -55,9 +55,7 @@ def digest(path):
 
 
 def get(base, endpoint):
-    response = requests.get(base + endpoint, timeout=10)
-    response.raise_for_status()
-    return response.json()
+    return backend_json(base, endpoint)
 
 
 def check_status(status, cid):

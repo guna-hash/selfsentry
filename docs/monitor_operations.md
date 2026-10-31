@@ -89,9 +89,11 @@ rows on read; run `.venv/bin/python ops/backfill_explanations.py` to persist it 
 
 ## Configure the shared API token
 
-All non-read requests to the actual backend app require a bearer token. Without a configured
-SELFSENTRY_API_TOKEN, writes return 503; invalid/missing credentials return 401. Reads remain
-available on the local development interface. Bind the backend to 127.0.0.1. This shared-token
+All protected reads and writes to the backend app require a bearer token. Without a configured
+SELFSENTRY_API_TOKEN, protected requests return 503; invalid/missing credentials return 401.
+Only the fixed root service probe and CORS preflights are public. API docs are protected too.
+Set the browser token under Monitor → Session credentials before reading live data. Bind the
+backend to 127.0.0.1. This shared-token
 scheme does not implement per-person identities, role-based permissions or an Internet-facing
 production auth system. Review names remain operator-supplied audit labels.
 
@@ -210,8 +212,15 @@ Inspect status and logs:
 ```bash
 cd ~/selfsentry
 python3 monitor-service/monitor_service.py --status
-curl -fsS http://127.0.0.1:8000/monitor/status
-curl -fsS 'http://127.0.0.1:8000/audit/?limit=20'
+# Uses the local .env token without printing it or putting it on a command line.
+.venv/bin/python - <<'PYREAD'
+import json
+import sys
+sys.path.insert(0, "monitor-service")
+from backend_auth import backend_json
+for path in ("/monitor/status", "/audit/?limit=20"):
+    print(json.dumps(backend_json("http://127.0.0.1:8000", path), indent=2))
+PYREAD
 tail -n 50 state/monitor/monitor.log
 sudo journalctl -u falco-modern-bpf -n 50 --no-pager
 ```
@@ -238,7 +247,7 @@ All settings come from environment/.env and are validated at startup. Paths can 
 
 | Variable | Default | Purpose |
 |---|---|---|
-| SELFSENTRY_API_TOKEN | unset | Required shared credential for backend writes |
+| SELFSENTRY_API_TOKEN | unset | Required shared credential for backend reads and writes |
 | SELFSENTRY_BACKEND_URL | http://localhost:8000 | Existing backend |
 | FALCO_LOG_PATH | /var/log/falco/alerts.json | Falco JSON |
 | MONITOR_STATE_DIR | repo/state/monitor | Journal, checkpoint, status and audit spool |
@@ -1043,7 +1052,7 @@ necessary schema/table/sequence privileges; evaluate migrations separately from 
 runtime grants. Docker socket access is root-equivalent. Scope native reload privileges to
 the actual configured Falco service rather than granting unrestricted sudo. Protect `.env`,
 private logs, SQLite/archives, checkpoints, baselines and recovery records. The current shared
-write token authenticates possession, while reviewer names remain supplied labels. Local
+shared token authenticates possession, while reviewer names remain supplied labels. Local
 files/ledgers are not tamper-proof against their owner. Multi-user identity/RBAC, public gateway
 and TLS are outside the requested host-local deployment boundary.
 

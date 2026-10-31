@@ -32,7 +32,7 @@ from clock_guard import (  # noqa: E402
 )
 from fingerprint import collect_fingerprint  # noqa: E402
 from scenarios import DEFAULT_PLAN, SCENARIOS  # noqa: E402
-from safety import require_isolation_disabled  # noqa: E402
+from safety import backend_json, require_isolation_disabled  # noqa: E402
 
 SCHEMA_VERSION = 2
 
@@ -149,11 +149,7 @@ def build_record(entry, incidents, cfg):
 
 
 def http_get(base, endpoint):
-    import requests
-
-    response = requests.get(base + endpoint, timeout=10)
-    response.raise_for_status()
-    return response.json()
+    return backend_json(base, endpoint)
 
 
 def run_windows(args, root, config, target, info, log_path):

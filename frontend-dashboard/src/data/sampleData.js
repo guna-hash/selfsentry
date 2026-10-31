@@ -30,7 +30,7 @@ export function sampleResult(path) {
   let value
   if (route==='/monitor/status') value=monitor
   else if(route==='/containers') value=containers
-  else if(route==='/incidents') value=incidents
+  else if(route==='/incidents') value=incidents.filter(r=>!url.searchParams.has('before_id') || r.id<Number(url.searchParams.get('before_id'))).sort((a,b)=>b.id-a.id).slice(0,Number(url.searchParams.get('limit') || 200))
   else if(/^\/incidents\/\d+$/.test(route)) value=incidents.find(r=>String(r.id)===route.split('/').at(-1))
   else if(route==='/rules/history') value=rules
   else if(route==='/rules/pending') value=rules.filter(r=>r.status==='pending_review')

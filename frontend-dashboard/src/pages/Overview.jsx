@@ -77,6 +77,7 @@ export default function Overview() {
       </select></label>
       <p>Period and container filters apply to incidents and the learning-loop cohort. Health, queue and models show live host-wide snapshots.</p>
     </div>
+    <p className="overview-caption">Incident metrics cover the latest 500 records at most. Period filters and comparisons use this window; older history may be omitted. Use Alerts to browse older batches.</p>
     <FilterChips filters={active} onRemove={(id) => id === 'range' ? setRange('24h') : setContainer('')} onClear={() => { setRange('24h'); setContainer('') }} />
     {paused && <p className="overview-limit" role="status">Overview refresh paused. Monitor health in the header continues updating; security monitoring continues.</p>}
     {issueEntries.map(([source, issue]) => <section key={source} aria-label={`${SOURCE_LABELS[source]} error`}>

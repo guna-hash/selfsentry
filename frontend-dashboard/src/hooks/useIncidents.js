@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { requestJson } from '../utils/requests.js'
 
 export const INCIDENT_REFRESH_MS = 15000
+export const INCIDENT_PAGE_SIZE = 200
 function records(value) {
   if (!Array.isArray(value) || value.some((row) => !row || typeof row !== 'object' || row.id == null))
     throw new Error('Unexpected incident/inventory response. Expected records with IDs.')
@@ -10,16 +11,20 @@ function records(value) {
 }
 export function useIncidents() {
   const [value, setValue] = useState({ incidents: null, containers: null, error: null, inventoryError: null, loading: true, refreshing: false, updatedAt: null })
+  const [cursors, setCursors] = useState([null])
+  const beforeId = cursors[cursors.length - 1]
   const [paused, setPaused] = useState(false)
   const pausedRef = useRef(false), refreshRef = useRef(null)
   useEffect(() => {
     let active = true, pending = false
+    setValue({ incidents: null, containers: null, error: null, inventoryError: null, loading: true, refreshing: false, updatedAt: null })
     const controller = new AbortController()
     async function refresh() {
       if (!active || pending) return
       pending = true
       setValue((old) => ({ ...old, refreshing: true }))
-      const results = await Promise.allSettled(['/incidents/', '/containers/'].map(async(path) => records(await requestJson(path, { signal: controller.signal }))))
+      const path = `/incidents/?limit=${INCIDENT_PAGE_SIZE}${beforeId ? `&before_id=${beforeId}` : ''}`
+      const results = await Promise.allSettled([path, '/containers/'].map(async(path) => records(await requestJson(path, { signal: controller.signal }))))
       pending = false
       if (!active) return
       setValue((old) => ({
@@ -34,13 +39,22 @@ export function useIncidents() {
     refreshRef.current = refresh; refresh()
     const timer = setInterval(() => { if (!pausedRef.current) refresh() }, INCIDENT_REFRESH_MS)
     return () => { active = false; controller.abort(); clearInterval(timer); refreshRef.current = null }
-  }, [])
+  }, [beforeId])
   const refresh = useCallback(() => refreshRef.current?.(), [])
   const togglePaused = useCallback(() => {
     pausedRef.current = !pausedRef.current; setPaused(pausedRef.current)
     if (!pausedRef.current) refreshRef.current?.()
   }, [])
-  return { ...value, paused, refresh, togglePaused }
+  const hasOlder = value.incidents?.length === INCIDENT_PAGE_SIZE
+  const older = () => {
+    if (!hasOlder || value.loading || value.refreshing || value.error) return
+    const lastId = Math.min(...value.incidents.map(row => Number(row.id)))
+    if (Number.isSafeInteger(lastId) && lastId > 0) setCursors(old => [...old, lastId])
+  }
+  const newer = () => setCursors(old => old.length > 1 ? old.slice(0, -1) : old)
+  const latest = () => setCursors([null])
+  return { ...value, paused, refresh, togglePaused, hasOlder, older, newer, latest,
+    pageNumber: cursors.length, hasNewer: cursors.length > 1, pageSize: INCIDENT_PAGE_SIZE }
 }
 export function useIncidentDetail(id, paused = false) {
   const [value, setValue] = useState({ incident: null, loading: true, error: null })

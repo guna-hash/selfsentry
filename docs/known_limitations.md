@@ -1,8 +1,8 @@
 # Current limitations
 
 SelfSentry's delivered academic scope is complete; it is not production
-certification. This page summarizes active limits for source commit `fe2733d`
-and the recorded operator evidence. It does not report new native tests.
+certification. This page summarizes active limits, including the API access, pagination and CI
+follow-up to source commit `ffc686e`, and the recorded operator evidence. It does not report new native tests.
 The [historical limitations](archive/known_limitations_history.md) retain the
 original findings and failed attempts. Detailed results and their boundaries
 remain in the [repository audit](repository-audit/report.md) and
@@ -67,13 +67,15 @@ not collected for that run, so it is not a zero-loss result.
 
 ## Access and deployment
 
-Most read endpoints are unauthenticated; `/health/ready` checks the token.
-Writes use one shared bearer token, without per-person roles or verified actor
-identity; `confirmed_by` is an operator-supplied label. Localhost CORS is not
-authentication. The incident listing is unpaginated and API rate limiting is
-absent. Keep the backend bound to localhost; Docker socket access grants powerful
-host privileges. Multi-user, fleet and Kubernetes operation are outside this
-release. No repository CI workflow or project license has been added.
+Protected reads and writes use one shared bearer token, without per-person roles
+or verified actor identity; `confirmed_by` is an operator-supplied label. The root
+service probe and CORS preflights are public. Localhost CORS is not authentication.
+Incident history is paginated, but API rate limiting remains absent. Dashboard
+filters and Overview metrics operate on explicitly bounded incident windows.
+Keep the backend bound to localhost; Docker socket access grants powerful host
+privileges. Multi-user, fleet and Kubernetes operation are outside this release.
+CI runs isolated tests/builds, not native host acceptance. No project license has
+been selected.
 
 ## Completed checks and remaining boundaries
 
@@ -93,5 +95,5 @@ historical paragraph says otherwise:
 
 Recorded scope is not exhaustive fault coverage, whole-application restore
 acceptance or complete OS/artifact supply-chain verification. Private raw
-operational evidence remains outside Git. This documentation cleanup does not
-change models, thresholds, response settings, services or the delivered scope.
+operational evidence remains outside Git. The API/CI follow-up does not change
+models, thresholds, response settings or the delivered detection scope.

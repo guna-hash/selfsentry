@@ -18,6 +18,7 @@ import time
 import uuid
 
 import requests
+from safety import backend_headers
 from sqlalchemy import inspect, text
 from sqlalchemy.exc import IntegrityError
 
@@ -132,7 +133,10 @@ def native_constraints(engine):
 
 
 def monitor_status():
-    response = requests.get("http://127.0.0.1:8000/monitor/status", timeout=15)
+    response = requests.get(
+        "http://127.0.0.1:8000/monitor/status", timeout=15,
+        headers=backend_headers(),
+    )
     response.raise_for_status()
     return response.json()
 

@@ -39,3 +39,16 @@ it('handles invalid incident URLs, backend failures and unavailable inventory ex
   expect(host.textContent).toContain('Container names unavailable')
   expect(host.textContent).toContain('server could not complete')
 })
+
+it('labels the bounded history window and exposes older/newer batch navigation', async () => {
+  snapshot = {...snapshot, pageNumber:2, pageSize:200, hasOlder:true, hasNewer:true,
+    older:vi.fn(), newer:vi.fn(), latest:vi.fn()}
+  await render()
+  const nav = host.querySelector('[aria-label="Incident history"]')
+  expect(nav.textContent).toContain('History batch 2')
+  expect(nav.textContent).toContain('filters apply to this batch')
+  for (const [text, action] of [['Older batch','older'],['Newer batch','newer'],['Latest incidents','latest']]) {
+    await act(async () => [...nav.querySelectorAll('button')].find(b => b.textContent===text).click())
+    expect(snapshot[action]).toHaveBeenCalledOnce()
+  }
+})

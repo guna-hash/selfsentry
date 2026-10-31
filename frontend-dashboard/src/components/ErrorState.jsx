@@ -1,6 +1,6 @@
 export function errorMessage(status) {
   return ({
-    401: 'Authentication required. Enter your write token and try again.',
+    401: 'Authentication required. Add your operator token in Monitor → Session credentials, then retry.',
     403: 'Access denied. Your credentials do not permit this action.',
     404: 'This record is no longer available. Refresh the data.',
     429: 'Request limit reached. Wait a moment, then retry.',
@@ -10,6 +10,7 @@ export function errorMessage(status) {
 export default function ErrorState({ error, status, onRetry, retrying = false }) {
   return <div className="error-state shared-error" role="alert">
     <div><strong>{errorMessage(status)}</strong>{error && <p>{typeof error === 'string' ? error : error.message}</p>}</div>
+    {status === 401 && <a href="/monitor">Open session credentials</a>}
     {onRetry && <button type="button" className="btn" disabled={retrying} onClick={onRetry}>{retrying ? 'Retrying…' : 'Retry'}</button>}
   </div>
 }

@@ -17,7 +17,7 @@ import time
 import uuid
 
 import requests
-from safety import require_isolation_disabled
+from safety import backend_json, require_isolation_disabled
 from dotenv import dotenv_values
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -38,9 +38,7 @@ def utc_now():
 
 
 def get_json(base, endpoint):
-    response = requests.get(base + endpoint, timeout=10)
-    response.raise_for_status()
-    return response.json()
+    return backend_json(base, endpoint)
 
 
 def main():

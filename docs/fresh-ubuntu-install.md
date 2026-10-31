@@ -202,7 +202,7 @@ git diff --check
 
 Open `http://127.0.0.1:5173` on the VM. Verify Overview/Monitor rendering, healthy
 status, isolation disabled and an authenticated audit event visible. Use the local
-write token only in the intended UI/session or authenticated API client, not chat.
+operator token only in the intended UI/session or authenticated API client, not chat.
 
 Confirm fresh native container events using a bounded owned probe. Compare event
 and receipt timestamps from the probe, not just the status heartbeat. Inspect

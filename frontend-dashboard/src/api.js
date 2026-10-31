@@ -33,8 +33,8 @@ export async function apiFetch(url, options = {}) {
   try {
     token = sessionStorage.getItem('selfsentry-api-token')
   } catch {
-    // Storage may be blocked by browser policy. Reads remain available;
-    // the backend still requires a valid bearer token for every write.
+    // Storage may be blocked by browser policy. Do not invent credentials;
+    // the backend will reject protected reads and writes without the token.
   }
   return fetch(url, {
     ...options,

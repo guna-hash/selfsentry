@@ -19,7 +19,7 @@ const columns = [
   { key: 'time', label: 'Created', render:(value)=><time title={formatDate(value)} dateTime={value===null?undefined:new Date(value).toISOString()}>{relativeTime(value)}</time> },
 ]
 export default function Alerts() {
-  const { incidents, containers, error, inventoryError, loading, refreshing, updatedAt, paused, refresh, togglePaused } = useIncidents()
+  const { incidents, containers, error, inventoryError, loading, refreshing, updatedAt, paused, refresh, togglePaused, hasOlder, hasNewer, older, newer, latest, pageNumber = 1, pageSize = 200 } = useIncidents()
   const [search,setSearch] = useSearchParams()
   const selected = search.get('incident')
   const validId = selected && /^\d+$/.test(selected) && Number(selected)>0
@@ -42,12 +42,18 @@ export default function Alerts() {
       </div>
     </div>
     <Notice notice={notice} onDismiss={()=>setNotice(null)} />
-    <div className="alerts-controls"><label htmlFor="incident-period">Creation period<select id="incident-period" value={period} onChange={(event)=>setPeriod(event.target.value)}><option value="all">All recorded time</option><option value="24h">Last 24 hours</option><option value="7d">Last 7 days</option></select></label>
+    <div className="alerts-controls"><label htmlFor="incident-period">Creation period<select id="incident-period" value={period} onChange={(event)=>setPeriod(event.target.value)}><option value="all">All time in this batch</option><option value="24h">Last 24 hours</option><option value="7d">Last 7 days</option></select></label>
       <p>Risk uses effective score when recorded, otherwise base risk. Model availability and advisory AI text do not establish which layers fired.</p></div>
     <FilterChips filters={period==='all'?[]:[{id:'period',label:`Creation period: ${period}`}]} onRemove={()=>setPeriod('all')} onClear={()=>setPeriod('all')}/>
     {paused && <p role="status" className="incident-caption">Incident refresh paused. Header health updates and security monitoring continue.</p>}
     {inventoryError && <p role="status" className="incident-caption">Container names unavailable; recorded IDs are shown. <button type="button" className="shell-button" disabled={refreshing} onClick={refresh}>Retry inventory</button></p>}
     {selected && !validId && <p role="alert" className="error-state">The incident link has an invalid ID. <button type="button" className="shell-button" onClick={close}>Clear incident selection</button></p>}
+    <nav aria-label="Incident history" className="alerts-controls">
+      <button type="button" className="shell-button" disabled={!hasNewer || loading || refreshing} onClick={latest}>Latest incidents</button>
+      <button type="button" className="shell-button" disabled={!hasNewer || loading || refreshing} onClick={newer}>Newer batch</button>
+      <button type="button" className="shell-button" disabled={!hasOlder || loading || refreshing || !!error} onClick={older}>Older batch</button>
+      <p role="status">History batch {pageNumber} · up to {pageSize} incidents. Search, sorting and creation-period filters apply to this batch.</p>
+    </nav>
     <DataTable rows={rows} columns={columns} caption="Incidents" initialSort={{key:'score',direction:'desc'}} pageSize={10}
       loading={loading} error={error?.message} errorStatus={error?.status} onRetry={refresh} onRowOpen={open}/>
     {validId && <IncidentDrawer key={selected} id={selected} paused={paused} onClose={close} onChanged={refresh} onNotice={setNotice}/>}

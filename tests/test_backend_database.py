@@ -168,7 +168,8 @@ def actual_backend(monkeypatch):
 
     module.app.dependency_overrides[database.get_db] = dependency
     try:
-        with TestClient(module.app, raise_server_exceptions=False) as http:
+        with TestClient(module.app, raise_server_exceptions=False,
+                        headers={"Authorization": "Bearer test-operator-token"}) as http:
             yield http, engine
     finally:
         engine.dispose()
@@ -286,7 +287,8 @@ def test_authentication_still_precedes_database_mutation(actual_backend):
 
     event.listen(engine, "before_cursor_execute", failed)
     try:
-        result = http.post("/audit/", json={"event_type": "TEST"})
+        result = http.post("/audit/", json={"event_type": "TEST"},
+                           headers={"Authorization": ""})
     finally:
         event.remove(engine, "before_cursor_execute", failed)
     assert result.status_code == 401

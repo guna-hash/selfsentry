@@ -27,7 +27,7 @@ export default function Monitor() {
     } catch {setNotice({kind:'error',text:'Browser session storage is unavailable; credentials were not saved.'})}
   }
   return <><PageHeader title="Monitor">Service health and recorded pipeline telemetry. Global safety indicators continue updating when this page snapshot is paused.</PageHeader>
-    <RefreshControls {...data} />{loading && <Skeleton label="Loading monitor…" />}{error && <ErrorState error={error} onRetry={data.refresh} />}
+    <RefreshControls {...data} />{loading && <Skeleton label="Loading monitor…" />}{error && <ErrorState error={error} status={data.errorStatus} onRetry={data.refresh} />}
     <section className="health-panel"><div><h3><StatusBadge tone={state.tone}>{state.label}</StatusBadge></h3><p>{status?.health_reason || status?.reason || 'No additional service reason recorded'}</p></div>
       <div>Last event: {eventAge(status?.last_event_at,dashboardNow())}<br />Snapshot: {formatDate(status?.updated_at)}<br />Heartbeat age: {formatNumber(status?.status_age_seconds, {maximumFractionDigits:0})} seconds<br />Control cycle age: {formatNumber(status?.control_status_age_seconds, {maximumFractionDigits:0})} seconds</div></section>
     <div className="metrics-grid">{[['Failed responses',status?.failed_response_actions],['Pending incidents',status?.unconfirmed_incidents],['Containers tracked',status?.containers?.tracked],['Models ready',status?.models_ready]].map(([label,value]) => <KpiCard key={label} label={label} value={value} comparisonLabel="Historical comparison unavailable" />)}</div>
@@ -40,7 +40,7 @@ export default function Monitor() {
     <p>Only services reported by the backend are listed. Missing Falco journal, backend, or database status is unavailable, rather than proof of health.</p>
     <DataTable rows={queueRows} caption="Queue depths" loading={loading} error={error} onRetry={data.refresh} columns={[{key:'name',label:'Queue'},{key:'value',label:'Reported depth'}]} />
     <p><Link to="/models">View container baselines and models</Link></p>
-    {isSampleMode() ? <p>Sample mode is read-only; session credentials are not used or changed.</p> : <details className="credentials"><summary>Session credentials</summary><p>Operator token for this browser tab. Blank clears the saved token.</p>
+    {isSampleMode() ? <p>Sample mode is read-only; session credentials are not used or changed.</p> : <details className="credentials"><summary>Session credentials</summary><p>Operator token for API reads and writes in this browser tab. Blank clears the saved token.</p>
       <label htmlFor="operator-token">Operator token</label><div className="token-form"><input id="operator-token" type="password" autoComplete="off" value={token} onChange={e => setToken(e.target.value)} /><button className="shell-button" onClick={saveToken}>Save token</button></div>
       <Notice notice={notice} onDismiss={() => setNotice(null)} /></details>}
   </>

@@ -13,10 +13,14 @@ import sys
 import tempfile
 
 import requests
+from safety import backend_headers
 
 
 def status():
-    response = requests.get("http://127.0.0.1:8000/monitor/status", timeout=10)
+    response = requests.get(
+        "http://127.0.0.1:8000/monitor/status", timeout=10,
+        headers=backend_headers(),
+    )
     response.raise_for_status()
     result = response.json()
     if result.get("healthy") is not True:

@@ -33,7 +33,7 @@ it('loads each source, pauses polling, allows manual refresh and refreshes on re
 it('clears a failed source instead of presenting stale cached data as current',async()=>{
   await act(async()=>root.render(<Probe/>))
   const firstComplete=value.updatedAt
-  apiFetch.mockImplementation(async(url)=>url==='/incidents/'?{ok:false,status:403,message:'Denied'}:ok([{id:2}]))
+  apiFetch.mockImplementation(async(url)=>url==='/incidents/?limit=500'?{ok:false,status:403,message:'Denied'}:ok([{id:2}]))
   await act(async()=>value.refresh())
   expect(value.data.incidents).toBeNull()
   expect(value.errors.incidents).toEqual({message:'Denied',status:403})

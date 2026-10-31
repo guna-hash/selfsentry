@@ -21,3 +21,14 @@ it('exposes stale cached telemetry with an error instead of claiming current hea
   requestJson.mockRejectedValue(new Error('Offline'));await act(async()=>vi.advanceTimersByTimeAsync(3000))
   expect(live.error).toBe('Offline');expect(live.status.running).toBe(true)
 })
+
+it('exposes authentication failures and refreshes after session credentials are configured', async () => {
+  requestJson.mockRejectedValue(Object.assign(new Error('Bearer token required'),{status:401}))
+  await act(async () => root.render(<MonitorProvider><Probe/></MonitorProvider>))
+  expect(live.errorStatus).toBe(401)
+  expect(live.status).toBeNull()
+  requestJson.mockResolvedValue({running:true})
+  await act(async () => page.refresh())
+  expect(live.errorStatus).toBeNull()
+  expect(live.status.running).toBe(true)
+})

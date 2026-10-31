@@ -54,8 +54,15 @@ router = APIRouter(prefix="/incidents", tags=["incidents"])
 
 
 @router.get("/")
-def list_incidents(db: Session = Depends(get_db)):
-    incidents = db.query(Incident).all()
+def list_incidents(
+    db: Session = Depends(get_db),
+    limit: int = Query(default=200, ge=1, le=500),
+    before_id: int | None = Query(default=None, ge=1),
+):
+    query = db.query(Incident)
+    if before_id is not None:
+        query = query.filter(Incident.id < before_id)
+    incidents = query.order_by(Incident.id.desc()).limit(limit).all()
     return [serialize(incident, db) for incident in incidents]
 
 

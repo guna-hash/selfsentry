@@ -4,7 +4,7 @@ import { API, apiFetch, describeFailure } from '../api.js'
 
 export const OVERVIEW_REFRESH_MS = 15000
 export const OVERVIEW_REQUEST_TIMEOUT_MS = 10000
-const SOURCES = { incidents: '/incidents/', containers: '/containers/', rules: '/rules/history', pending: '/rules/pending' }
+const SOURCES = { incidents: '/incidents/?limit=500', containers: '/containers/', rules: '/rules/history', pending: '/rules/pending' }
 export default function useOverviewData() {
   const [snapshot, setSnapshot] = useState({
     data: { incidents: null, containers: null, rules: null, pending: null },

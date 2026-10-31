@@ -10,7 +10,6 @@ import time
 import uuid
 
 import docker
-import requests
 
 ROOT = Path(__file__).resolve().parents[1]
 for folder in ("policy-checker", "monitor-service", "response-engine"):
@@ -18,6 +17,7 @@ for folder in ("policy-checker", "monitor-service", "response-engine"):
 from deploy_policy_validator import check_deployment_config  # noqa: E402
 from event_classifier import classify_line  # noqa: E402
 from auto_isolate import isolate_container, resume_container  # noqa: E402
+from backend_auth import backend_json  # noqa: E402
 from monitor_config import load_config  # noqa: E402
 
 
@@ -105,11 +105,7 @@ def probe(args, evidence):
                         ):
                             if classified.event["rule"] == "Terminal shell in container":
                                 evidence["parsed_alert"] = classified.event
-                    response = requests.get(
-                        args.backend.rstrip("/") + "/incidents/", timeout=10
-                    )
-                    response.raise_for_status()
-                    for incident in response.json():
+                    for incident in backend_json(args.backend, "/incidents/"):
                         if incident["container_id"] not in (container.id, container.id[:12]):
                             continue
                         alerts = (incident.get("monitor_evidence") or {}).get("falco_alerts", [])

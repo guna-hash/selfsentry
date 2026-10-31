@@ -19,6 +19,7 @@ import requests
 from dotenv import load_dotenv
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "monitor-service"))
+from backend_auth import backend_headers  # noqa: E402
 from journal_archive import has_archives, verified_archive, sync_directory  # noqa: E402
 
 MAX_DATABASE_BYTES = 512 * 2**20
@@ -258,7 +259,10 @@ def source_path_for_archive(source, name):
 
 
 def monitor_status():
-    response = requests.get("http://127.0.0.1:8000/monitor/status", timeout=5)
+    response = requests.get(
+        "http://127.0.0.1:8000/monitor/status", timeout=5,
+        headers=backend_headers(),
+    )
     response.raise_for_status()
     return response.json()
 

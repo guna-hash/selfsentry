@@ -43,8 +43,9 @@ async def database_operation_unavailable(request: Request, exc: Exception):
 
 
 @app.middleware("http")
-async def authorize_writes(request: Request, call_next):
-    if request.method not in ("GET", "HEAD", "OPTIONS"):
+async def authorize_api(request: Request, call_next):
+    public_probe = request.url.path == "/" and request.method in ("GET", "HEAD")
+    if request.method != "OPTIONS" and not public_probe:
         token = os.environ.get("SELFSENTRY_API_TOKEN", "")
         if not token:
             return JSONResponse(
@@ -52,7 +53,10 @@ async def authorize_writes(request: Request, call_next):
             )
         supplied = request.headers.get("Authorization", "")
         if token and not secrets.compare_digest(supplied.encode(), f"Bearer {token}".encode()):
-            return JSONResponse(status_code=401, content={"detail": "Bearer token required"})
+            return JSONResponse(
+                status_code=401, content={"detail": "Bearer token required"},
+                headers={"WWW-Authenticate": "Bearer"},
+            )
     return await call_next(request)
 
 
@@ -83,7 +87,7 @@ async def root():
 
 @app.get("/health/ready")
 def readiness(request: Request, db: Session = Depends(get_db)):
-    """Read-only database readiness, authenticated with the configured write token."""
+    """Read-only database readiness, authenticated with the shared API token."""
     token = os.environ.get("SELFSENTRY_API_TOKEN", "")
     if not token:
         raise HTTPException(503, "Configure SELFSENTRY_API_TOKEN")
