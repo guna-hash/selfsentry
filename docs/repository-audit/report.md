@@ -2280,3 +2280,28 @@ accuracy or lossless capture; native drop counters were not collected.
 All captures passed their guards, retained the owned container stopped,
 and reported a healthy monitor with empty delivery queues afterward.
 Live model and response configuration were unchanged.
+
+## Completed four-hour resource measurement — 31 October 2026
+
+On source commit 0a53d3a0d5cca5986780f80d5d5e41f3a29055be, the synthetic native workload
+completed 14400.407 seconds with 478 resource
+samples and no unavailable status samples. Native capture observed
+149,368 owned-container events, maximum absolute
+receipt skew 0.124s
+and maximum matching receipt gap 1.076s.
+
+Status-request latency was 10.63ms median, 17.55ms p95 and 42.12ms maximum.
+Monitor process-tree RSS increased from 166.418 to 175.750 MiB.
+Monitor-state logical growth was 317,133,343 bytes; Falco-log growth was
+119,124,305 bytes. PostgreSQL size increased by 851,968 bytes.
+Sampled incident-outbox depth peaked at one; audit-spool depth peaked at zero.
+
+The exact owned container was removed. The monitor finished healthy with
+empty delivery queues. Evidence: soak-20261030T181831Z.
+
+This completes the previously deferred four-hour measurement. Earlier
+interrupted attempts remain incomplete and preserved. This is one synthetic
+workload, not production capacity, leak-absence, model-quality or lossless
+capture acceptance. No native drop counters were collected. Storage growth
+includes shared host activity; retention planning remains necessary.
+Recurring timestamp faults outside this guarded run remain unresolved.

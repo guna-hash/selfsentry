@@ -1,6 +1,44 @@
 # Known limitations and evidence history
 
-## Acceptance follow-up — 29 October 2026
+## Current evidence reconciliation — 31 October 2026
+
+This section supersedes older pending-status statements only where later
+evidence is identified. Historical failures and their original scopes remain.
+
+Completed:
+- Four-hour synthetic resource measurement: 14,400.407 seconds, 478 samples,
+  no unavailable status samples, 149,368 fresh native events and maximum
+  absolute receipt skew 0.124 seconds. Owned-container cleanup succeeded;
+  final monitor health was good and both delivery queues were empty.
+  Evidence: soak-20261030T181831Z.
+- Frozen cross-VM model validation: six windows in each of four stages.
+  LOF flagged 0/6 routine benign, 6/6 approved uptime, and all twelve
+  controlled-deviation windows. The offline IF comparison qualified every
+  window at 0.8. LOF is not accepted for live promotion.
+  Evidence: frozen-validation-v2.
+- The recorded review-process, native deployment-before-status crash and
+  controlled stalled-worker cases passed within their documented boundaries.
+  Those specific cases are no longer pending.
+
+Open limitations:
+- Representative model quality and handling legitimate behavior changes.
+- Recurring event-clock/delivery faults: recovery and a successful guarded
+  run do not establish a permanent fix.
+- Retention policy and production capacity. The four-hour run measured
+  storage growth; it did not prove leak absence, safe indefinite retention
+  or zero dropped events.
+- Permanently stalled-worker completion bounds and untested fault schedules.
+
+Owner decisions/deferred work:
+- License selection, demo recording and any live archival cutoff.
+- Proposed removals remain retained; no deletion is required for completion.
+
+Criterion 3 remains partial. No unconditional production-readiness or complete
+original-master-prompt claim is made. Live models and response settings are
+unchanged. Detailed evidence and scope are in the repository audit report.
+
+
+## Historical acceptance follow-up — 29 October 2026
 
 The recorded review/deployment crash cases have now been exercised.
 Controlled approval-process termination before and after a private adapter
@@ -35,7 +73,7 @@ limitations remain intact; no model or automatic-response setting changes.
 Authoritative ten-criterion review: [acceptance review](repository-audit/acceptance-review-20261028.md).
 Earlier dated assessments below are historical evidence, not current blanket blockers.
 
-## Current acceptance reconciliation — 28 October 2026
+## Historical acceptance reconciliation — 28 October 2026
 
 This section supersedes older current-status lists within the scopes below.
 Historical results, failed attempts and their limitations remain intact.

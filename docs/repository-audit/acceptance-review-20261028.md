@@ -1,6 +1,44 @@
 # Acceptance review — 28 October 2026
 
-## Acceptance follow-up — 29 October 2026
+## Current evidence reconciliation — 31 October 2026
+
+This section supersedes older pending-status statements only where later
+evidence is identified. Historical failures and their original scopes remain.
+
+Completed:
+- Four-hour synthetic resource measurement: 14,400.407 seconds, 478 samples,
+  no unavailable status samples, 149,368 fresh native events and maximum
+  absolute receipt skew 0.124 seconds. Owned-container cleanup succeeded;
+  final monitor health was good and both delivery queues were empty.
+  Evidence: soak-20261030T181831Z.
+- Frozen cross-VM model validation: six windows in each of four stages.
+  LOF flagged 0/6 routine benign, 6/6 approved uptime, and all twelve
+  controlled-deviation windows. The offline IF comparison qualified every
+  window at 0.8. LOF is not accepted for live promotion.
+  Evidence: frozen-validation-v2.
+- The recorded review-process, native deployment-before-status crash and
+  controlled stalled-worker cases passed within their documented boundaries.
+  Those specific cases are no longer pending.
+
+Open limitations:
+- Representative model quality and handling legitimate behavior changes.
+- Recurring event-clock/delivery faults: recovery and a successful guarded
+  run do not establish a permanent fix.
+- Retention policy and production capacity. The four-hour run measured
+  storage growth; it did not prove leak absence, safe indefinite retention
+  or zero dropped events.
+- Permanently stalled-worker completion bounds and untested fault schedules.
+
+Owner decisions/deferred work:
+- License selection, demo recording and any live archival cutoff.
+- Proposed removals remain retained; no deletion is required for completion.
+
+Criterion 3 remains partial. No unconditional production-readiness or complete
+original-master-prompt claim is made. Live models and response settings are
+unchanged. Detailed evidence and scope are in the repository audit report.
+
+
+## Historical acceptance follow-up — 29 October 2026
 
 The recorded review/deployment crash cases have now been exercised.
 Controlled approval-process termination before and after a private adapter
@@ -41,9 +79,9 @@ output; no independent access to the operator databases or raw evidence is claim
 
 | Criterion | Current assessment | Evidence and boundary |
 | --- | --- | --- |
-| 1. Inventory | Recorded pass within scope | Inventory now lists 388 paths with no removals. This documentation-only archive cannot independently rehash every application file or prove equal semantic review depth. |
+| 1. Inventory | Recorded pass within scope | The 28 October review listed 388 paths; the latest inventory refresh lists 390, with no removals. This documentation-only archive cannot independently rehash every application file or prove equal semantic review depth. |
 | 2. Justified removals | Pass within scope | No original files removed; four proposals remain retained. Deletion is not needed to satisfy this criterion. |
-| 3. Critical feature flow | Partial | Native gate/Falco, two supervised default-IF rule loops, direct response/recovery and bounded interruption/replay checks are recorded. Representative model quality and broader review/deployment failure coverage remain open. |
+| 3. Critical feature flow | Partial | Native gate/Falco, two supervised default-IF rule loops, direct response/recovery and bounded interruption/replay checks are recorded. Representative model quality remains open; specified review/deployment crash cases subsequently passed, while other fault schedules remain untested. |
 | 4. Tests executed | Pass for recorded release | Fresh VM: 1,278 Python tests, 104 subtests, 168 frontend tests, lint and scoped types. Later changes covered by this review are documentation only. |
 | 5. Build | Pass for recorded release | Fresh Node 24.21.0/npm 11.19.0 build; chart-size warning remains non-blocking, not performance acceptance. |
 | 6. Security findings resolved or documented | Pass within that wording | Risks and defaults are documented. This does not mean every finding is repaired, all current advisories were refreshed or the deployment is certified. |
@@ -70,28 +108,19 @@ Criterion 3 remains partial. Recorded passes retain the boundaries above.
 
 ## Remaining engineering and validation
 
-1. **Clock reliability:** fresh probes pass after recovery, but recurring event-time
-   skew has no established permanent cause or fix. Keep freshness observations and
-   invalidate affected evaluations. Bridged networking is not proof of remediation.
-2. **Model quality:** the default IF produced substantial benign flags. LOF's 0/6
-   benign and 4/4 controlled-deviation result is promising but small and synthetic.
-   Keep it experimental; use new prospectively labelled workloads and fixed policy
-   before any promotion. No malicious-attack recall or production FPR is established.
-3. **Review/deployment failure coverage:** native locking was already tested across
-   commits and exceptions. Specific remaining cases should be enumerated before new
-   tests: owner termination after approval but before deployment; applied native
-   state before durable final status; competing approval/rejection during that
-   interval. These are proposed test boundaries, not newly reproduced defects.
-4. **Worker shutdown/resources/history:** CLI timeout does not bound a running
-   worker's completion. Thirty-minute measurements do not establish capacity,
-   memory-leak absence, long-duration storage bounds or a safe archival cutoff.
-5. **Provenance and future changes:** the current README/setup/operations wording was
-   reconciled in the subsequent documentation pass. Preserve failures and distinguish
-   original-host results from fresh-host results and differing tool versions. Installed
-   artifact/OS supply-chain verification is not established by lockfiles or this review.
-
-The remaining tests require concrete protocols, bounded owned resources and stated
-outcomes. Do not demand every possible fault or repeatedly rerun passing checks.
+1. **Clock reliability:** recurring faults have no established permanent fix.
+   Preserve timestamp observations and invalidate affected captures.
+2. **Model quality:** the completed frozen validation exposed false positives
+   on all six approved-activity windows. Keep LOF experimental; do not retune
+   on inspected validation outcomes or claim malicious-attack recall.
+3. **Fault coverage:** the specified review-owner and native deployment/status
+   crash cases passed. Other schedules require explicit protocols before
+   testing; permanently stalled production workers still lack a completion bound.
+4. **Resources and history:** the four-hour measurement is complete. Capacity,
+   leak absence, retention limits and native losslessness remain unestablished.
+5. **Provenance:** selected installed-package comparisons were performed within
+   their recorded scope. These do not establish complete OS/artifact supply-chain
+   verification. Preserve version differences and historical evidence.
 
 ## Owner decisions and deferred work
 
