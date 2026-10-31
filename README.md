@@ -60,6 +60,15 @@ PostgreSQL stores incidents and audit records. Local SQLite journals support out
 they are not a replacement for database backups. See [contracts](docs/interfaces.md) and
 [developer guide](docs/repository-audit/developer-guide.md).
 
+Falco writes rule-selected security alerts and baseline telemetry to its JSON
+output file. SelfSentry's continuous monitor reads that file with checkpoints;
+it has no gRPC ingestion client or independent eBPF probe. The React dashboard
+uses HTTP polling: monitor status and collection views refresh every 3 seconds,
+while incidents, overview and rules use 15-second intervals. These are scheduled
+refreshes, not detection-latency guarantees. See the
+[transport contract](docs/interfaces.md#event-transport-and-dashboard-refresh)
+for the per-view details and report wording.
+
 ## Prerequisites
 
 Full host operation requires Linux with `/proc` and `flock`, PostgreSQL, Docker,
@@ -96,11 +105,9 @@ use the locks for the tested Linux/Python 3.12 resolution. Neither lock has hash
 or claims cross-platform reproducibility. Installing a smaller dependency set into
 an existing environment does not uninstall packages already present.
 
-Falco events arrive through JSON-file tailing and the dashboard polls the API.
-There is no direct gRPC, pandas or WebSocket application dependency. WebSockets
-are still installed by `uvicorn[standard]`. The OpenAI client's HTTP dependencies
-remain in the runtime lock; HTTPX is also declared for FastAPI's test client in
-the development requirements.
+The `websockets` package remains an indirect dependency of `uvicorn[standard]`;
+the dashboard uses HTTP polling. The OpenAI client's HTTP dependencies remain in
+the runtime lock; HTTPX is also declared for FastAPI's test client in development.
 
 Edit `.env` locally: configure a dedicated PostgreSQL database/role via `DATABASE_URL`,
 generate a random `SELFSENTRY_API_TOKEN`, and set Falco paths. Keep

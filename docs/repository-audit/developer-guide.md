@@ -200,9 +200,12 @@ before treating delayed advisory work as a lost incident. Check the full Docker 
 network IDs before recovery. A failed reload leaves a rule approved for retry; preserve the
 duplicate registry and inspect both database state and generated file contents.
 
-The dashboard's three-second monitor/inventory polling and fifteen-second incident/overview
-polling are UI behavior, not monitoring cadence. Pausing page refresh never pauses Falco or
-the monitor. Sample mode uses frozen fixtures and blocks writes locally; it proves interface
+The dashboard uses HTTP polling, not WebSockets: global monitor status and collection
+views refresh on three-second schedules; incident/overview/rule views use fifteen seconds.
+The incident view's inventory context follows its fifteen-second refresh. See the
+[transport contract](../interfaces.md#event-transport-and-dashboard-refresh).
+These schedules are UI behavior, not monitoring cadence or end-to-end latency guarantees.
+Pausing page refresh never pauses Falco or the monitor. Sample mode uses frozen fixtures and blocks writes locally; it proves interface
 behavior only. AI summaries are advisory; observed timelines and deterministic guidance remain
 the evidence source.
 

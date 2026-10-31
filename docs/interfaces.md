@@ -4,6 +4,42 @@ These contracts describe the current source, not the early phase plans. Keep rou
 names, field types, the eight-feature order and persisted event keys compatible when
 changing producers. Live PostgreSQL/OpenAPI acceptance remains a separate check.
 
+## Event transport and dashboard refresh
+
+Falco writes newline-delimited JSON to its configured output file.
+`monitor-service/falco_ingest.py:FalcoTailer` reads complete lines with a
+persistent checkpoint; `MonitorService` classifies and journals them before
+advancing that checkpoint. Security rules and baseline-capture rules determine
+which events are emitted. SelfSentry has no independent eBPF probe, unfiltered
+pre-rule syscall feed, or gRPC ingestion client.
+
+The dashboard uses HTTP requests to the FastAPI API, with periodic polling
+rather than a WebSocket connection:
+
+| Consumer | Scheduled refresh interval | Source |
+| --- | --- | --- |
+| Global monitor status | 3 seconds | `frontend-dashboard/src/hooks/useMonitor.jsx` |
+| Containers, models inventory, deployments and audit collections | 3 seconds | `frontend-dashboard/src/hooks/useCollection.js` |
+| Incident list, its inventory context and incident detail | 15 seconds | `frontend-dashboard/src/hooks/useIncidents.js` |
+| Overview | 15 seconds | `frontend-dashboard/src/hooks/useOverviewData.js` |
+| Rule review | 15 seconds | `frontend-dashboard/src/hooks/useRules.js` |
+
+Hooks also load on mount and support refresh/pause behavior where implemented.
+These intervals are scheduling settings, not end-to-end latency guarantees;
+requests, processing, browser scheduling and pauses can delay visible results.
+Pausing a page snapshot does not stop the monitor or global status polling.
+The `websockets` package retained by `uvicorn[standard]` is a server dependency,
+not evidence of a dashboard WebSocket transport.
+
+For the report's implementation description:
+
+> SelfSentry reads Falco security alerts and baseline telemetry from a JSON
+> output file through a checkpointed monitor. Falco's eBPF driver provides the
+> underlying kernel capture, while loaded rules select the emitted events.
+> The React dashboard retrieves persisted data and monitor status through the
+> FastAPI HTTP API using periodic polling. Refresh intervals vary by view;
+> they do not establish a fixed detection or display latency.
+
 ## Falco and baseline telemetry
 
 `runtime-monitor/falco_integration.py:parse_falco_alert` returns a `FalcoAlert`.
