@@ -9,7 +9,7 @@
 ## What this phase delivers
 
 - `runtime-monitor/falco_integration.py` — parses Falco's JSON alert output,
-  normalizes it into ContainerGuard AI's internal schema (shape #1, see
+  normalizes it into SelfSentry's internal schema (shape #1, see
   `docs/interfaces.md`), and exposes both a live-tailing generator
   (`stream_falco_alerts`) and a finite batch reader
   (`read_falco_alerts_from_file`) for the rest of the pipeline to consume.
@@ -158,7 +158,7 @@ copy `runtime-monitor/` and `tests/` into your repo first (see
 "Integrating into your repo" below), then:
 
 ```bash
-cd containerguard-ai/runtime-monitor
+cd selfsentry/runtime-monitor
 python3 falco_integration.py /var/log/falco/alerts.json --mode batch
 ```
 You should see your real alert printed back as a normalized shape-#1 JSON
@@ -210,10 +210,10 @@ These files are additive — nothing here touches `image-scanner/` or
 `policy-checker/` from Phases 1–2. From the folder you unzip this into:
 
 ```bash
-cp -r runtime-monitor ~/containerguard-ai/
-cp tests/test_falco_integration.py ~/containerguard-ai/tests/
-cp -r docs/* ~/containerguard-ai/docs/          # merges interfaces.md + this file in
-cd ~/containerguard-ai
+cp -r runtime-monitor ~/selfsentry/
+cp tests/test_falco_integration.py ~/selfsentry/tests/
+cp -r docs/* ~/selfsentry/docs/          # merges interfaces.md + this file in
+cd ~/selfsentry
 python3 -m unittest tests.test_falco_integration -v   # confirm 20/20 pass in your real repo too
 ```
 

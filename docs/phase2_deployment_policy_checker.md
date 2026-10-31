@@ -7,7 +7,7 @@
 > database workarounds as the current human-approved workflow.
 
 ## What this phase delivers
-A Python policy engine (`policy-checker/deploy_policy_validator.py`) that inspects a container's deployment configuration (shaped like `docker inspect <container>` output) and returns a `PolicyResult` describing every violation of ContainerGuard AI's default security policy:
+A Python policy engine (`policy-checker/deploy_policy_validator.py`) that inspects a container's deployment configuration (shaped like `docker inspect <container>` output) and returns a `PolicyResult` describing every violation of SelfSentry's default security policy:
 
 1. **Non-root user** — `Config.User` must not be empty, `"root"`, or UID `0` (`HIGH`, blocking).
 2. **No `--privileged` mode** — `HostConfig.Privileged` must be `false` (`CRITICAL`, blocking).
@@ -46,7 +46,7 @@ This is the one step that requires your actual machine — there's no Docker dae
    ```
 2. Run the checker against it:
    ```bash
-   cd containerguard-ai/policy-checker
+   cd selfsentry/policy-checker
    python3 deploy_policy_validator.py bad-container
    ```
    Confirm it exits non-zero (`echo $?`) and the JSON output's `violation_rule_ids` includes `POLICY-PRIVILEGED`, `POLICY-EXCESS-CAPS`, and (likely) `POLICY-ROOT-USER` and `POLICY-WRITABLE-ROOTFS`.

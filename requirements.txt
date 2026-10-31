@@ -1,4 +1,4 @@
-# ContainerGuard AI — full project dependency list, organized by phase.
+# SelfSentry — full project dependency list, organized by phase.
 # Install everything now with `pip install -r requirements.txt`, or install
 # incrementally per-phase if you'd rather keep your venv lean while learning.
 # NOTE: `trivy` and `falco` are NOT pip packages — they are separate CLI

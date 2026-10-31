@@ -39,4 +39,4 @@ evaluation/_before*/
 evaluation/_pre_*/
 evaluation/candidate-*.yaml
 evaluation/generated-rules-*.yaml
-monitor-service/*.before-*
+*.before-*

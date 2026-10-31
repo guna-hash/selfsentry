@@ -51,11 +51,11 @@ OPS = {
 # A collector edit requires review and an explicit update of these pins.
 BASELINE_COLLECTORS = {
     "Baseline Process Spawn": (
-        "76a3fa674b13a5c547e730314838fd8756c8a10cae380837ddacc94c3732441f",
+        "d99a978db06a0d7b2259d322123ebc37bcd8987500fa7374da68745de95ecb41",
         ("proc.name", "proc.pname"),
     ),
     "Baseline File Write": (
-        "90747f8d2a79e73178cdeac83621fdef0279097a8e086e412ba602ab11e82207",
+        "6c8a5585b418d9481a132b83e7920c0c0dcf52f4bfda93ace76bee1c763d5c3c",
         ("proc.name", "fd.name"),
     ),
 }

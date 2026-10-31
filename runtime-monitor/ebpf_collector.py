@@ -1,7 +1,7 @@
 """
 ebpf_collector.py
 ------------------
-Module 3 of ContainerGuard AI: raw eBPF telemetry collection.
+Module 3 of SelfSentry: raw eBPF telemetry collection.
 
 SCOPE DECISION (see docs/phase3_falco_integration.md for the full writeup —
 this is summarized here so it's visible right where an evaluator or future
@@ -63,7 +63,7 @@ def stream_raw_events(
 ) -> Iterator[dict]:
     """
     Thin facade over falco_integration.stream_falco_alerts — see this
-    module's docstring for why ContainerGuard AI does not run a second,
+    module's docstring for why SelfSentry does not run a second,
     independent eBPF collector alongside Falco's own.
 
     Phase 4 (behavioral-engine/feature_extractor.py) should treat this

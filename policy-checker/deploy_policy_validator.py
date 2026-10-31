@@ -1,11 +1,11 @@
 """
 deploy_policy_validator.py
 ----------------------------
-Module 2 of ContainerGuard AI: Deployment Policy Checker.
+Module 2 of SelfSentry: Deployment Policy Checker.
 
 Inspects a container's deployment configuration (shaped like ONE element of
 the JSON array returned by `docker inspect <container>`) and blocks it if it
-violates ContainerGuard AI's default security policy:
+violates SelfSentry's default security policy:
 
   1. Container must not run as root.
   2. Container must not run in --privileged mode.
@@ -164,7 +164,7 @@ def check_deployment_config(
 ) -> PolicyResult:
     """
     Public entry point: validate a container's deployment configuration
-    against ContainerGuard AI's default security policy.
+    against SelfSentry's default security policy.
 
     Args:
         container_spec: a dict shaped like ONE element of the JSON array
@@ -229,7 +229,7 @@ if __name__ == "__main__":
     import sys
 
     parser = argparse.ArgumentParser(
-        description="ContainerGuard AI - Deployment Policy Checker"
+        description="SelfSentry - Deployment Policy Checker"
     )
     parser.add_argument(
         "container", help="Name or ID of a running container to check, e.g. mycontainer"

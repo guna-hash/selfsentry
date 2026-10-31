@@ -15,7 +15,7 @@ A Python wrapper (`image-scanner/trivy_wrapper.py`) around the Trivy CLI that:
 
 ## What's original vs. off-the-shelf
 - **Off-the-shelf:** Trivy itself (the scanning engine/CVE database).
-- **Original:** the invocation logic, error handling (missing binary, timeout, bad JSON), normalization into typed Python objects, the `has_blocking_findings` policy-ready flag, and the summary/reporting shape — this is the glue the rest of ContainerGuard AI depends on.
+- **Original:** the invocation logic, error handling (missing binary, timeout, bad JSON), normalization into typed Python objects, the `has_blocking_findings` policy-ready flag, and the summary/reporting shape — this is the glue the rest of SelfSentry depends on.
 
 ## Automated tests
 `tests/test_trivy_wrapper.py` — 16 unit tests, all mocked (no real `trivy` binary or network required). Covers:
@@ -40,7 +40,7 @@ This is the one step that could NOT be run in the current sandbox (no internet a
 1. Install Trivy: https://aquasecurity.github.io/trivy/latest/getting-started/installation/
 2. Run a real scan:
    ```bash
-   cd containerguard-ai/image-scanner
+   cd selfsentry/image-scanner
    python3 trivy_wrapper.py nginx:1.25
    ```
 3. Confirm you get a JSON summary back, e.g.:

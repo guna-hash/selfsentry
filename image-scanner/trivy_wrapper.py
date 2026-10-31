@@ -1,7 +1,7 @@
 """
 trivy_wrapper.py
 -----------------
-Module 1 of ContainerGuard AI: Image Scanner.
+Module 1 of SelfSentry: Image Scanner.
 
 Wraps the Trivy CLI to scan a container image for:
   - Known vulnerabilities (CVEs)

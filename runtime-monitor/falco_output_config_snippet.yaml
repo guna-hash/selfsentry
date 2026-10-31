@@ -1,4 +1,4 @@
-# ContainerGuard AI — Phase 3 Falco output configuration
+# SelfSentry — Phase 3 Falco output configuration
 #
 # This is NOT a full falco.yaml — it's the specific settings this project
 # needs, verified against Falco's current documented config keys. Merge
@@ -18,7 +18,7 @@ json_output: true
 json_include_output_property: true
 
 # Include each rule's tags in the JSON output (not currently consumed by
-# ContainerGuard AI, but cheap to keep for future use / debugging).
+# SelfSentry, but cheap to keep for future use / debugging).
 json_include_tags_property: true
 
 # Use full ISO 8601 timestamps (e.g. "2026-08-09T10:15:00.123456789Z")

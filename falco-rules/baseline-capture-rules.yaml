@@ -1,5 +1,5 @@
 # baseline-capture-rules.yaml
-# ContainerGuard AI - Phase 4 baseline data collection rules.
+# SelfSentry - Phase 4 baseline data collection rules.
 #
 # IMPORTANT: these are NOT security alerts. Every rule here fires on
 # completely normal, expected container activity - their only purpose is
@@ -15,25 +15,25 @@
 - rule: Baseline Process Spawn
   desc: >
     Captures every process spawn inside any container - training data for
-    ContainerGuard AI's behavioral baseline, not a security alert.
+    SelfSentry's behavioral baseline, not a security alert.
   condition: spawned_process and container
   output: >
     BASELINE_PROCESS_SPAWN container_id=%container.id proc_name=%proc.name
     parent_proc_name=%proc.pname timestamp=%evt.time.iso8601
   priority: NOTICE
-  tags: [baseline, containerguard-ai]
+  tags: [baseline, selfsentry]
 
 - rule: Baseline Network Outbound
   desc: >
     Captures every outbound network connection from any container -
-    training data for ContainerGuard AI's behavioral baseline, not a
+    training data for SelfSentry's behavioral baseline, not a
     security alert.
   condition: outbound and container
   output: >
     BASELINE_NETWORK_CONNECT container_id=%container.id dest_ip=%fd.rip
     dest_port=%fd.rport timestamp=%evt.time.iso8601
   priority: NOTICE
-  tags: [baseline, containerguard-ai]
+  tags: [baseline, selfsentry]
 
 - rule: Baseline File Write
   desc: >
@@ -47,11 +47,11 @@
     BASELINE_FILE_ACCESS container_id=%container.id file_path=%fd.name proc_name=%proc.name
     timestamp=%evt.time.iso8601
   priority: NOTICE
-  tags: [baseline, containerguard-ai]
+  tags: [baseline, selfsentry]
 
 - rule: Baseline Sensitive Syscall
   desc: >
-    Captures syscalls from ContainerGuard AI's sensitive-syscall watchlist
+    Captures syscalls from SelfSentry's sensitive-syscall watchlist
     (see behavioral-engine/feature_extractor.py's SENSITIVE_SYSCALLS) -
     baseline training data. Several of these also overlap with Falco's own
     default security rules, which is expected and fine - this rule exists
@@ -64,4 +64,4 @@
     BASELINE_SYSCALL container_id=%container.id syscall_name=%evt.type
     timestamp=%evt.time.iso8601
   priority: NOTICE
-  tags: [baseline, containerguard-ai]
+  tags: [baseline, selfsentry]

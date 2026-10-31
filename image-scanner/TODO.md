@@ -1,2 +1,0 @@
-- [x] Run real Trivy scan manually on your Linux/Docker machine
-- [x] Mark Phase 1 fully closed once manual validation passes

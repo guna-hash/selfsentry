@@ -1,7 +1,13 @@
 {
   "source_commit": "a25fca0cc22974cda692a4dd8410de99b06fc37e",
-  "approved": false,
-  "deletions_performed": [],
+  "approved": true,
+  "deletions_performed": [
+    "-c",
+    "evaluation/clock_guard.py.before-clock-followup",
+    "frontend-dashboard/src/components/RiskExplanation.jsx.before-clock-followup",
+    "tests/test_evaluation_clock_guard.py.before-clock-followup",
+    "image-scanner/TODO.md"
+  ],
   "entries": [
     {
       "path": "-c",
@@ -11,8 +17,8 @@
       "recover_from_commit": "a25fca0cc22974cda692a4dd8410de99b06fc37e",
       "reason": "Empty artifact; no application content",
       "reference_review": "No runtime loading reference found; suffix excludes normal Python/JS discovery. Dynamic/manual use cannot be disproved.",
-      "action": "PROPOSE REMOVE; explicit approval still required",
-      "removed": false
+      "action": "REMOVE",
+      "removed": true
     },
     {
       "path": "evaluation/clock_guard.py.before-clock-followup",
@@ -22,8 +28,8 @@
       "recover_from_commit": "a25fca0cc22974cda692a4dd8410de99b06fc37e",
       "reason": "Pre-follow-up source copy; current original contains the reviewed fix and tests; Git retains exact prior copy",
       "reference_review": "No runtime loading reference found; suffix excludes normal Python/JS discovery. Dynamic/manual use cannot be disproved.",
-      "action": "PROPOSE REMOVE; explicit approval still required",
-      "removed": false
+      "action": "REMOVE",
+      "removed": true
     },
     {
       "path": "frontend-dashboard/src/components/RiskExplanation.jsx.before-clock-followup",
@@ -33,8 +39,8 @@
       "recover_from_commit": "a25fca0cc22974cda692a4dd8410de99b06fc37e",
       "reason": "Pre-follow-up source copy; current original contains the reviewed fix and tests; Git retains exact prior copy",
       "reference_review": "No runtime loading reference found; suffix excludes normal Python/JS discovery. Dynamic/manual use cannot be disproved.",
-      "action": "PROPOSE REMOVE; explicit approval still required",
-      "removed": false
+      "action": "REMOVE",
+      "removed": true
     },
     {
       "path": "tests/test_evaluation_clock_guard.py.before-clock-followup",
@@ -44,9 +50,22 @@
       "recover_from_commit": "a25fca0cc22974cda692a4dd8410de99b06fc37e",
       "reason": "Pre-follow-up source copy; current original contains the reviewed fix and tests; Git retains exact prior copy",
       "reference_review": "No runtime loading reference found; suffix excludes normal Python/JS discovery. Dynamic/manual use cannot be disproved.",
-      "action": "PROPOSE REMOVE; explicit approval still required",
-      "removed": false
+      "action": "REMOVE",
+      "removed": true
+    },
+    {
+      "path": "image-scanner/TODO.md",
+      "size_bytes": 126,
+      "sha256": "15cac820ee8ae6a5a283d55630941cef1c00d0209bc4a289c4aa11f9841bb7ba",
+      "git_blob": "4edd2d6baad42d4adba1486451aea43c7422a804",
+      "recover_from_commit": "0d40cbb62a63bee7a66fda9b4a8f9d8dc63010e8",
+      "reason": "Completed two-item Phase 1 checklist; historical completion remains in Git and project documentation",
+      "reference_review": "Only historical file-tree and inventory references found; no runtime use",
+      "action": "REMOVE",
+      "removed": true
     }
   ],
-  "recovery": "git show COMMIT:PATH recovers exact bytes; use -- for the leading-hyphen filename in filesystem/git commands"
+  "recovery": "git show COMMIT:PATH recovers exact bytes; use -- for the leading-hyphen filename in filesystem/git commands",
+  "approval_basis": "User requested completion of cleanup item 4: remove confirmed junk/backup files and replace obsolete project branding.",
+  "cleanup_base_commit": "0d40cbb62a63bee7a66fda9b4a8f9d8dc63010e8"
 }

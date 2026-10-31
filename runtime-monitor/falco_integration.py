@@ -1,9 +1,9 @@
 """
 falco_integration.py
 ---------------------
-Module 3 of ContainerGuard AI: Falco Rule Engine integration.
+Module 3 of SelfSentry: Falco Rule Engine integration.
 
-Wraps Falco's JSON alert output and normalizes it into ContainerGuard AI's
+Wraps Falco's JSON alert output and normalizes it into SelfSentry's
 internal Falco alert schema — "shape #1" in docs/interfaces.md — which the
 Correlation Engine (Phase 5) and everything downstream depends on:
 
@@ -44,7 +44,7 @@ class FalcoParseError(ValueError):
 
 
 # Falco's own priority strings (see falco_common::priority_names upstream)
-# mapped to the upper-case form ContainerGuard AI uses internally. Kept as
+# mapped to the upper-case form SelfSentry uses internally. Kept as
 # an explicit map (rather than just .upper()) so "Informational" normalizes
 # to "INFO" and any future/unexpected value still degrades gracefully via
 # _normalize_priority()'s fallback rather than raising.
@@ -70,7 +70,7 @@ _CONTAINER_ID_FIELDS = ("container.id", "container_id")
 # version/output path) for events that aren't tied to any container.
 _NON_CONTAINER_ID_VALUES = {"host", "<na>", ""}
 
-# The minimum set of keys ContainerGuard AI needs from a raw Falco JSON
+# The minimum set of keys SelfSentry needs from a raw Falco JSON
 # alert. If any are missing, the line is treated as unparseable rather than
 # silently producing a half-populated alert.
 _REQUIRED_RAW_FIELDS = ("rule", "priority", "output", "time")
@@ -246,7 +246,7 @@ if __name__ == "__main__":
     import sys
 
     parser = argparse.ArgumentParser(
-        description="ContainerGuard AI - Falco alert stream (Phase 3 manual validation tool)"
+        description="SelfSentry - Falco alert stream (Phase 3 manual validation tool)"
     )
     parser.add_argument("log_path", help="Path to Falco's JSON output log file")
     parser.add_argument(
