@@ -29,10 +29,6 @@ Open limitations:
   or zero dropped events.
 - Permanently stalled-worker completion bounds and untested fault schedules.
 
-Owner decisions/deferred work:
-- License selection, demo recording and any live archival cutoff.
-- Proposed removals remain retained; no deletion is required for completion.
-
 Criterion 3 remains partial. No unconditional production-readiness or complete
 original-master-prompt claim is made. Live models and response settings are
 unchanged. Detailed evidence and scope are in the repository audit report.

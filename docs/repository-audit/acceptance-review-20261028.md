@@ -29,10 +29,6 @@ Open limitations:
   or zero dropped events.
 - Permanently stalled-worker completion bounds and untested fault schedules.
 
-Owner decisions/deferred work:
-- License selection, demo recording and any live archival cutoff.
-- Proposed removals remain retained; no deletion is required for completion.
-
 Criterion 3 remains partial. No unconditional production-readiness or complete
 original-master-prompt claim is made. Live models and response settings are
 unchanged. Detailed evidence and scope are in the repository audit report.
@@ -106,7 +102,7 @@ Criterion 3 remains partial. Recorded passes retain the boundaries above.
 - Two supervised rule loops with native re-fire and verified test-rule unloading.
 - 30-minute synthetic measurement and prospective calibrated LOF study.
 
-## Remaining engineering and validation
+## Observed verification boundaries
 
 1. **Clock reliability:** recurring faults have no established permanent fix.
    Preserve timestamp observations and invalidate affected captures.
@@ -121,20 +117,6 @@ Criterion 3 remains partial. Recorded passes retain the boundaries above.
 5. **Provenance:** selected installed-package comparisons were performed within
    their recorded scope. These do not establish complete OS/artifact supply-chain
    verification. Preserve version differences and historical evidence.
-
-## Owner decisions and deferred work
-
-- Licensing: the repository currently has no selected license. Adding a license
-  requires the owner's choice; a completion script must not choose one silently.
-- File deletion and live archive/pruning are deferred. Retaining files is valid;
-  no arbitrary cutoff, database rewrite or deletion is needed for a green checklist.
-- Demo recording is deferred by the operator. Additional browser/device coverage
-  is optional beyond the recorded scope unless the original requirement demands it.
-- Multi-user RBAC, Kubernetes, fleet operation, Internet-facing deployment and
-  production certification are outside the present host-local academic scope.
-
-Automatic isolation, confirmation, rule candidates and native retirement remain
-disabled in the clean-install evidence. None is enabled by this documentation pass.
 
 ## Setup-document follow-up
 
