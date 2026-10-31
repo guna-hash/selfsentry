@@ -89,6 +89,19 @@ cp -n .env.example .env
 chmod 600 .env
 ```
 
+`requirements.lock` installs the runtime packages. `requirements-dev.lock` includes
+those same pins plus tests, coverage, formatting, lint and type-check tools.
+The corresponding `.txt` files declare direct dependencies with lower bounds;
+use the locks for the tested Linux/Python 3.12 resolution. Neither lock has hashes
+or claims cross-platform reproducibility. Installing a smaller dependency set into
+an existing environment does not uninstall packages already present.
+
+Falco events arrive through JSON-file tailing and the dashboard polls the API.
+There is no direct gRPC, pandas or WebSocket application dependency. WebSockets
+are still installed by `uvicorn[standard]`. The OpenAI client's HTTP dependencies
+remain in the runtime lock; HTTPX is also declared for FastAPI's test client in
+the development requirements.
+
 Edit `.env` locally: configure a dedicated PostgreSQL database/role via `DATABASE_URL`,
 generate a random `SELFSENTRY_API_TOKEN`, and set Falco paths. Keep
 `AUTO_ISOLATION_ENABLED=false`. Never commit credentials, baseline datasets or runtime state.
@@ -132,7 +145,11 @@ Actual automatic response belongs to the durable monitor.
 
 ## Validate
 
+Install the development dependencies before running tests and release checks:
+
 ```bash
+.venv/bin/python -m pip install -r requirements-dev.lock
+.venv/bin/python -m pip check
 .venv/bin/python -m pytest tests/ -q
 .venv/bin/python scripts/verify_final_checks.py
 (cd frontend-dashboard && npm test -- --run)

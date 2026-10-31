@@ -193,6 +193,8 @@ not grant broad sudo privileges or enable native retirement.
 ```bash
 bash bin/selfsentry start
 bash bin/selfsentry status
+.venv/bin/python -m pip install -r requirements-dev.lock
+.venv/bin/python -m pip check
 .venv/bin/python scripts/verify_final_checks.py
 .venv/bin/python scripts/verify_schema.py
 git diff --check

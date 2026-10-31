@@ -11,18 +11,22 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def main():
-    sources = ['requirements.lock', 'frontend-dashboard/package-lock.json']
+    sources = ['requirements.lock', 'requirements-dev.lock',
+               'frontend-dashboard/package-lock.json']
     hashes = {name: hashlib.sha256((ROOT / name).read_bytes()).hexdigest() for name in sources}
     packages = []
-    for line in (ROOT / sources[0]).read_text().splitlines():
-        if not line.strip() or line.startswith('#'):
-            continue
-        match = re.fullmatch(r'([A-Za-z0-9_.-]+)==([^\s;]+)', line.strip())
-        if not match:
-            raise ValueError('Unsupported lock entry; refuse incomplete SBOM')
-        packages.append({'name': match[1], 'versionInfo': match[2],
-                         'sourceInfo': 'Declared Python lock entry'})
-    lock = json.loads((ROOT / sources[1]).read_text())
+    for source in sources[:-1]:
+        for line in (ROOT / source).read_text().splitlines():
+            if not line.strip() or line.startswith('#'):
+                continue
+            if source == 'requirements-dev.lock' and line.strip() == '-r requirements.lock':
+                continue  # Runtime pins are already included above.
+            match = re.fullmatch(r'([A-Za-z0-9_.-]+)==([^\s;]+)', line.strip())
+            if not match:
+                raise ValueError('Unsupported lock entry; refuse incomplete SBOM')
+            packages.append({'name': match[1], 'versionInfo': match[2],
+                             'sourceInfo': f'Declared Python lock entry: {source}'})
+    lock = json.loads((ROOT / sources[-1]).read_text())
     for path, item in sorted(lock['packages'].items()):
         if not path:
             continue  # Root project is described by the document, not a third-party package.
